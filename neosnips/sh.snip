@@ -1,4 +1,14 @@
 
+snippet help
+  help() {
+      echo "usage: $(basename \$0) <options>"
+  }
+
+  if [ "\${1:-}" = "-h" -o "\${1:-}" = "--help" ]; then
+      help
+      exit 0
+  fi
+
 snippet err
 options word
   >&2 echo ${1}
