@@ -142,8 +142,9 @@ nnoremap <leader>F :execute 'edit' expand("%:p:h")<cr>
 
 noremap <Leader>w :w<CR>
 
-" Close current buffer
-noremap <Leader>d :bd<CR>
+" Close current buffer without closing split window
+" http://stackoverflow.com/a/4468491/153718
+noremap <Leader>d :bp\|bd #<CR>
 
 " Make Y behave like other capitals. Yank to end of line.
 map Y y$
