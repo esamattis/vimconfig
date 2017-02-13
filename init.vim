@@ -256,3 +256,6 @@ augroup json
     au!
     au BufNewFile,BufRead .eslintrc,.babelrc setlocal filetype=json
 augroup END
+
+
+command ToCamel normal f-xvgU
