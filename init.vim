@@ -39,6 +39,7 @@ Plug 'vim-airline/vim-airline'
 Plug 'Glench/Vim-Jinja2-Syntax'
 Plug 'machakann/vim-highlightedyank'
 Plug 'tpope/vim-sleuth'
+Plug 'sbdchd/neoformat'
 call plug#end()
 
 "" Leader mappings
