@@ -259,4 +259,8 @@ augroup json
 augroup END
 
 
+" Change tab behaviour
+command -nargs=1 TabSpace setlocal expandtab shiftwidth=<args> tabstop=<args> softtabstop=<args>
+command -nargs=1 Tab setlocal noexpandtab shiftwidth=<args> tabstop=<args> softtabstop=<args>
+
 command ToCamel normal f-xvgU
