@@ -39,6 +39,10 @@ if [ -d ~/.vim/bin ] ; then
     PATH=~/.vim/bin:"${PATH}"
 fi
 
+if [ -d ~/.config/nvim/bin ] ; then
+    PATH=~/.config/nvim/bin:"${PATH}"
+fi
+
 if [ -d ~/bin ] ; then
     PATH=~/bin:"${PATH}"
 fi
