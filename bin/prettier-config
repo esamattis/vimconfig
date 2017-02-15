@@ -21,6 +21,10 @@ while true; do
 
 done
 
+if [ "$opts" = "" ]; then
+    opts="--no-bracket-spacing --tab-width=4 --trailing-comma --print-width=100"
+fi
+
 if [ "$opts" = "disable" ]; then
     exec cat
 fi
