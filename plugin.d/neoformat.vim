@@ -6,4 +6,15 @@ let g:neoformat_javascript_prettier = {
 
 let g:neoformat_enabled_javascript = ['prettier']
 
-autocmd BufWritePre *.js exe ":Neoformat"
+let g:epeli_neoformat_enabled = 1
+
+command NeoformatDisable execute "let g:epeli_neoformat_enabled = 0"
+command NeoformatEnable execute "let g:epeli_neoformat_enabled = 1"
+
+function AutoFormat()
+    if g:epeli_neoformat_enabled
+        Neoformat
+    endif
+endfunction
+
+autocmd BufWritePre *.js exe ":call AutoFormat()"
