@@ -1,13 +1,6 @@
 noremap <Leader>q :Neoformat<CR>
 vnoremap <Leader>q :'<,'>Neoformat<CR>
 
-let g:neoformat_javascript_prettier = {
-    \ 'exe': 'prettier-config',
-    \ 'args': ['--stdin'],
-    \ 'stdin': 1,
-    \ }
-
-let g:neoformat_enabled_javascript = ['prettier']
 
 let g:epeli_neoformat_disabled = 0
 
@@ -28,5 +21,14 @@ function AutoFormat()
 
     Neoformat
 endfunction
+
+
+let g:neoformat_javascript_prettier = {
+    \ 'exe': 'prettier-config',
+    \ 'args': ['--stdin'],
+    \ 'stdin': 1,
+    \ }
+
+let g:neoformat_enabled_javascript = ['prettier']
 
 autocmd BufWritePre *.js exe ":call AutoFormat()"
