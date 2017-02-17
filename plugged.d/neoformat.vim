@@ -1,3 +1,6 @@
+noremap <Leader>q :Neoformat<CR>
+vnoremap <Leader>q :'<,'>Neoformat<CR>
+
 let g:neoformat_javascript_prettier = {
     \ 'exe': 'prettier-config',
     \ 'args': ['--stdin'],
