@@ -21,8 +21,9 @@ while true; do
 
 done
 
+# Do not do anything if config is not found
 if [ "$opts" = "" ]; then
-    opts="--no-bracket-spacing --tab-width=4 --trailing-comma --print-width=100"
+    exec cat
 fi
 
 if [ "$opts" = "disable" ]; then
