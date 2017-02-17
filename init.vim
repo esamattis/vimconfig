@@ -48,11 +48,11 @@ let mapleader = ","
 
 for plugin in keys(g:plugs)
     if has("win32")
-        let s:plugin_config = $HOME . '/AppData/Local/nvim/plugin.d/' . plugin . '.vim'
+        let s:plugin_config = $HOME . '/AppData/Local/nvim/plugged.d/' . plugin . '.vim'
     elseif has('nvim')
-        let s:plugin_config = $HOME . '/.config/nvim/plugin.d/' . plugin . '.vim'
+        let s:plugin_config = $HOME . '/.config/nvim/plugged.d/' . plugin . '.vim'
     else
-        let s:plugin_config = $HOME . '/.vim/plugin.d/' . plugin . '.vim'
+        let s:plugin_config = $HOME . '/.vim/plugged.d/' . plugin . '.vim'
     endif
 
     if filereadable(s:plugin_config)
