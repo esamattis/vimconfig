@@ -259,6 +259,9 @@ augroup json
 augroup END
 
 
+" Treat dash as part of words
+set iskeyword+=-
+
 " Change tab behaviour
 command -nargs=1 TabSpace setlocal expandtab shiftwidth=<args> tabstop=<args> softtabstop=<args>
 command -nargs=1 Tab setlocal noexpandtab shiftwidth=<args> tabstop=<args> softtabstop=<args>
