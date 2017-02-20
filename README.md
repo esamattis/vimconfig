@@ -1,18 +1,5 @@
 # Vim Config by Epeli
 
-## Install
-
-Vim and tools
-
-    sudo apt-get install vim-nox git-core tmux curl wget bvi
-
-Checkers and linters for Syntastic (and some other tools)
-
-    sudo npm install -g jshint coffee-script jsonlint stylus less serve yalr
-    sudo npm install -g npmlv npm-mkrelease grunt
-    sudo gem install sass
-    sudo apt-get install pyflakes
-
 ### Bootstrap
 
     sh <(wget -qO - https://github.com/epeli/vimconfig/raw/master/install.sh)
@@ -23,21 +10,6 @@ Checkers and linters for Syntastic (and some other tools)
 
 Can't live without it.
 
-
-
-## Solarized for gnome-terminal
-
-  * https://github.com/sigurdga/gnome-terminal-colors-solarized
-
-## tmux 1.8
-
-    sudo apt-get install checkinstall libevent-dev libncurses-dev
-    wget http://downloads.sourceforge.net/project/tmux/tmux/tmux-1.8/tmux-1.8.tar.gz
-    tar xzvf tmux-1.8.tar.gz
-    cd tmux-1.8/
-    ./configure
-    make
-    sudo checkinstall
 
 ## Influences from
 
