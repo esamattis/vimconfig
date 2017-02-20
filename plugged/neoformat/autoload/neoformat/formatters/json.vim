@@ -1,5 +1,12 @@
+function! neoformat#formatters#json#jq() abort
+    return {
+            \ 'exe': 'jq',
+            \ 'args': ['.'],
+            \ }
+endfunction
+
 function! neoformat#formatters#json#enabled() abort
-    return ['jsbeautify', 'prettydiff']
+    return ['jsbeautify', 'prettydiff', 'jq']
 endfunction
 
 function! neoformat#formatters#json#jsbeautify() abort
