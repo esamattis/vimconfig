@@ -1,7 +1,7 @@
 Include: include/setup.vader
 
 Execute (neomake#utils#LogMessage writes to logfile always):
-  Save g:neomake_verbose g:neomake_logfile
+  Save g:neomake_verbose, g:neomake_logfile
   let neomake_verbose = 0
   let g:neomake_logfile = tempname()
   call neomake#utils#LogMessage(1, 'msg1')
@@ -29,37 +29,98 @@ Execute (neomake#utils#CompressWhitespace):
   AssertEqual F("foo\n bar \r\n"), 'foo bar'
 
 Execute (neomake#utils#GetSetting serialize):
+  Save g:maker
   let g:maker = {'name': 'mymaker'}
   function! GetSetting()
     return neomake#utils#GetSetting('serialize', g:maker, 'default',
                                   \ ['myft'], bufnr('%'))
   endfunction
 
+  Save g:neomake_serialize, b:neomake_serialize
+  Save g:neomake_mymaker_serialize, b:neomake_mymaker_serialize
+  Save g:neomake_myft_mymaker_serialize, b:neomake_myft_mymaker_serialize
+
   AssertEqual GetSetting(), 'default'
-  let g:neomake_serialize = 5
+
+  let g:neomake_serialize = 7
+  AssertEqual GetSetting(), 7
+  let g:neomake_serialize = 0
+  AssertEqual GetSetting(), 0
+  let g:neomake_serialize = 99
+  AssertEqual GetSetting(), 99
+
+  let b:neomake_serialize = 6
+  AssertEqual GetSetting(), 6
+  let b:neomake_serialize = 0
+  AssertEqual GetSetting(), 0
+  let b:neomake_serialize = 98
+  AssertEqual GetSetting(), 98
+
+  let g:maker.serialize = 5
   AssertEqual GetSetting(), 5
-  let b:neomake_serialize = 4
+  let g:maker.serialize = 0
+  AssertEqual GetSetting(), 0
+  let g:maker.serialize = 97
+  AssertEqual GetSetting(), 97
+
+  let g:neomake_mymaker_serialize = 4
   AssertEqual GetSetting(), 4
-  let g:maker.serialize = 3
+  let g:neomake_mymaker_serialize = 0
+  AssertEqual GetSetting(), 0
+  let g:neomake_mymaker_serialize = 96
+  AssertEqual GetSetting(), 96
+
+  let b:neomake_mymaker_serialize = 3
   AssertEqual GetSetting(), 3
+  let b:neomake_mymaker_serialize = 0
+  AssertEqual GetSetting(), 0
+  let b:neomake_mymaker_serialize = 95
+  AssertEqual GetSetting(), 95
+
   let g:neomake_myft_mymaker_serialize = 2
   AssertEqual GetSetting(), 2
+  let g:neomake_myft_mymaker_serialize = 0
+  AssertEqual GetSetting(), 0
+  let g:neomake_myft_mymaker_serialize = 94
+  AssertEqual GetSetting(), 94
+
   let b:neomake_myft_mymaker_serialize = 1
   AssertEqual GetSetting(), 1
+  let b:neomake_myft_mymaker_serialize = 0
+  AssertEqual GetSetting(), 0
+  unlet b:neomake_myft_mymaker_serialize
+  let b:neomake_myft_mymaker_serialize = [1]
+  AssertEqual GetSetting(), [1]
+
+  " Uses b:neomake_serialize
+  let g:maker = {'name': ''}
+  AssertEqual GetSetting(), 98
+  let g:maker = {}
+  AssertEqual GetSetting(), 98
 
 Execute (neomake#utils#GetSetting accepts lists):
+  Save g:maker
   let g:maker = {'name': 'mymaker'}
   function! GetSetting()
     return neomake#utils#GetSetting('args', g:maker, 'default',
                                   \ ['myft'], bufnr('%'))
   endfunction
 
+  Save g:neomake_myft_mymaker_args, b:neomake_myft_mymaker_args
   let g:neomake_myft_mymaker_args = [ 'global', 'shallow', 'list' ]
   AssertEqual GetSetting(), [ 'global', 'shallow', 'list' ]
   let b:neomake_myft_mymaker_args = [ 'buffer', 'shallow', 'list' ]
   AssertEqual GetSetting(), [ 'buffer', 'shallow', 'list' ]
 
+  Save g:maker
+  Restore
+  let g:maker = {'name': 'mymaker'}
+  Save b:neomake_myft_mymaker_args
+  let b:neomake_myft_mymaker_args = 'string'
+  AssertEqual GetSetting(), 'string'
+
 Execute (neomake#utils#GetSetting without name):
+  Save g:maker
   let g:maker = {}
   function! GetSetting(key)
     return neomake#utils#GetSetting(a:key, g:maker, [],
@@ -67,11 +128,11 @@ Execute (neomake#utils#GetSetting without name):
   endfunction
   AssertEqual GetSetting('args'), []
 
-  Save neomake_setting neomake_myft_setting
+  Save g:neomake_setting, g:neomake_myft_setting
   AssertEqual GetSetting('setting'), []
-  let neomake_setting = 42
+  let g:neomake_setting = 42
   AssertEqual GetSetting('setting'), 42
-  let neomake_myft_setting = {'custom': 1}
+  let g:neomake_myft_setting = {'custom': 1}
   AssertEqual GetSetting('setting'), {'custom': 1}
 
 Execute(neomake#utils#redir):
@@ -90,10 +151,49 @@ Execute(neomake#utils#redir):
 
 Execute (neomake#utils#ExpandArgs):
   file file1.ext
-  let args = ['%', '%:h', '%:rt', '--foo=%:h', '%s', '\%', '%%']
-  let expected_args = ['file1.ext', '.', 'file1', '--foo=%:h', '%s', '\%', '%%']
+  let isk = &iskeyword
+  let args = [
+  \ '%',
+  \ '%:h',
+  \ '%:p:t:r',
+  \ '%:rt',
+  \ '--foo=%:h',
+  \ '%s',
+  \ '%z',
+  \ '\%',
+  \ '%%',
+  \ '%:r.o',
+  \ '%:r%',
+  \ '%:r% %',
+  \ '%%%%',
+  \ '%%%',
+  \ '^%$',
+  \ 'C:\\%\\',
+  \ 'C:\\%:r\\',
+  \ ]
+  let expected_args = [
+  \ 'file1.ext',
+  \ '.',
+  \ 'file1',
+  \ 'file1',
+  \ '--foo=.',
+  \ '%s',
+  \ '%z',
+  \ '\%',
+  \ '%',
+  \ 'file1.o',
+  \ 'file1file1.ext',
+  \ 'file1file1.ext file1.ext',
+  \ '%%',
+  \ '%file1.ext',
+  \ '^file1.ext$',
+  \ 'C:\\file1.ext\\',
+  \ 'C:\\file1\\',
+  \ ]
+
   call neomake#utils#ExpandArgs(args)
   AssertEqual expected_args, args
+  AssertEqual isk, &iskeyword
 
 Execute (neomake#utils#MakerIsAvailable):
   AssertEqual neomake#utils#MakerIsAvailable('sh', 'makeprg'), 1
@@ -104,7 +204,7 @@ Execute (neomake#utils#MakerIsAvailable):
   let g:neomake_myft_mymaker_maker = {'exe': 'sh'}
   AssertEqual neomake#utils#MakerIsAvailable('myft', 'mymaker'), 1
 
-Execute (TODO: neomake#utils#MakerIsAvailable picks up changes):
+Execute (neomake#utils#MakerIsAvailable picks up changes):
   Save g:neomake_myft_sh_maker
   let g:neomake_myft_sh_maker = {
     \ 'exe': 'doesnotexist',
@@ -112,3 +212,86 @@ Execute (TODO: neomake#utils#MakerIsAvailable picks up changes):
   AssertEqual neomake#utils#MakerIsAvailable('myft', 'sh'), 0
   let g:neomake_myft_sh_maker.exe = 'sh'
   AssertEqual neomake#utils#MakerIsAvailable('myft', 'sh'), 1
+
+Execute (neomake#utils#diff_dict):
+  AssertEqual neomake#utils#diff_dict({}, {}), [{}, {}, {}]
+  AssertEqual neomake#utils#diff_dict({'a': 1}, {'a': 2}),
+    \ [{'a': [1, 2]}, {}, {}]
+  AssertEqual neomake#utils#diff_dict({'a': 1}, {'b': 2}),
+    \ [{}, {'a': 1}, {'b': 2}]
+  AssertEqual neomake#utils#diff_dict({'a': 1}, {'a': 1, 'b': 2}),
+    \ [{}, {}, {'b': 2}]
+
+  AssertEqual neomake#utils#diff_dict({'a': '1'}, {'a': 1}),
+    \ [{'a': ['1', 1]}, {}, {}]
+  AssertEqual neomake#utils#diff_dict({'a': []}, {'a': {}}),
+    \ [{'a': [[], {}]}, {}, {}]
+
+Execute (neomake#utils#wstrpart):
+  AssertEqual neomake#utils#wstrpart('123', 0, 0), ''
+  AssertEqual neomake#utils#wstrpart('123', 0, 1), '1'
+  AssertEqual neomake#utils#wstrpart('123', 0, 2), '12'
+  AssertEqual neomake#utils#wstrpart('123', 1, 2), '23'
+  AssertEqual neomake#utils#wstrpart('123', 1, 1), '2'
+  AssertEqual neomake#utils#wstrpart('123', 1, 0), ''
+
+  AssertEqual neomake#utils#wstrpart('…', 0, 1), '…'
+  AssertEqual neomake#utils#wstrpart('12…45', 1, 3), '2…4'
+  AssertEqual neomake#utils#wstrpart('…after', 1, 10), 'after'
+
+Execute (neomake#utils#sort_by_col):
+  function! S(l)
+    call sort(a:l, function('neomake#utils#sort_by_col'))
+    return a:l
+  endfunction
+
+  let a = {'col': 1}
+  let b = {'col': 5}
+  AssertEqual S([a, b]), [a, b]
+  norm i1234
+  AssertEqual getpos('.')[2], 4, 'position is correct'
+  AssertEqual S([a, b]), [a, b]
+  norm a5
+  AssertEqual getpos('.')[2], 5, 'position is correct'
+  AssertEqual S([a, b]), [b, a]
+
+Execute (neomake#utils#MakerFromCommand splits shell/shellcmdflag):
+  Save &shell, &shellcmdflag
+
+  let jobinfo = {'file_mode': 0}
+
+  let &shell = '/bin/bash -o pipefail'
+  let &shellcmdflag = '-c'
+  let maker = neomake#utils#MakerFromCommand('echo 1')
+  if neomake#has_async_support()
+    let expected_argv = ['/bin/bash', '-o', 'pipefail', '-c', 'echo 1']
+  else
+    let expected_argv = "/bin/bash '-o' 'pipefail' '-c' 'echo 1'"
+  endif
+  let bound_maker = neomake#GetMaker(maker.fn(jobinfo))
+  AssertEqual bound_maker.get_argv(), expected_argv
+
+  let &shell = '/bin/bash'
+  let &shellcmdflag = '-o pipefail -c'
+  let maker = neomake#utils#MakerFromCommand('echo 2')
+  if neomake#has_async_support()
+    let expected_argv = ['/bin/bash', '-o', 'pipefail', '-c', 'echo 2']
+  else
+    let expected_argv = "/bin/bash '-o' 'pipefail' '-c' 'echo 2'"
+  endif
+  let bound_maker = neomake#GetMaker(maker.fn(jobinfo))
+  AssertEqual bound_maker.get_argv(), expected_argv
+
+Execute (neomake#utils#MakerFromCommand appends args for file_mode):
+  let maker = neomake#utils#MakerFromCommand('foo')
+  let jobinfo = {'file_mode': 0}
+
+  AssertEqual maker.fn(jobinfo), {
+  \ 'args': [&shellcmdflag, 'foo'], 'exe': &shell, 'remove_invalid_entries': 0}
+
+  file file\ with\ space
+  let fname = expand('%:p')
+  let jobinfo = {'maker': maker, 'file_mode': 1, 'bufnr': bufnr('%')}
+  AssertEqual maker.fn(jobinfo), {
+  \ 'args': [&shellcmdflag, 'foo '.fnameescape(fname)], 'append_file': 0,
+  \ 'exe': &shell, 'remove_invalid_entries': 0}

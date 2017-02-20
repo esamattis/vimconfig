@@ -1,24 +1,35 @@
 " vim: ts=4 sw=4 et
 
-function! neomake#makers#ft#javascript#EnabledMakers()
+function! neomake#makers#ft#javascript#EnabledMakers() abort
     return ['jshint', 'jscs', 'eslint']
 endfunction
 
-function! neomake#makers#ft#javascript#jshint()
+function! neomake#makers#ft#javascript#gjslint() abort
+    return {
+        \ 'args': ['--nodebug_indentation', '--nosummary', '--unix_mode', '--nobeep'],
+        \ 'errorformat': '%f:%l:(New Error -%\\?\%n) %m,' .
+        \ '%f:%l:(-%\\?%n) %m,' .
+        \ '%-G1 files checked,' .
+        \ ' no errors found.,' .
+        \ '%-G%.%#'
+        \ }
+endfunction
+
+function! neomake#makers#ft#javascript#jshint() abort
     return {
         \ 'args': ['--verbose'],
         \ 'errorformat': '%A%f: line %l\, col %v\, %m \(%t%*\d\)',
         \ }
 endfunction
 
-function! neomake#makers#ft#javascript#jscs()
+function! neomake#makers#ft#javascript#jscs() abort
     return {
         \ 'args': ['--no-colors', '--reporter', 'inline'],
         \ 'errorformat': '%E%f: line %l\, col %c\, %m',
         \ }
 endfunction
 
-function! neomake#makers#ft#javascript#eslint()
+function! neomake#makers#ft#javascript#eslint() abort
     return {
         \ 'args': ['-f', 'compact'],
         \ 'errorformat': '%E%f: line %l\, col %c\, Error - %m,' .
@@ -26,7 +37,7 @@ function! neomake#makers#ft#javascript#eslint()
         \ }
 endfunction
 
-function! neomake#makers#ft#javascript#eslint_d()
+function! neomake#makers#ft#javascript#eslint_d() abort
     return {
         \ 'args': ['-f', 'compact'],
         \ 'errorformat': '%E%f: line %l\, col %c\, Error - %m,' .
@@ -34,29 +45,49 @@ function! neomake#makers#ft#javascript#eslint_d()
         \ }
 endfunction
 
-function! neomake#makers#ft#javascript#standard()
+function! neomake#makers#ft#javascript#standard() abort
     return {
         \ 'errorformat': '%W  %f:%l:%c: %m'
         \ }
 endfunction
 
-function! neomake#makers#ft#javascript#semistandard()
+function! neomake#makers#ft#javascript#semistandard() abort
     return {
         \ 'errorformat': '%W  %f:%l:%c: %m'
         \ }
 endfunction
 
-function! neomake#makers#ft#javascript#flow()
-    " Replace "\n" by space.
-    let mapexpr = 'substitute(v:val, "\\\\n", " ", "g")'
-    return {
-        \ 'args': ['--old-output-format'],
-        \ 'errorformat': '%E%f:%l:%c\,%n: %m',
-        \ 'mapexpr': mapexpr,
+function! neomake#makers#ft#javascript#rjsx() abort
+  return {
+        \ 'exe': 'emacs',
+        \ 'args': ['%','--quick','--batch','--eval='
+        \ .'(progn(package-initialize)(require ''rjsx-mode)'
+        \ .'  (setq js2-include-node-externs t js2-include-rhino-externs t js2-include-browser-externs t js2-strict-missing-semi-warning nil)'
+        \ .'  (rjsx-mode)(js2-reparse)(js2-display-error-list)'
+        \ .'  (princ(replace-regexp-in-string "^" (concat buffer-file-name " ")'
+        \ .'  (with-current-buffer "*js-lint*" (buffer-substring-no-properties(point-min)(point-max)))))(terpri))'],
+        \ 'errorformat': '%f line %l: %m,%-G%.%#',
+        \ 'append_file': 0,
         \ }
 endfunction
 
-function! neomake#makers#ft#javascript#xo()
+function! neomake#makers#ft#javascript#flow() abort
+    return {
+        \ 'args': ['--from=vim', '--show-all-errors'],
+        \ 'errorformat': '%EFile "%f"\, line %l\, characters %c-%m,%C%m,%Z%m',
+        \ 'postprocess': function('neomake#makers#ft#javascript#FlowProcess')
+        \ }
+endfunction
+
+function! neomake#makers#ft#javascript#FlowProcess(entry) abort
+    let l:lines = split(a:entry.text, '\n')
+    if len(l:lines)
+        let a:entry.text = join(l:lines[1:])
+        let a:entry.length = l:lines[0] - a:entry.col + 1
+    endif
+endfunction
+
+function! neomake#makers#ft#javascript#xo() abort
     return {
         \ 'args': ['--compact'],
         \ 'errorformat': '%E%f: line %l\, col %c\, Error - %m,' .

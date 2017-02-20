@@ -19,6 +19,8 @@ function! s:timestr() abort
     return strftime('%H:%M:%S')
 endfunction
 
+let s:unset = {}
+
 function! neomake#utils#LogMessage(level, msg, ...) abort
     let verbose = get(g:, 'neomake_verbose', 1)
     let logfile = get(g:, 'neomake_logfile')
@@ -30,25 +32,23 @@ function! neomake#utils#LogMessage(level, msg, ...) abort
     if a:0
         let jobinfo = a:1
         if has_key(jobinfo, 'id')
-            let msg = printf('[%d.%d] %s', jobinfo.make_id, jobinfo.id, a:msg)
+            let msg = printf('[%s.%d] %s', get(jobinfo, 'make_id', '-'), jobinfo.id, a:msg)
         else
-            let msg = printf('[%d] %s', jobinfo.make_id, a:msg)
+            let msg = printf('[%s] %s', get(jobinfo, 'make_id', '?'), a:msg)
         endif
     else
         let jobinfo = {}
         let msg = a:msg
     endif
 
-    if exists('*vader#log')
-        " Log is defined during Vader tests.
+    " Use Vader's log for messages during tests.
+    if exists('*vader#log') && exists('g:neomake_test_messages')
         let test_msg = '['.s:level_to_name[a:level].'] ['.s:timestr().']: '.msg
         call vader#log(test_msg)
         " Only keep jobinfo entries that are relevant for / used in the message.
         let g:neomake_test_messages += [[a:level, a:msg,
                     \ filter(copy(jobinfo), "index(['id', 'make_id'], v:key) != -1")]]
-    endif
-
-    if verbose >= a:level
+    elseif verbose >= a:level
         redraw
         if a:level ==# 0
             echohl ErrorMsg
@@ -103,6 +103,10 @@ function! neomake#utils#DebugObject(msg, obj) abort
     call neomake#utils#DebugMessage(a:msg.' '.neomake#utils#Stringify(a:obj))
 endfunction
 
+function! neomake#utils#wstrpart(mb_string, start, len) abort
+  return matchstr(a:mb_string, '.\{,'.a:len.'}', 0, a:start+1)
+endfunction
+
 " This comes straight out of syntastic.
 "print as much of a:msg as possible without "Press Enter" prompt appearing
 function! neomake#utils#WideMessage(msg) abort " {{{2
@@ -117,7 +121,7 @@ function! neomake#utils#WideMessage(msg) abort " {{{2
     "width as the proper amount of characters
     let chunks = split(msg, "\t", 1)
     let msg = join(map(chunks[:-2], "v:val . repeat(' ', &tabstop - strwidth(v:val) % &tabstop)"), '') . chunks[-1]
-    let msg = strpart(msg, 0, &columns - 1)
+    let msg = neomake#utils#wstrpart(msg, 0, &columns - 1)
 
     set noruler noshowcmd
     redraw
@@ -162,16 +166,31 @@ function! neomake#utils#Random() abort
     return answer
 endfunction
 
+let s:command_maker = {
+            \ 'remove_invalid_entries': 0,
+            \ }
+function! s:command_maker.fn(jobinfo) dict abort
+    let maker = filter(copy(self), "v:key !~# '^__' && v:key !~# 'fn'")
+    let argv = split(&shell) + split(&shellcmdflag)
+    let command = self.__command
+
+    if a:jobinfo.file_mode && get(maker, 'append_file', 1)
+        let command .= ' '.fnameescape(fnamemodify(bufname(a:jobinfo.bufnr), ':p'))
+        let maker.append_file = 0
+    endif
+    call extend(maker, {
+                \ 'exe': argv[0],
+                \ 'args': argv[1:] + [command],
+                \ })
+    return maker
+endfunction
+
 function! neomake#utils#MakerFromCommand(command) abort
-    " XXX: use neomake#utils#ExpandArgs and/or remove it.
-    "      Expansion should happen later already!
-    let command = substitute(a:command, '%\(:[a-z]\)*',
-                           \ '\=expand(submatch(0))', 'g')
-    return {
-        \ 'exe': &shell,
-        \ 'args': [&shellcmdflag, command],
-        \ 'remove_invalid_entries': 0,
-        \ }
+    let command = neomake#utils#ExpandArgs([a:command])[0]
+    " Create a maker object, with a "fn" callback.
+    let maker = copy(s:command_maker)
+    let maker.__command = command
+    return maker
 endfunction
 
 let s:available_makers = {}
@@ -181,14 +200,14 @@ function! neomake#utils#MakerIsAvailable(ft, maker_name) abort
         " for our purposes
         return 1
     endif
-    if !has_key(s:available_makers, a:maker_name)
-        let maker = neomake#GetMaker(a:maker_name, a:ft)
-        if empty(maker)
-            return 0
-        endif
-        let s:available_makers[a:maker_name] = executable(maker.exe)
+    let maker = neomake#GetMaker(a:maker_name, a:ft)
+    if empty(maker)
+        return 0
     endif
-    return s:available_makers[a:maker_name]
+    if !has_key(s:available_makers, maker.exe)
+        let s:available_makers[maker.exe] = executable(maker.exe)
+    endif
+    return s:available_makers[maker.exe]
 endfunction
 
 function! neomake#utils#AvailableMakers(ft, makers) abort
@@ -221,26 +240,26 @@ endfunction
 " Get a setting by key, based on filetypes, from the buffer or global
 " namespace, defaulting to default.
 function! neomake#utils#GetSetting(key, maker, default, fts, bufnr) abort
-  let maker_name = has_key(a:maker, 'name') ? '_'.a:maker.name : ''
-  if len(a:fts)
-    for ft in a:fts
-      " Look through the neomake setting override vars for a filetype maker,
-      " like neomake_scss_sasslint_exe (should be a string), and
-      " neomake_scss_sasslint_args (should be a list)
-      let config_var = 'neomake_'.ft.maker_name.'_'.a:key
-      if has_key(g:, config_var)
-            \ || !empty(getbufvar(a:bufnr, config_var))
+  let maker_name = has_key(a:maker, 'name') ? a:maker.name : ''
+  for ft in a:fts + ['']
+    " Look through the override vars for a filetype maker, like
+    " neomake_scss_sasslint_exe (should be a string), and
+    " neomake_scss_sasslint_args (should be a list).
+    let part = join(filter([ft, maker_name], 'len(v:val)'), '_')
+    if !len(part)
         break
-      endif
-    endfor
-  elseif len(maker_name)
-    " Following this, we're checking the neomake overrides for global makers
-    let config_var = 'neomake'.maker_name.'_'.a:key
-  endif
+    endif
+    let config_var = 'neomake_'.part.'_'.a:key
+    if has_key(g:, config_var)
+          \ || neomake#compat#getbufvar(a:bufnr, config_var, s:unset) isnot s:unset
+      break
+    endif
+  endfor
 
   if exists('config_var')
-    if !empty(getbufvar(a:bufnr, config_var))
-      return copy(getbufvar(a:bufnr, config_var))
+    let bufcfgvar = neomake#compat#getbufvar(a:bufnr, config_var, s:unset)
+    if bufcfgvar isnot s:unset
+      return copy(bufcfgvar)
     elseif has_key(g:, config_var)
       return copy(get(g:, config_var))
     endif
@@ -249,13 +268,12 @@ function! neomake#utils#GetSetting(key, maker, default, fts, bufnr) abort
     return a:maker[a:key]
   endif
   " Look for 'neomake_'.key in the buffer and global namespace.
-  let bufvar = getbufvar(a:bufnr, 'neomake_'.a:key)
-  if !empty(bufvar)
+  let bufvar = neomake#compat#getbufvar(a:bufnr, 'neomake_'.a:key, s:unset)
+  if bufvar isnot s:unset
       return bufvar
   endif
-  let var = get(g:, 'neomake_'.a:key)
-  if !empty(var)
-      return var
+  if has_key(g:, 'neomake_'.a:key)
+      return get(g:, 'neomake_'.a:key)
   endif
   return a:default
 endfunction
@@ -325,20 +343,78 @@ function! neomake#utils#redir(cmd) abort
 endfunction
 
 function! neomake#utils#ExpandArgs(args) abort
-    " Only expand those args that start with \ and a single %
-    call map(a:args, "v:val =~# '\\(^%$\\|^%:\\l\\+$\\)' ? expand(v:val) : v:val")
+    " Expand % in args like when using :!
+    " \% is ignored
+    " \\% is expanded to \\file.ext
+    " %% becomes %
+    " % must be followed with an expansion keyword
+    let isk = &iskeyword
+    set iskeyword=p,h,t,r,e,%,:
+    try
+        let ret = map(a:args,
+                    \ 'substitute(v:val, '
+                    \ . '''\(\%(\\\@<!\\\)\@<!%\%(%\|\%(:[phtre]\+\)*\)\ze\)\w\@!'', '
+                    \ . '''\=(submatch(1) == "%%" ? "%" : expand(submatch(1)))'', '
+                    \ . '''g'')')
+    finally
+        let &iskeyword = isk
+    endtry
+    return ret
 endfunction
 
-function! neomake#utils#hook(event, context) abort
+function! neomake#utils#hook(event, context, ...) abort
     if exists('#User#'.a:event)
+        let jobinfo = a:0 ? a:1 : (
+                    \ has_key(a:context, 'jobinfo') ? a:context.jobinfo : {})
         let g:neomake_hook_context = a:context
-        call neomake#utils#DebugMessage('Calling User autocmd '.a:event
-                                      \ .' with context: '.string(a:context))
+
+        let args = ['Calling User autocmd '.a:event
+                    \ .' with context: '.string(map(copy(a:context), "v:key ==# 'jobinfo' ? '…' : v:val"))]
+        if len(jobinfo)
+            let args += [jobinfo]
+        endif
+        call call('neomake#utils#LoudMessage', args)
         if v:version >= 704 || (v:version == 703 && has('patch442'))
             exec 'doautocmd <nomodeline> User ' . a:event
         else
             exec 'doautocmd User ' . a:event
         endif
         unlet g:neomake_hook_context
+    else
+        call neomake#utils#DebugMessage(printf(
+                    \ 'Skipping User autocmd %s: no hooks.', a:event))
     endif
+endfunction
+
+function! neomake#utils#diff_dict(d1, d2) abort
+    let diff = [{}, {}, {}]
+    let keys = keys(a:d1) + keys(a:d2)
+    for k in keys
+        if !has_key(a:d2, k)
+            let diff[1][k] = a:d1[k]
+        elseif !has_key(a:d1, k)
+            let diff[2][k] = a:d2[k]
+        elseif type(a:d1[k]) !=# type(a:d2[k]) || a:d1[k] !=# a:d2[k]
+            let diff[0][k] = [a:d1[k], a:d2[k]]
+        endif
+    endfor
+    return diff
+endfunction
+
+" Sort quickfix/location list entries by distance to current cursor position's
+" column, but preferring entries starting at or behind the cursor position.
+function! neomake#utils#sort_by_col(a, b) abort
+    let col = getpos('.')[2]
+    if a:a.col > col
+        if a:b.col < col
+            return 1
+        endif
+    elseif a:b.col > col
+        return -1
+    endif
+    return abs(col - a:a.col) - abs(col - a:b.col)
+endfunction
+
+function! neomake#utils#path_sep() abort
+    return neomake#utils#IsRunningWindows() ? ';' : ':'
 endfunction

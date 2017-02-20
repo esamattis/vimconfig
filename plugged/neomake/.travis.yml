@@ -22,12 +22,10 @@ env:
     - ENV=docker_test MAKE_ARGS=DOCKER_VIM=vim73
     - ENV=docker_test MAKE_ARGS=DOCKER_VIM=vim74-trusty
     - ENV=docker_test MAKE_ARGS=DOCKER_VIM=vim74-xenial
-    - ENV=docker_test MAKE_ARGS=DOCKER_VIM=vim8000
     - ENV=docker_test MAKE_ARGS=DOCKER_VIM=vim8069
     - ENV=docker_test MAKE_ARGS=DOCKER_VIM=vim-master
     - ENV=vint-diff
     - ENV=vint-errors
-    - ENV=vimlint-errors
     - ENV=testvim
     - ENV=vint
     - ENV=vimlint
@@ -35,7 +33,6 @@ env:
 
 matrix:
   allow_failures:
-    - env: ENV=vimlint
     - env: ENV=vint
   fast_finish: true
 
@@ -44,7 +41,7 @@ install:
     if [ "$ENV" = "vint-diff" ]; then
       # Run full vint against changed files.
       echo "Looking for changed files in $TRAVIS_COMMIT_RANGE."
-      export CHANGED_VIM_FILES="$(git diff --name-only "$TRAVIS_COMMIT_RANGE" | grep '\.vim$')"
+      CHANGED_VIM_FILES=($(git diff --name-only "$TRAVIS_COMMIT_RANGE" | grep '\.vim$'))
       if [ -z "$CHANGED_VIM_FILES" ]; then
         SKIP_BUILD_REASON="vint-diff: No changed .vim files."
       fi
@@ -68,11 +65,7 @@ script:
       echo "Skipping job: $SKIP_BUILD_REASON"
     elif [ "$ENV" = "vint-diff" ]; then
       if [ -n "$CHANGED_VIM_FILES" ]; then
-        vint $CHANGED_VIM_FILES | grep -v '^autoload/neomake/makers/.*Use the abort attribute for functions in autoload'
-        if [ "$?" != 1 ]; then
-          echo "vint-diff found errors."
-          exit 1
-        fi
+        make vint LINT_FILES="${CHANGED_VIM_FILES[*]}"
       fi
     else
       if [[ "$ENV" = "testvim" ]]; then

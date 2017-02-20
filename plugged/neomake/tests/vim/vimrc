@@ -41,15 +41,13 @@ set foldnestmax=10
 set ttimeoutlen=0
 set cmdheight=5
 set textwidth=79
-" set hidden
+set hidden
 set splitbelow  " Easier for window numbers (incrementing).
 
 
 set debug=msg,throw
 
 let mapleader=','
-
-let g:neomake_verbose = 3
 
 " No '-- More --' prompt, which would hang Travis.
 set nomore

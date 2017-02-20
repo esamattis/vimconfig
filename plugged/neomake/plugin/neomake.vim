@@ -15,16 +15,32 @@ command! -nargs=* -bar -complete=customlist,neomake#CompleteMakers
 command! -nargs=+ -bang -complete=shellcmd
       \ NeomakeSh call neomake#ShCommand(<bang>0, <q-args>)
 command! NeomakeListJobs call neomake#ListJobs()
-command! -nargs=1 NeomakeCancelJob call neomake#CancelJob(<args>)
+command! -bang -nargs=1 -complete=custom,neomake#CompleteJobs
+      \ NeomakeCancelJob call neomake#CancelJob(<q-args>, <bang>0)
+command! -bang NeomakeCancelJobs call neomake#CancelJobs(<bang>0)
 
 command! -bar NeomakeInfo call neomake#DisplayInfo()
 
 augroup neomake
   au!
-  au WinEnter,CursorHold * call neomake#ProcessCurrentWindow()
+  au WinEnter * call neomake#ProcessCurrentWindow()
+  au CursorHold * call neomake#ProcessPendingOutput()
   au BufEnter * call neomake#highlights#ShowHighlights()
-  au CursorMoved * call neomake#CursorMoved()
-  au ColorScheme,VimEnter * call neomake#signs#DefineHighlights()
+  if has('timers')
+    au CursorMoved * call neomake#CursorMovedDelayed()
+    " Force-redraw display of current error after resizing Vim, which appears
+    " to clear the previously echoed error.
+    au VimResized * call timer_start(100, function('neomake#EchoCurrentError'))
+  else
+    au CursorMoved * call neomake#CursorMoved()
+  endif
 augroup END
+
+if has('signs')
+  let g:neomake_place_signs = get(g:, 'neomake_place_signs', 1)
+else
+  let g:neomake_place_signs = 0
+  lockvar g:neomake_place_signs
+endif
 
 " vim: sw=2 et

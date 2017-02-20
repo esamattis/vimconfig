@@ -57,6 +57,8 @@ function! neomake#makers#ft#python#PylintEntryProcess(entry) abort
         let type = ''
     endif
     let a:entry.type = type
+    " Pylint uses 0-indexed columns, vim uses 1-indexed columns
+    let a:entry.col += 1
 endfunction
 
 function! neomake#makers#ft#python#flake8() abort
@@ -94,9 +96,52 @@ function! neomake#makers#ft#python#Flake8EntryProcess(entry) abort
     else
         let type = ''
     endif
+
     let l:token = matchstr(a:entry.text, "'.*'")
     if strlen(l:token)
-        let a:entry.length = strlen(l:token) - 2 " subtract the quotes
+        " remove quotes
+        let l:token = substitute(l:token, "'", '', 'g')
+        if a:entry.type ==# 'F' && (a:entry.nr == 401 ||  a:entry.nr == 811)
+            " The unused column is incorrect for import errors and redefinition
+            " errors.
+            let l:view = winsaveview()
+            call cursor(a:entry.lnum, a:entry.col)
+            " The number of lines to give up searching afterwards
+            let l:search_lines = 5
+
+            if searchpos('\<from\>', 'cnW', a:entry.lnum)[1] == a:entry.col
+                " for 'from xxx.yyy import zzz' the token looks like
+                " xxx.yyy.zzz, but only the zzz part should be highlighted. So
+                " this discards the module part
+                let l:token = split(l:token, '\.')[-1]
+
+                " Also the searhch should be started at the import keyword.
+                " Otherwise for 'from os import os' the first os will be
+                " found. This moves the cursor there.
+                echom search('\<import\>', 'cW', a:entry.lnum + l:search_lines)
+            endif
+
+            " Search for the first occurrence of the token and highlight in
+            " the next couple of lines and change the lnum and col to that
+            " position.
+            " Don't match entries surrounded by dots, even though
+            " it ends a word, we want to find a full identifier. It also
+            " matches all seperators such as spaces and newlines with
+            " backslashes until it knows for sure the previous real character
+            " was not a dot.
+            let l:ident_pos = searchpos('\(\.\(\_s\|\\\)*\)\@<!\<' .
+                        \ l:token . '\>\(\(\_s\|\\\)*\.\)\@!',
+                        \ 'cnW',
+                        \ a:entry.lnum + l:search_lines)
+            if l:ident_pos[1] > 0
+                let a:entry.lnum = l:ident_pos[0]
+                let a:entry.col = l:ident_pos[1]
+            endif
+
+            call winrestview(l:view)
+        endif
+
+        let a:entry.length = strlen(l:token) " subtract the quotes
     endif
 
     let a:entry.text = a:entry.type . a:entry.nr . ' ' . a:entry.text
@@ -152,12 +197,19 @@ function! neomake#makers#ft#python#pep257() abort
 endfunction
 
 function! neomake#makers#ft#python#PylamaEntryProcess(entry) abort
+    if a:entry.nr == -1
+        " Get number from the beginning of text.
+        let nr = matchstr(a:entry.text, '\v^\u\zs\d+')
+        if len(nr)
+            let a:entry.nr = nr + 0
+        endif
+    endif
     if a:entry.type ==# 'C' && a:entry.text =~# '\v\[%(pycodestyle|pep8)\]$'
         call neomake#makers#ft#python#Pep8EntryProcess(a:entry)
     elseif a:entry.type ==# 'D'  " pydocstyle/pep257
         let a:entry.type = 'W'
-    elseif a:entry.type ==# 'E901'  " mccabe
-        let a:entry.type = 'W'
+    elseif a:entry.type ==# 'C' && a:entry.nr == 901  " mccabe
+        let a:entry.type = 'I'
     elseif a:entry.type ==# 'R'  " Radon
         let a:entry.type = 'W'
     endif
@@ -181,10 +233,12 @@ function! neomake#makers#ft#python#python() abort
             \ "try:\r" .
             \ "    compile(open(argv[1]).read(), argv[1], 'exec', 0, 1)\r" .
             \ "except SyntaxError as err:\r" .
-            \ "    print('%s:%s:%s: %s' % (err.filename, err.lineno, err.offset, err.msg))\r" .
+            \ "    print('%s:%s:%s: %s' %% (err.filename, err.lineno, err.offset, err.msg))\r" .
             \ '    exit(1)'
         \ ],
         \ 'errorformat': '%E%f:%l:%c: %m',
+        \ 'serialize': 1,
+        \ 'serialize_abort_on_error': 1,
         \ }
 endfunction
 
@@ -207,11 +261,15 @@ function! neomake#makers#ft#python#vulture() abort
         \ }
 endfunction
 
-" Because this uses --silent-imports it requires mypy >= 0.4
-" It is annoying for new users to use MyPy without --silent-imports
+" --fast-parser: adds experimental support for async/await syntax
+" --silent-imports: replaced by --ignore-missing-imports --follow-imports=skip
 function! neomake#makers#ft#python#mypy() abort
+    let args = ['--ignore-missing-imports', '--follow-imports=skip']
+    if !neomake#utils#IsRunningWindows()
+        let args += ['--fast-parser']
+    endif
     return {
-        \ 'args': ['--silent-imports'],
+        \ 'args': args,
         \ 'errorformat':
             \ '%E%f:%l: error: %m,' .
             \ '%W%f:%l: warning: %m,' .
