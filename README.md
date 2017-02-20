@@ -1,4 +1,4 @@
-# Vim Config by Epeli
+# (Neo)Vim Config by Epeli
 
 ### Bootstrap
 
