@@ -31,6 +31,8 @@ let g:neoformat_javascript_prettier = {
 
 let g:neoformat_enabled_javascript = ['prettier']
 
+let g:neoformat_enabled_json = ['jq']
+
 autocmd BufWritePre *.js exe ":call AutoFormat()"
 
 let g:neoformat_enabled_php = ['phpcbf']
