@@ -1,0 +1,2 @@
+#!/bin/sh
+exec git grep -n -e "^.\{0,300\}$" --and -e $@

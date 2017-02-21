@@ -271,22 +271,34 @@ command -nargs=1 Tab setlocal noexpandtab shiftwidth=<args> tabstop=<args> softt
 command ToCamel normal f-xvgU
 
 
-let g:gitgrepprg="git\\ grep\\ -n"
+" let g:gitgrepprg="git\\ grep\\ -n"
+let g:gitgrepprg="git-grep-short-lines"
+
+let s:GitGrepWindowOpen = 0
 
 function! GitGrep(args)
     let grepprg_bak=&grepprg
     exec "set grepprg=" . g:gitgrepprg
-    execute "silent! grep " . a:args
+    execute "silent! grep! " . a:args
     botright copen
     let &grepprg=grepprg_bak
-    let b:GitGrepWindow = 1
+    let s:GitGrepWindowOpen = 1
     exec "redraw!"
+    nnoremap <buffer> <silent> q :call <sid>GitGrepClose()<CR>
+    nnoremap <buffer> <silent> <esc> :call <sid>GitGrepClose()<CR>
 endfunction
 
 command! -nargs=* -complete=file GitGrep call GitGrep(<q-args>)
+command! -nargs=* -complete=file G call GitGrep(<q-args>)
 
-" noremap <Leader>g :GitGrep <c-r>/<cr>
 
-" Close quickfix automatically
-autocmd FileType qf nnoremap <buffer> <CR> <CR>:cclose<CR>
+
+function s:GitGrepClose()
+    if s:GitGrepWindowOpen
+        cclose
+        let s:GitGrepWindowOpen = 0
+    endif
+endfunction
+
+au BufEnter * :call s:GitGrepClose()
 
