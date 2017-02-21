@@ -72,6 +72,8 @@ endif
 " Always disable paste mode when leaving insert mode
 au InsertLeave * set nopaste
 
+" Simple paste for the command mode
+cnoremap <C-y> <C-r>"
 
 " Show trailing whitespace characters
 set list
