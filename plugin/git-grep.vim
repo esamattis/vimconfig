@@ -1,4 +1,4 @@
-" Search using git grep using the quickfix window
+" Search using git grep
 "
 " Ex. :GitGrep var foo
 " Ex. :G var foo
