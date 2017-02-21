@@ -1,2 +1,2 @@
 #!/bin/sh
-exec git grep -n -e "^.\{0,300\}$" --and -e $@
+exec git grep -n -e "$@" --and -e "^.\{0,500\}$" 
