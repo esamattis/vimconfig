@@ -280,13 +280,15 @@ let s:GitGrepWindowOpen = 0
 function! GitGrep(args)
     let grepprg_bak=&grepprg
     exec "set grepprg=" . g:gitgrepprg
-    execute "silent! grep! " . a:args
+    execute "silent! grep! '" . a:args . "'"
     botright copen
     let &grepprg=grepprg_bak
     let s:GitGrepWindowOpen = 1
     exec "redraw!"
     nnoremap <buffer> <silent> q :call <sid>GitGrepClose()<CR>
     nnoremap <buffer> <silent> <esc> :call <sid>GitGrepClose()<CR>
+    let @/=a:args
+    set hlsearch
 endfunction
 
 command! -nargs=* -complete=file GitGrep call GitGrep(<q-args>)
