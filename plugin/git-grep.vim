@@ -1,3 +1,9 @@
+" Search using git grep using the quickfix window
+"
+" Ex. :GitGrep var foo
+" Ex. :G var foo
+
+
 " Using custom wrapper which ignore long lines. Ex. compiled Javascript
 " bundles etc.
 let g:gitgrepprg="git-grep-short-lines"
@@ -48,9 +54,6 @@ endfunction
 " Close GitGrep quickfix window after leaving it
 au BufEnter * :call s:GitGrepClose()
 
-
-" User interface
-" Ex. :GitGrep var foo
-" Ex. :G var foo
+" User interace bindings
 command! -nargs=* -complete=file GitGrep call GitGrep(<q-args>)
 command! -nargs=* -complete=file G call GitGrep(<q-args>)
