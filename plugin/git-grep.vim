@@ -4,7 +4,7 @@
 " Ex. :G var foo
 
 
-" Using custom wrapper which ignore long lines. Ex. compiled Javascript
+" Using custom wrapper which ignores long lines. Ex. compiled Javascript
 " bundles etc.
 let g:gitgrepprg="git-grep-short-lines"
 " let g:gitgrepprg="git\\ grep\\ -n"
