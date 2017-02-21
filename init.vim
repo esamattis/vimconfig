@@ -268,6 +268,7 @@ set iskeyword+=-
 command -nargs=1 TabSpace setlocal expandtab shiftwidth=<args> tabstop=<args> softtabstop=<args>
 command -nargs=1 Tab setlocal noexpandtab shiftwidth=<args> tabstop=<args> softtabstop=<args>
 
+" Convert foo-bar to fooBar
 command ToCamel normal f-xvgU
 
 
