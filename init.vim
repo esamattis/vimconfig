@@ -267,3 +267,24 @@ command -nargs=1 TabSpace setlocal expandtab shiftwidth=<args> tabstop=<args> so
 command -nargs=1 Tab setlocal noexpandtab shiftwidth=<args> tabstop=<args> softtabstop=<args>
 
 command ToCamel normal f-xvgU
+
+
+let g:gitgrepprg="git\\ grep\\ -n"
+
+function! GitGrep(args)
+    let grepprg_bak=&grepprg
+    exec "set grepprg=" . g:gitgrepprg
+    execute "silent! grep " . a:args
+    botright copen
+    let &grepprg=grepprg_bak
+    let b:GitGrepWindow = 1
+    exec "redraw!"
+endfunction
+
+command! -nargs=* -complete=file GitGrep call GitGrep(<q-args>)
+
+" noremap <Leader>g :GitGrep <c-r>/<cr>
+
+" Close quickfix automatically
+autocmd FileType qf nnoremap <buffer> <CR> <CR>:cclose<CR>
+
