@@ -23,9 +23,6 @@ function! GitGrep(args)
     " Open quickfix window to the bottom
     botright copen
 
-    " Add flag that the quickfix window was opened from GitGrep
-    let s:GitGrepWindowOpen = 1
-
     " Restore previous :grep command
     let &grepprg=grepprg_bak
 
@@ -40,6 +37,9 @@ function! GitGrep(args)
 
     " Hilight search matches
     set hlsearch
+
+    " Add flag that the quickfix window was opened from GitGrep
+    let s:GitGrepWindowOpen = 1
 endfunction
 
 
@@ -52,7 +52,12 @@ function s:GitGrepClose()
 endfunction
 
 " Close GitGrep quickfix window after leaving it
-au BufEnter * :call s:GitGrepClose()
+" au BufLeave * :call s:GitGrepClose()
+" autocmd FileType qf nnoremap <buffer> <CR> <CR>:call s:GitGrepClose()<CR>
+autocmd FileType qf nnoremap <buffer> <CR> <CR>:cclose<CR>
+
+" git-grep the word under the cursor immediately
+ noremap <Leader>g :normal yiw<cr>\|:call GitGrep(@")<cr>
 
 " User interace bindings
 command! -nargs=* -complete=file GitGrep call GitGrep(<q-args>)
