@@ -271,3 +271,12 @@ command -nargs=1 Tab setlocal noexpandtab shiftwidth=<args> tabstop=<args> softt
 " Convert foo-bar to fooBar
 command ToCamel normal f-xvgU
 
+" Adds
+"
+"     var Header = simple(View, {
+"         marginBottom: 50,
+"     });
+"     Header = compose(
+"     )(Header)
+"
+command! Compose normal! yiw$%o<esc>pA = compose(<esc>o<esc>i)(<esc>pA)<esc>O
