@@ -8,6 +8,18 @@ snippet php
 options word
   <?php ${1} ?>
 
+snippet l
+options word
+  error_log(print_r(${1}, true));
+
+snippet r
+options word
+  return ${1}
+
+snippet req
+options word
+  require_once(__DIR__ . '/${1}.php');
+
 snippet html
 options word
   ?>
