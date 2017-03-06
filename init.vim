@@ -40,6 +40,7 @@ Plug 'Glench/Vim-Jinja2-Syntax'
 Plug 'machakann/vim-highlightedyank'
 Plug 'tpope/vim-sleuth'
 Plug 'sbdchd/neoformat'
+Plug 'wakatime/vim-wakatime'
 call plug#end()
 
 "" Leader mappings
