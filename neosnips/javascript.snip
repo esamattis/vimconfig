@@ -7,7 +7,7 @@ options word
 snippet return
 alias r
 options word
-  return ${1}
+  return ${0}
 
 snippet debugger
 alias bp
@@ -17,19 +17,34 @@ options word
 snippet console.log
 alias l
 options word
-  console.log(${1});
+  console.log(${0});
+
+snippet export default
+alias e
+options word
+  export default ${0}
+
+snippet import
+alias i
+options word
+  import ${0} from "./${0}";
+
+snippet translatejsx
+alias t
+options word
+  {t("${0}")}
 
 snippet // eslint-disable-next-line
 alias el
 options word
-  // eslint-disable-next-line ${1}
+  // eslint-disable-next-line ${0}
 
 snippet // eslint-disable
 alias ed
 options word
-  // eslint-disable ${1}
+  // eslint-disable ${0}
 
 snippet // eslint-enable
 alias ee
 options word
-  // eslint-enable ${1}
+  // eslint-enable ${0}
