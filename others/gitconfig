@@ -5,6 +5,8 @@
   user = epeli
 [apply]
   whitespace = nowarn
+[status]
+  showUntrackedFiles = all
 [color]
   branch = auto
   diff = auto
