@@ -6,24 +6,24 @@ options word
 
 snippet php
 options word
-  <?php ${1} ?>
+  <?php ${0} ?>
 
 snippet l
 options word
-  error_log(print_r(${1}, true));
+  error_log(print_r(${0}, true));
 
 snippet r
 options word
-  return ${1}
+  return ${0}
 
 snippet req
 options word
-  require_once(__DIR__ . '/${1}.php');
+  require_once(__DIR__ . '/${0}.php');
 
 snippet html
 options word
   ?>
-  ${1}
+  ${0}
   <?php
 
 
