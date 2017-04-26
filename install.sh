@@ -73,8 +73,18 @@ cd $HOME/.vim
 git remote add sshorigin git@github.com:epeli/vimconfig.git
 
 chmod +x $HOME/.vim/bin/*
-ln -fs $HOME/.vim/vimrc $HOME/.vimrc
+ln -fs $HOME/.vim/init.vim $HOME/.vimrc
 
+echo
+
+# Neovim installation
+read -p "Neovim? y/n? [y]>" neovim
+[ "$neovim" = "" ] && neovim="y"
+
+if [ "$neovim" = "y" ]; then
+    mkdir -p "$HOME/.config"
+    cp -a "$HOME/.vim" "$HOME/.config/nvim"
+fi
 
 echo
 if [ "$use_subshell" = "y" ]; then
