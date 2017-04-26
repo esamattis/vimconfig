@@ -47,7 +47,9 @@ if [ -d ~/bin ] ; then
     PATH=~/bin:"${PATH}"
 fi
 
-
+# https://github.com/tj/n
+export N_PREFIX=$HOME/n
+export PATH=$N_PREFIX/bin:$PATH
 
 # Thanks to https://gist.github.com/634750
 
