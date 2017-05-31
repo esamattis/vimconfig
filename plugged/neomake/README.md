@@ -1,4 +1,4 @@
-#[![Neomake](https://cloud.githubusercontent.com/assets/111942/22717189/9e3e1760-ed67-11e6-94c5-e8955869d6d0.png)](#neomake)
+# [![Neomake](https://cloud.githubusercontent.com/assets/111942/22717189/9e3e1760-ed67-11e6-94c5-e8955869d6d0.png)](#neomake)
 
 [![Build Status](https://travis-ci.org/neomake/neomake.svg?branch=master)](https://travis-ci.org/neomake/neomake)
 
@@ -172,6 +172,12 @@ of Neovim at the moment.
 #### Run all tests against all Vims in the Docker image
 
     make docker_test_all
+
+## Donate
+
+ * Bitcoin: 1JscK5VaHyBhdE2ayVr63hDc6Mx94m9Y7R
+ * Flattr: [![Flattr](http://api.flattr.com/button/flattr-badge-large.png)](
+https://flattr.com/submit/auto?user_id=blueyed&url=https://github.com/neomake/neomake&title=Neomake&language=en_GB&tags=github&category=software)
 
 
 [Neovim]: http://neovim.org/
