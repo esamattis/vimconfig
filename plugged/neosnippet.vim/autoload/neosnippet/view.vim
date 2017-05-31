@@ -58,20 +58,16 @@ function! neosnippet#view#_insert(snippet, options, cur_text, col) abort "{{{
     let snip_word = s:eval_snippet(snip_word)
   endif
 
-  " Substitute escaped `.
-  let snip_word = substitute(snip_word, '\\`', '`', 'g')
-
   " Substitute markers.
   let snip_word = substitute(snip_word,
-        \ '\\\@<!'.neosnippet#get_placeholder_marker_substitute_pattern(),
+        \ neosnippet#get_placeholder_marker_substitute_pattern(),
         \ '<`\1`>', 'g')
   let snip_word = substitute(snip_word,
-        \ '\\\@<!'.neosnippet#get_mirror_placeholder_marker_substitute_pattern(),
+        \ neosnippet#get_mirror_placeholder_marker_substitute_pattern(),
         \ '<|\1|>', 'g')
-  let snip_word = substitute(snip_word,
-        \ '\\'.neosnippet#get_mirror_placeholder_marker_substitute_pattern().'\|'.
-        \ '\\'.neosnippet#get_placeholder_marker_substitute_pattern(),
-        \ '\=submatch(0)[1:]', 'g')
+
+  " Substitute escaped characters.
+  let snip_word = substitute(snip_word, '\\\(\\\|`\|\$\)', '\1', 'g')
 
   " Insert snippets.
   let next_line = getline('.')[a:col-1 :]
@@ -200,7 +196,7 @@ function! s:indent_snippet(begin, end) abort "{{{
         if &l:expandtab && current_line =~ '^\t\+'
           " Expand tab.
           cal setline('.', substitute(current_line,
-                \ '^\t\+', base_indent . repeat(' ', &shiftwidth *
+                \ '^\t\+', base_indent . repeat(' ', shiftwidth() *
                 \    len(matchstr(current_line, '^\t\+'))), ''))
         elseif line_nr != a:begin
           call setline('.', base_indent . current_line)

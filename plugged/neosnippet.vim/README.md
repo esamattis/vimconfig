@@ -20,6 +20,8 @@ required files into your `.vim` folder.
 
 Notes:
 
+* Vim 7.4 or above is needed.
+
 * Default snippets files are available in:
   [neosnippet-snippets](https://github.com/Shougo/neosnippet-snippets)
 * Installing default snippets is optional. If choose not to install them,
@@ -102,11 +104,14 @@ can use the following keys:
 
 ```vim
 " Plugin key-mappings.
+" Note: It must be "imap" and "smap".  It uses <Plug> mappings.
 imap <C-k>     <Plug>(neosnippet_expand_or_jump)
 smap <C-k>     <Plug>(neosnippet_expand_or_jump)
 xmap <C-k>     <Plug>(neosnippet_expand_target)
 
 " SuperTab like snippets behavior.
+" Note: It must be "imap" and "smap".  It uses <Plug> mappings.
+imap <C-k>     <Plug>(neosnippet_expand_or_jump)
 "imap <expr><TAB>
 " \ pumvisible() ? "\<C-n>" :
 " \ neosnippet#expandable_or_jumpable() ?
