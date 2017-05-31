@@ -28,6 +28,8 @@ if g:mundo_prefer_python3 && has('python3')"{{{
     let s:has_supported_python = 2
 elseif has('python')"
     let s:has_supported_python = 1
+elseif has('python3')"
+    let s:has_supported_python = 2
 endif
 
 if !s:has_supported_python
@@ -43,6 +45,14 @@ let s:plugin_path = escape(expand('<sfile>:p:h'), '\')
 "}}}
 
 "{{{ Mundo utility functions
+
+function! s:MundoSetupPythonPath()"{{{
+    if g:mundo_python_path_setup == 0
+        let g:mundo_python_path_setup = 1
+        call s:MundoPython('sys.path.insert(1, "'. s:mundo_path .'")')
+        call s:MundoPython('sys.path.insert(1, "'. s:mundo_path .'/mundo")')
+    end
+endfunction"}}}
 
 function! s:MundoGoToWindowForBufferName(name)"{{{
     if bufwinnr(bufnr(a:name)) != -1
@@ -260,7 +270,7 @@ endfunction"}}}
 
 function! s:MundoOpen()"{{{
     if !exists('g:mundo_py_loaded')
-        if s:has_supported_python == 2 && g:mundo_prefer_python3
+        if s:has_supported_python == 2
             exe 'py3file ' . escape(s:plugin_path, ' ') . '/mundo.py'
             python3 initPythonModule()
         else
@@ -300,11 +310,7 @@ endfunction"}}}
 let s:mundo_path = escape( expand( '<sfile>:p:h' ), '\' )
 
 function! s:MundoToggle()"{{{
-    if g:mundo_python_path_setup == 0
-        let g:mundo_python_path_setup = 1
-        call s:MundoPython('sys.path.insert(1, "'. s:mundo_path .'")')
-        call s:MundoPython('sys.path.insert(1, "'. s:mundo_path .'/mundo")')
-    end
+    call s:MundoSetupPythonPath()
     if s:MundoIsVisible()
         call s:MundoClose()
     else
@@ -315,6 +321,7 @@ function! s:MundoToggle()"{{{
 endfunction"}}}
 
 function! s:MundoShow()"{{{
+    call s:MundoSetupPythonPath()
     if !s:MundoIsVisible()
         let g:mundo_target_n = bufnr('')
         let g:mundo_target_f = @%
@@ -323,6 +330,7 @@ function! s:MundoShow()"{{{
 endfunction"}}}
 
 function! s:MundoHide()"{{{
+    call s:MundoSetupPythonPath()
     if s:MundoIsVisible()
         call s:MundoClose()
     endif
@@ -347,7 +355,7 @@ endfunction"}}}
 "{{{ Mundo rendering
 
 function! s:MundoPython(fn)"{{{
-    if s:has_supported_python == 2 && g:mundo_prefer_python3
+    if s:has_supported_python == 2
         exec "python3 ". a:fn
     else
         exec "python ". a:fn
