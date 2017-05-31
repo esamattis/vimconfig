@@ -303,7 +303,6 @@ fu! s:match_window_opts()
 	let s:mw_res =
 		\ s:mw =~ 'results:[^,]\+' ? str2nr(matchstr(s:mw, 'results:\zs\d\+'))
 		\ : min([s:mw_max, &lines])
-	let s:mw_res = max([s:mw_res, 1])
 endf
 "}}}1
 " * Open & Close {{{1
@@ -1764,6 +1763,7 @@ fu! ctrlp#setpathmode(pmode, ...)
 		let spath = a:0 ? a:1 : s:crfpath
 		let markers = ['.git', '.hg', '.svn', '.bzr', '_darcs']
 		if type(s:rmarkers) == 3 && !empty(s:rmarkers)
+			if s:findroot(spath, s:rmarkers, 0, 0) != [] | retu 1 | en
 			cal filter(markers, 'index(s:rmarkers, v:val) < 0')
 			let markers = s:rmarkers + markers
 		en
@@ -1995,9 +1995,14 @@ fu! s:bufnrfilpath(line)
 	en
 	let filpath = fnamemodify(filpath, ':p')
 	let bufnr = bufnr('^'.filpath.'$')
-	if (a:line =~ '[\/]\?\[\d\+\*No Name\]$' && !filereadable(filpath) && bufnr < 1)
-		let bufnr = str2nr(matchstr(a:line, '[\/]\?\[\zs\d\+\ze\*No Name\]$'))
-		let filpath = bufnr
+	if (!filereadable(filpath) && bufnr < 1)
+		if (a:line =~ '[\/]\?\[\d\+\*No Name\]$')
+			let bufnr = str2nr(matchstr(a:line, '[\/]\?\[\zs\d\+\ze\*No Name\]$'))
+			let filpath = bufnr
+		else
+			let bufnr = bufnr(a:line)
+			retu [bufnr, a:line]
+		en
 	en
 	retu [bufnr, filpath]
 endf
@@ -2300,7 +2305,7 @@ fu! s:lastvisual()
 	let cview = winsaveview()
 	let [ovreg, ovtype] = [getreg('v'), getregtype('v')]
 	let [oureg, outype] = [getreg('"'), getregtype('"')]
-	sil! norm! gv"vy
+	sil! norm! gV"vy
 	let selected = s:regisfilter('v')
 	cal setreg('v', ovreg, ovtype)
 	cal setreg('"', oureg, outype)
@@ -2380,7 +2385,7 @@ endf
 fu! s:matchbuf(item, pat)
 	let bufnr = s:bufnrfilpath(a:item)[0]
 	let parts = s:bufparts(bufnr)
-	let item = bufnr.parts[0].parts[2].s:lash().parts[3]
+	let item = s:byfname ? parts[2] : bufnr.parts[0].parts[2].s:lash().parts[3]
 	retu match(item, a:pat)
 endf
 
