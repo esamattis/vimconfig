@@ -190,6 +190,8 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
   - [`dartfmt`](https://www.dartlang.org/tools/)
 - Elm
   - [`elm-format`](https://github.com/avh4/elm-format)
+- Fish
+  - [`fish_indent`](http://fishshell.com)
 - Go
   - [`gofmt`](https://golang.org/cmd/gofmt/),
     [`goimports`](https://godoc.org/golang.org/x/tools/cmd/goimports)
@@ -210,11 +212,15 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
     [`prettier`](https://github.com/jlongster/prettier),
     [`prettydiff`](https://github.com/prettydiff/prettydiff),
     [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html),
-    [`esformatter`](https://github.com/millermedeiros/esformatter/)
-    [`prettier-eslint`](https://github.com/kentcdodds/prettier-eslint-cli)
+    [`esformatter`](https://github.com/millermedeiros/esformatter/),
+    [`prettier-eslint`](https://github.com/kentcdodds/prettier-eslint-cli),
+    [`eslint_d`](https://github.com/mantoni/eslint_d.js)
 - JSON
   - [`js-beautify`](https://github.com/beautify-web/js-beautify),
     [`prettydiff`](https://github.com/prettydiff/prettydiff)
+    [`jq`](https://stedolan.github.io/jq/)
+- LaTeX
+  - [`latexindent`](https://github.com/cmhughes/latexindent.pl)
 - Less
   - [`csscomb`](http://csscomb.com),
     [`prettydiff`](https://github.com/prettydiff/prettydiff)
@@ -243,6 +249,7 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
 - Python
   - [`yapf`](https://github.com/google/yapf),
     [`autopep8`](https://github.com/hhatto/autopep8)
+    [isort](https://github.com/timothycrosley/isort)
 - Ruby
   - [`ruby-beautify`](https://github.com/erniebrodeur/ruby-beautify)
 - Rust

@@ -5,7 +5,7 @@ endfunction
 function! neoformat#formatters#java#uncrustify() abort
      return {
             \ 'exe': 'uncrustify',
-            \ 'args': ['-q', '-l JAVA', '-f'],
+            \ 'args': ['-q', '-l JAVA'],
             \ 'stdin': 1,
             \ }
 endfunction

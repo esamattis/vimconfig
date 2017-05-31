@@ -49,6 +49,8 @@ function! s:neoformat(bang, user_input, start_line, end_line) abort
                     \ 'args': fmt_prg_def[1:],
                     \ 'stdin': 1,
                     \ }
+        elseif exists('b:neoformat_' . filetype . '_' . formatter)
+            let definition = b:neoformat_{filetype}_{formatter}
         elseif exists('g:neoformat_' . filetype . '_' . formatter)
             let definition = g:neoformat_{filetype}_{formatter}
         elseif s:autoload_func_exists('neoformat#formatters#' . filetype . '#' . formatter)
@@ -82,7 +84,10 @@ function! s:neoformat(bang, user_input, start_line, end_line) abort
             let stdout = split(system(cmd.exe, stdin), '\n')
         else
             call neoformat#utils#log('using tmp file')
-            call mkdir('/tmp/neoformat', 'p')
+            let tmp_dir = '/tmp/neoformat'
+            if !isdirectory(tmp_dir)
+                call mkdir(tmp_dir, 'p')
+            endif
             call writefile(stdin, cmd.tmp_file_path)
             let stdout = split(system(cmd.exe), '\n')
         endif
@@ -99,7 +104,7 @@ function! s:neoformat(bang, user_input, start_line, end_line) abort
             let lines_before = getbufline(bufnr('%'), 1, a:start_line - 1)
 
             let new_buffer = lines_before + stdout + lines_after
-            if new_buffer != original_buffer
+            if new_buffer !=# original_buffer
 
                 call s:deletelines(len(new_buffer), line('$'))
 
@@ -129,7 +134,9 @@ function! s:get_enabled_formatters(filetype) abort
     " Note: we append format_prg_exe to ever return as it will either be
     " [], or it will be a formatter that we want to try first
 
-    if exists('g:neoformat_enabled_' . a:filetype)
+    if exists('b:neoformat_enabled_' . a:filetype)
+        return format_prg_exe + b:neoformat_enabled_{a:filetype}
+    elseif exists('g:neoformat_enabled_' . a:filetype)
         return format_prg_exe + g:neoformat_enabled_{a:filetype}
     elseif s:autoload_func_exists('neoformat#formatters#' . a:filetype . '#enabled')
         return format_prg_exe + neoformat#formatters#{a:filetype}#enabled()
@@ -138,7 +145,7 @@ function! s:get_enabled_formatters(filetype) abort
 endfunction
 
 function! s:deletelines(start, end) abort
-    silent! execute a:start . ',' . a:end . 'delete'
+    silent! execute a:start . ',' . a:end . 'delete _'
 endfunction
 
 function! neoformat#CompleteFormatters(ArgLead, CmdLine, CursorPos) abort
@@ -207,7 +214,12 @@ function! s:generate_cmd(definition, filetype) abort
     let using_stdin = get(a:definition, 'stdin', 0)
 
     let filename = expand('%:t')
-    let path = !using_stdin ? '/tmp/neoformat/' . fnameescape(filename) : ''
+
+    if get(a:definition, 'replace', 0)
+        let path = !using_stdin ? '/tmp/neoformat/' . fnameescape(filename) : ''
+    else
+        let path = !using_stdin ? tempname() : ''
+    endif
 
     let _fullcmd = executable . ' ' . join(args_expanded) . ' ' . (no_append ? '' : path)
     " make sure there aren't any double spaces in the cmd

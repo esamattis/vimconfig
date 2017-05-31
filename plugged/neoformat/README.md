@@ -195,6 +195,8 @@ endfunction
   - [`dartfmt`](https://www.dartlang.org/tools/)
 - Elm
   - [`elm-format`](https://github.com/avh4/elm-format)
+- Fish
+  - [`fish_indent`](http://fishshell.com)
 - Go
   - [`gofmt`](https://golang.org/cmd/gofmt/),
     [`goimports`](https://godoc.org/golang.org/x/tools/cmd/goimports)
@@ -215,11 +217,15 @@ endfunction
     [`prettier`](https://github.com/jlongster/prettier),
     [`prettydiff`](https://github.com/prettydiff/prettydiff),
     [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html),
-    [`esformatter`](https://github.com/millermedeiros/esformatter/)
-    [`prettier-eslint`](https://github.com/kentcdodds/prettier-eslint-cli)
+    [`esformatter`](https://github.com/millermedeiros/esformatter/),
+    [`prettier-eslint`](https://github.com/kentcdodds/prettier-eslint-cli),
+    [`eslint_d`](https://github.com/mantoni/eslint_d.js)
 - JSON
   - [`js-beautify`](https://github.com/beautify-web/js-beautify),
     [`prettydiff`](https://github.com/prettydiff/prettydiff)
+    [`jq`](https://stedolan.github.io/jq/)
+- LaTeX
+  - [`latexindent`](https://github.com/cmhughes/latexindent.pl)
 - Less
   - [`csscomb`](http://csscomb.com),
     [`prettydiff`](https://github.com/prettydiff/prettydiff)
@@ -248,15 +254,18 @@ endfunction
 - Python
   - [`yapf`](https://github.com/google/yapf),
     [`autopep8`](https://github.com/hhatto/autopep8)
+  - [`isort](https://github.com/timothycrosley/isort)
 - Ruby
-  - [`ruby-beautify`](https://github.com/erniebrodeur/ruby-beautify)
+  - [`ruby-beautify`](https://github.com/erniebrodeur/ruby-beautify),
+    [`rubocop`](https://github.com/bbatsov/rubocop)
 - Rust
   - [`rustfmt`](https://github.com/rust-lang-nursery/rustfmt)
 - Sass
   - [`sass-convert`](http://sass-lang.com/documentation/#executables),
     [`csscomb`](http://csscomb.com)
 - Scala
-  - [`scalariform`](https://github.com/scala-ide/scalariform)
+  - [`scalariform`](https://github.com/scala-ide/scalariform),
+    [`scalafmt`](http://scalameta.org/scalafmt/)
 - SCSS
   - [`sass-convert`](http://sass-lang.com/documentation/#executables),
     [`stylefmt`](https://github.com/morishitter/stylefmt),
