@@ -42,7 +42,6 @@ Plug 'Glench/Vim-Jinja2-Syntax'
 Plug 'machakann/vim-highlightedyank'
 Plug 'tpope/vim-sleuth'
 Plug 'sbdchd/neoformat'
-Plug 'wakatime/vim-wakatime'
 Plug 'joshglendenning/vim-caddyfile'
 call plug#end()
 
