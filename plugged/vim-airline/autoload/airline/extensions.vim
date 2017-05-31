@@ -143,6 +143,11 @@ function! airline#extensions#load()
     call add(loaded_ext, 'unite')
   endif
 
+  if get(g:, 'loaded_denite', 0)
+    call airline#extensions#denite#init(s:ext)
+    call add(loaded_ext, 'denite')
+  endif
+
   if exists(':NetrwSettings')
     call airline#extensions#netrw#init(s:ext)
     call add(loaded_ext, 'netrw')
@@ -181,6 +186,12 @@ function! airline#extensions#load()
         \ && (exists('g:loaded_signify') || exists('g:loaded_gitgutter') || exists('g:loaded_changes') || exists('g:loaded_quickfixsigns'))
     call airline#extensions#hunks#init(s:ext)
     call add(loaded_ext, 'hunks')
+  endif
+
+  if get(g:, 'airline#extensions#vimagit#enabled', 1)
+        \ && (exists('g:loaded_magit'))
+    call airline#extensions#vimagit#init(s:ext)
+    call add(loaded_ext, 'vimagit')
   endif
 
   if get(g:, 'airline#extensions#tagbar#enabled', 1)
@@ -284,6 +295,11 @@ function! airline#extensions#load()
     call add(loaded_ext, 'capslock')
   endif
 
+  if (get(g:, 'airline#extensions#xkblayout#enabled', 1) && exists('g:XkbSwitchLib'))
+    call airline#extensions#xkblayout#init(s:ext)
+    call add(loaded_ext, 'xkblayout')
+  endif
+
   if (get(g:, 'airline#extensions#windowswap#enabled', 1) && get(g:, 'loaded_windowswap', 0))
     call airline#extensions#windowswap#init(s:ext)
     call add(loaded_ext, 'windowswap')
@@ -292,6 +308,12 @@ function! airline#extensions#load()
   if (get(g:, 'airline#extensions#obsession#enabled', 1) && exists('*ObsessionStatus'))
     call airline#extensions#obsession#init(s:ext)
     call add(loaded_ext, 'obsession')
+  endif
+
+  runtime autoload/vimtex.vim
+  if (get(g:, 'airline#extensions#vimtex#enabled', 1)) && exists('*vimtex#init')
+   call airline#extensions#vimtex#init(s:ext)
+   call add(loaded_ext, 'vimtex')
   endif
 
   if !get(g:, 'airline#extensions#disable_rtp_load', 0)
