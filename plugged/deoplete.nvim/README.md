@@ -11,8 +11,9 @@ To view the current options, please consult the
 
 ## Installation
 
-**Note:** deoplete requires Neovim(latest is recommended) with Python3 enabled.
-See [requirements](#requirements) if you aren't sure whether you have this.
+**Note:** deoplete requires Neovim(latest is recommended) with Python3 and
+timers(neovim ver.0.1.5+) enabled.  See [requirements](#requirements) if you
+aren't sure whether you have this.
 
 1. Extract the files and put them in your Neovim directory
    (usually `$XDG_CONFIG_HOME/nvim/`).
@@ -42,6 +43,13 @@ If `:echo has("python3")` returns `1`, then you're done; otherwise, see below.
 You can enable Python3 interface with pip:
 
     pip3 install neovim
+
+## Sources
+
+deoplete will display completions via omnifunc by default.
+
+Here are some [completion sources](https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources) specifically made for deoplete.nvim.
+
 
 ## Note: deoplete needs neovim-python ver.0.1.8+.
 You need update neovim-python module.

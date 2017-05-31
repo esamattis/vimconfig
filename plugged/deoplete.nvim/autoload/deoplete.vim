@@ -29,7 +29,7 @@ function! deoplete#enable_logging(level, logfile) abort
     endif
   endif
 
-  call rpcrequest(g:deoplete#_channel_id,
+  call rpcnotify(g:deoplete#_channel_id,
         \ 'deoplete_enable_logging', a:level, a:logfile)
 endfunction
 
@@ -40,25 +40,23 @@ function! deoplete#manual_complete(...) abort
 
   " Start complete.
   return (pumvisible() ? "\<C-e>" : '')
-        \ . "\<C-r>=deoplete#mapping#_rpcnotify_wrapper("
+        \ . "\<C-r>=deoplete#mapping#_rpcrequest_wrapper("
         \ . string(get(a:000, 0, [])) . ")\<CR>"
 endfunction
 function! deoplete#close_popup() abort
-  let g:deoplete#_context.position = getpos('.')
   return pumvisible() ? "\<C-y>" : ''
 endfunction
 function! deoplete#smart_close_popup() abort
-  let g:deoplete#_context.position = getpos('.')
   return pumvisible() ? "\<C-e>" : ''
 endfunction
 function! deoplete#cancel_popup() abort
-  let g:deoplete#_context.position = getpos('.')
   return pumvisible() ? "\<C-e>" : ''
 endfunction
 function! deoplete#refresh() abort
-  let g:deoplete#_context.refresh = 1
-  if get(g:deoplete#_context, 'event', '') ==# 'Manual'
-    let g:deoplete#_context.event = 'Refresh'
+  if exists('g:deoplete#_context')
+    if get(g:deoplete#_context, 'event', '') ==# 'Manual'
+      let g:deoplete#_context.event = 'Refresh'
+    endif
   endif
   return pumvisible() ? "\<C-e>" : ''
 endfunction

@@ -47,6 +47,10 @@ def convert2list(expr):
     return (expr if isinstance(expr, list) else [expr])
 
 
+def convert2candidates(l):
+    return [{'word': x} for x in l] if l and isinstance(l[0], str) else l
+
+
 def globruntime(runtimepath, path):
     ret = []
     for rtp in re.split(',', runtimepath):
@@ -67,6 +71,7 @@ def find_rplugins(context, source):
         os.path.join('rplugin/python3/deoplete', source, 'base.py'),
         os.path.join('rplugin/python3/deoplete', source, '*.py'),
         os.path.join('rplugin/python3/deoplete', source + 's', '*.py'),
+        os.path.join('rplugin/python3/deoplete', source, '*', '*.py'),
     )
 
     for src in sources:
@@ -130,11 +135,12 @@ def escape(expr):
 
 
 def charpos2bytepos(encoding, input, pos):
-    return len(bytes(input[: pos], encoding))
+    return len(bytes(input[: pos], encoding, errors='replace'))
 
 
 def bytepos2charpos(encoding, input, pos):
-    return len(bytes(input, encoding)[: pos].decode(encoding))
+    return len(bytes(input, encoding, errors='replace')[: pos].decode(
+        encoding, errors='replace'))
 
 
 def get_custom(custom, source_name, key, default):
@@ -182,28 +188,28 @@ def load_external_module(file, module):
         sys.path.insert(0, module_dir)
 
 
-def truncate_skipping(string, max, footer, footer_len):
-    if len(string) <= max/2:
+def truncate_skipping(string, max_width, footer, footer_len):
+    if len(string) <= max_width/2:
         return string
-    if strwidth(string) <= max:
+    if strwidth(string) <= max_width:
         return string
 
     footer += string[
             -len(truncate(string[::-1], footer_len)):]
-    return truncate(string, max - strwidth(footer)) + footer
+    return truncate(string, max_width - strwidth(footer)) + footer
 
 
-def truncate(string, max):
-    if len(string) <= max/2:
+def truncate(string, max_width):
+    if len(string) <= max_width/2:
         return string
-    if strwidth(string) <= max:
+    if strwidth(string) <= max_width:
         return string
 
     width = 0
     ret = ''
     for c in string:
         wc = charwidth(c)
-        if width + wc > max:
+        if width + wc > max_width:
             break
         ret += c
         width += wc
@@ -229,10 +235,10 @@ def expand(path):
 def getlines(vim, start=1, end='$'):
     if end == '$':
         end = len(vim.current.buffer)
-    max = 5000
+    max_len = min([end - start, 5000])
     lines = []
     current = start
     while current <= end:
-        lines += vim.call('getline', current, current + max)
-        current += max + 1
+        lines += vim.call('getline', current, current + max_len)
+        current += max_len + 1
     return lines
