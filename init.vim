@@ -1,6 +1,8 @@
 " PLUG_UPDATE=1 nvim -c 'PlugClean | PlugUpdate'
 call plug#begin()
-Plug 'tpope/vim-sensible'
+if !has('nvim')
+    Plug 'tpope/vim-sensible'
+endif
 Plug 'neomake/neomake' " alt https://github.com/w0rp/ale
 
 
