@@ -64,6 +64,10 @@ chmod +x $subshell_loc/login
 export HOME="$subshell_loc"
 fi
 
+# Neovim installation
+read -p "Neovim? y/n? [y]>" neovim
+[ "$neovim" = "" ] && neovim="y"
+
 
 backup $HOME/.vim
 backup $HOME/.vimrc
@@ -77,9 +81,7 @@ ln -fs $HOME/.vim/init.vim $HOME/.vimrc
 
 echo
 
-# Neovim installation
-read -p "Neovim? y/n? [y]>" neovim
-[ "$neovim" = "" ] && neovim="y"
+
 
 if [ "$neovim" = "y" ]; then
     mkdir -p "$HOME/.config"
