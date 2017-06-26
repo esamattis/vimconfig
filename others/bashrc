@@ -51,6 +51,33 @@ fi
 export N_PREFIX=$HOME/n
 export PATH=$N_PREFIX/bin:$PATH
 
+
+# "bundle exec" like tool for node_modules. Executes given script from the
+# first found node_modules folder
+#
+# Ex. npm-exec webpack --progress
+npm-exec() {
+    local script_name=$1
+    shift
+    local script_args=$@
+
+    local dir="$(pwd)"
+    local script=
+
+    while [ "$dir" != "/" ]; do
+        script="$dir/node_modules/.bin/$script_name"
+        if [ -x "$script" ]; then
+            "$script" $script_args
+            return $?
+        fi
+        dir="$(dirname "$dir")"
+    done
+
+    >&2 echo "Cannot find node_modules command $script_name"
+    return 2
+
+}
+
 # Thanks to https://gist.github.com/634750
 
 RED="\[\033[0;31m\]"
