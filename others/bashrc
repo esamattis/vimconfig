@@ -103,6 +103,12 @@ function generate_nvm_info {
   fi
 }
 
+function generate_nbin_info {
+    if [[ "$PATH" == *"node_modules/.bin"* ]]; then
+      echo "${COLOR_NONE}(${YELLOW}nm/bin${COLOR_NONE})"
+    fi
+}
+
 function generate_git_bar {
   git_status="$(git status 2> /dev/null)"
   branch_pattern="On branch ([^${IFS}]*)"
@@ -207,7 +213,7 @@ function prompt_func() {
     git_bar=""
   fi
 
-  PS1="${titlebar}\n${_jobs}$(tmux_bg)${git_bar}$(generate_nvm_info)${prompt_char}"
+  PS1="${titlebar}\n${_jobs}$(tmux_bg)${git_bar}$(generate_nvm_info)$(generate_nbin_info)${prompt_char}"
   title="\033]0;"
   if [ "$SSH_CONNECTION" != "" -o "${USER}" = "root" ]; then
     title="${title}${HOSTNAME}: "
