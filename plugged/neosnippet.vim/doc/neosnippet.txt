@@ -2,26 +2,8 @@
 		The neo-snippet plugin contains snippet source
 
 Version: 5.0
-Author: Shougo <Shougo.Matsu@gmail.com>
-License: MIT license  {{{
-    Permission is hereby granted, free of charge, to any person obtaining
-    a copy of this software and associated documentation files (the
-    "Software"), to deal in the Software without restriction, including
-    without limitation the rights to use, copy, modify, merge, publish,
-    distribute, sublicense, and/or sell copies of the Software, and to
-    permit persons to whom the Software is furnished to do so, subject to
-    the following conditions:
-    The above copyright notice and this permission notice shall be included
-    in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-}}}
+Author: Shougo <Shougo.Matsu at gmail.com>
+License: MIT license
 
 CONTENTS			*neosnippet-contents*
 
@@ -234,6 +216,17 @@ g:neosnippet#enable_completed_snippet
 		prototype.
 
 		The default value is 0.
+		
+					*g:neosnippet#enable_optional_arguments*
+g:neosnippet#enable_optional_arguments
+		If this variable is not 0, neosnippet will conceal commas in
+		expanded arguments from completed snippets.
+		
+		Useful for languages where arguments are optional by default.
+
+		Note: For use with |g:neosnippet#enable_completed_snippet| = 1
+
+		The default value is 1.
 
 					*g:neosnippet#enable_auto_clear_markers*
 g:neosnippet#enable_auto_clear_markers
@@ -405,6 +398,11 @@ EXAMPLES					*neosnippet-examples*
 
 	" Enable snipMate compatibility feature.
 	" let g:neosnippet#enable_snipmate_compatibility = 1
+
+	" Expand the completed snippet trigger by <CR>.
+	"imap <expr><CR>
+	"\ (pumvisible() && neosnippet#expandable()) ?
+	"\ "\<Plug>(neosnippet_expand)" : "\<CR>"
 
 ==============================================================================
 SNIPPET SYNTAX					*neosnippet-snippet-syntax*

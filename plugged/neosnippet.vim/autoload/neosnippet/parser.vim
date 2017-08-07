@@ -1,30 +1,8 @@
 "=============================================================================
 " FILE: parser.vim
-" AUTHOR:  Shougo Matsushita <Shougo.Matsu@gmail.com>
-" License: MIT license  {{{
-"     Permission is hereby granted, free of charge, to any person obtaining
-"     a copy of this software and associated documentation files (the
-"     "Software"), to deal in the Software without restriction, including
-"     without limitation the rights to use, copy, modify, merge, publish,
-"     distribute, sublicense, and/or sell copies of the Software, and to
-"     permit persons to whom the Software is furnished to do so, subject to
-"     the following conditions:
-"
-"     The above copyright notice and this permission notice shall be included
-"     in all copies or substantial portions of the Software.
-"
-"     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-"     OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-"     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-"     IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-"     CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-"     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-"     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-" }}}
+" AUTHOR:  Shougo Matsushita <Shougo.Matsu at gmail.com>
+" License: MIT license
 "=============================================================================
-
-let s:save_cpo = &cpo
-set cpo&vim
 
 let s:Cache = neosnippet#util#get_vital().import('System.Cache.Deprecated')
 
@@ -361,9 +339,7 @@ function! neosnippet#parser#_get_completed_snippet(completed_item, cur_text, nex
     for arg in split(substitute(
           \ neosnippet#parser#_get_in_paren('<', '>', abbr),
           \ '<\zs.\{-}\ze>', '', 'g'), '[^[]\zs\s*,\s*')
-      let args .= printf('${%d:#:%s%s}',
-            \ cnt, ((args != '') ? ', ' : ''),
-            \ escape(arg, '{}'))
+      let args .= neosnippet#parser#_conceal_argument(arg, cnt, args)
       let cnt += 1
     endfor
     let snippet .= args
@@ -379,14 +355,14 @@ function! neosnippet#parser#_get_completed_snippet(completed_item, cur_text, nex
         \ neosnippet#parser#_get_in_paren(key, pair, abbr),
         \ key.'\zs.\{-}\ze'.pair . '\|<\zs.\{-}\ze>', '', 'g'),
         \ '[^[]\zs\s*,\s*')
-    if key ==# '(' && arg ==# 'self' && &filetype ==# 'python'
+    if key ==# '(' && (
+          \ (&filetype ==# 'python' && arg ==# 'self') ||
+          \ (&filetype ==# 'rust' && arg =~# '\m^&\?\(mut \)\?self$'))
       " Ignore self argument
       continue
     endif
 
-    let args .= printf('${%d:#:%s%s}',
-          \ cnt, ((args != '') ? ', ' : ''),
-          \ escape(arg, '{}'))
+    let args .= neosnippet#parser#_conceal_argument(arg, cnt, args)
     let cnt += 1
   endfor
   let snippet .= args
@@ -428,8 +404,16 @@ function! neosnippet#parser#_get_in_paren(key, pair, str) abort "{{{
   return ''
 endfunction"}}}
 
-
-let &cpo = s:save_cpo
-unlet s:save_cpo
-
+function! neosnippet#parser#_conceal_argument(arg, cnt, args) abort "{{{
+  let outside = ''
+  let inside = ''
+  if (a:args != '')
+    if g:neosnippet#enable_optional_arguments
+      let inside = ', '
+    else
+      let outside = ', '
+    endif
+  endif
+  return printf('%s${%d:#:%s%s}', outside, a:cnt, inside, escape(a:arg, '{}'))
+endfunction"}}}
 " vim: foldmethod=marker
