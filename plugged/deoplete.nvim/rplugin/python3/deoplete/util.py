@@ -48,7 +48,8 @@ def convert2list(expr):
 
 
 def convert2candidates(l):
-    return [{'word': x} for x in l] if l and isinstance(l[0], str) else l
+    return ([{'word': x} for x in l]
+            if l and isinstance(l, list) and isinstance(l[0], str) else l)
 
 
 def globruntime(runtimepath, path):
@@ -166,9 +167,8 @@ def parse_file_pattern(f, pattern):
     return list(set(ret))
 
 
-def parse_buffer_pattern(b, pattern, complete_str):
-    p = re.compile(pattern)
-    return [x for x in p.findall('\n'.join(b)) if x != complete_str]
+def parse_buffer_pattern(b, pattern):
+    return list(set(re.compile(pattern).findall('\n'.join(b))))
 
 
 def fuzzy_escape(string, camelcase):
@@ -242,3 +242,51 @@ def getlines(vim, start=1, end='$'):
         lines += vim.call('getline', current, current + max_len)
         current += max_len + 1
     return lines
+
+
+def binary_search_begin(l, prefix):
+    if not l:
+        return -1
+    if len(l) == 1:
+        return 0 if l[0]['word'].lower().startswith(prefix) else -1
+
+    s = 0
+    e = len(l)
+    prefix = prefix.lower()
+    while s < e:
+        index = int((s + e) / 2)
+        word = l[index]['word'].lower()
+        if word.startswith(prefix):
+            if (index - 1 < 0 or not
+                    l[index-1]['word'].lower().startswith(prefix)):
+                return index
+            e = index
+        elif prefix < word:
+            e = index
+        else:
+            s = index + 1
+    return -1
+
+
+def binary_search_end(l, prefix):
+    if not l:
+        return -1
+    if len(l) == 1:
+        return 0 if l[0]['word'].lower().startswith(prefix) else -1
+
+    s = 0
+    e = len(l)
+    prefix = prefix.lower()
+    while s < e:
+        index = int((s + e) / 2)
+        word = l[index]['word'].lower()
+        if word.startswith(prefix):
+            if ((index + 1) >= len(l) or not
+                    l[index+1]['word'].lower().startswith(prefix)):
+                return index
+            s = index + 1
+        elif prefix < word:
+            e = index
+        else:
+            s = index + 1
+    return -1

@@ -402,6 +402,11 @@ deoplete#toggle()
 
 						*deoplete#custom#set()*
 deoplete#custom#set({source-name}, {option-name}, {value})
+		It is the deprecated option.
+		Please use |deoplete#custom#source()| instead.
+
+						*deoplete#custom#source()*
+deoplete#custom#source({source-name}, {option-name}, {value})
 		Set {source-name} source specialized {option-name}
 		to {value}. You may specify multiple sources with
 		separating "," in {source-name}.
@@ -412,45 +417,48 @@ deoplete#custom#set({source-name}, {option-name}, {value})
 		" Examples:
 
 		" Use head matcher instead of fuzzy matcher
-		call deoplete#custom#set('_', 'matchers', ['matcher_head'])
+		call deoplete#custom#source('_',
+		\ 'matchers', ['matcher_head'])
 
 		" Use auto delimiter feature
-		call deoplete#custom#set('_', 'converters',
+		call deoplete#custom#source('_', 'converters',
 		\ ['converter_auto_delimiter', 'remove_overlap'])
 
-		call deoplete#custom#set('buffer', 'min_pattern_length', 9999)
+		call deoplete#custom#source('buffer',
+		\ 'min_pattern_length', 9999)
 
 		" Change the source rank
-		call deoplete#custom#set('buffer', 'rank', 9999)
+		call deoplete#custom#source('buffer', 'rank', 9999)
 
 		" Enable buffer source in C/C++ files only.
-		call deoplete#custom#set('buffer', 'filetypes', ['c', 'cpp'])
+		call deoplete#custom#source('buffer',
+		\ 'filetypes', ['c', 'cpp'])
 
 		" Disable the candidates in Comment/String syntaxes.
-		call deoplete#custom#set('_',
+		call deoplete#custom#source('_',
 		\ 'disabled_syntaxes', ['Comment', 'String'])
 
 		" Change the truncate width.
-		call deoplete#custom#set('javacomplete2',
+		call deoplete#custom#source('javacomplete2',
 		\ 'max_abbr_width', 20)
-		call deoplete#custom#set('javacomplete2',
+		call deoplete#custom#source('javacomplete2',
 		\ 'max_menu_width', 80)
 
 		" Disable the truncate feature.
-		call deoplete#custom#set('javacomplete2',
+		call deoplete#custom#source('javacomplete2',
 		\ 'max_abbr_width', 0)
-		call deoplete#custom#set('javacomplete2',
+		call deoplete#custom#source('javacomplete2',
 		\ 'max_menu_width', 0)
 
 		" Change the source mark.
-		call deoplete#custom#set('buffer', 'mark', '*')
+		call deoplete#custom#source('buffer', 'mark', '*')
 		" Disable the source mark.
-		call deoplete#custom#set('omni', 'mark', '')
+		call deoplete#custom#source('omni', 'mark', '')
 
 		" Enable jedi source debug messages
 		" let g:deoplete#enable_profile = 1
 		" call deoplete#enable_logging('DEBUG', 'deoplete.log')
-		" call deoplete#custom#set('jedi', 'debug_enabled', 1)
+		" call deoplete#custom#source('jedi', 'debug_enabled', 1)
 <
 						*deoplete#enable_logging()*
 deoplete#enable_logging({level}, {logfile})
@@ -470,12 +478,12 @@ KEY MAPPINGS 					*deoplete-key-mappings*
 
 					*deoplete#manual_complete()*
 deoplete#manual_complete([{sources}])
-		Use this function with |:inoremap| <expr> (|:map-expression|).
 		It calls the completion of deoplete.  You can use it with
 		custom completion setups.
 		You can provide a list of {sources}: It can be the name of a
 		source or a list of sources name.
 		Note: It blocks your neovim.
+		Note: It must be in |map-<expr>|.
 
 		If you want to trigger deoplete manually, see also
 		|g:deoplete#disable_auto_complete|, which should be 1 then
@@ -493,6 +501,7 @@ deoplete#manual_complete([{sources}])
 				*deoplete#smart_close_popup()*
 deoplete#smart_close_popup()
 		Insert candidate and re-generate popup menu for deoplete.
+		Note: It must be in |map-<expr>|.
 >
 		inoremap <expr><C-h>
 		\ deoplete#smart_close_popup()."\<C-h>"
@@ -506,19 +515,28 @@ deoplete#smart_close_popup()
 					*deoplete#close_popup()*
 deoplete#close_popup()
 		Insert candidate and close popup menu for deoplete.
+		Note: It must be in |map-<expr>|.
 
 					*deoplete#undo_completion()*
 deoplete#undo_completion()
-		Undo inputted candidate. >
-
+		Undo inputted candidate.
+		Note: It must be in |map-<expr>|.
+>
 		inoremap <expr><C-g>     deoplete#undo_completion()
 <
 					*deoplete#refresh()*
 deoplete#refresh()
 		Refresh the candidates.
+		Note: It must be in |map-<expr>|.
 >
 		inoremap <expr><C-l>     deoplete#refresh()
 <
+					*deoplete#complete_common_string()*
+deoplete#complete_common_string()
+		complete common string in candidates.  It will be convenient
+		when candidates have long common string.
+		Note: It must be in |map-<expr>|.
+
 ==============================================================================
 EXAMPLES						*deoplete-examples*
 >
@@ -561,7 +579,9 @@ tag							*deoplete-source-tag*
 		Note: It only supports UTF-8 encoding tag file.
 
 file							*deoplete-source-file*
-		This source collects keywords from local files.
+		This source collects keywords from local files. Specifically,
+		it completes file and directory names and paths, e.g.
+		/usr/lib/share.
 
 omni							*deoplete-source-omni*
 		This source collects keywords from 'omnifunc'.
@@ -569,8 +589,24 @@ omni							*deoplete-source-omni*
 
 dictionary					*deoplete-source-dictionary*
 		This source collects |g:deoplete#keyword_patterns| keywords
-		from 'dictionary'.
-
+		from 'dictionary'. Note: it uses buffer-local 'dictionary'
+		set up.
+>
+		" Examples:
+		" Sample configuration for dictionary source with multiple
+		" dictionary files.
+		setlocal dictionary+=/usr/share/dict/words
+		setlocal dictionary+=/usr/share/dict/american-english
+		" Remove this if you'd like to use fuzzy search
+		call deoplete#custom#source(
+		\ 'dictionary', 'matchers', ['matcher_head'])
+		" If dictionary is already sorted, no need to sort it again.
+		call deoplete#custom#source(
+		\ 'dictionary', 'sorters', [])
+		" Do not complete too short words
+		call deoplete#custom#source(
+		\ 'dictionary', 'min_pattern_length', 4)
+<
 around						    *deoplete-source-around*
 		This source collects candidates around the cursor, so inside
 		current buffer only. Plus, it searches keywords in |:changes|
@@ -588,20 +624,20 @@ around						    *deoplete-source-around*
 FILTERS							*deoplete-filters*
 
 					*deoplete-filter-matcher_default*
-Default matchers: ['matcher_length', 'matcher_fuzzy']
+Default matchers: ['matcher_fuzzy']
 
-	You can change it by |deoplete#custom#set()|.
+	You can change it by |deoplete#custom#source()|.
 
 					*deoplete-filter-sorter_default*
 Default sorters: ['sorter_rank'].
 
-	You can change it by |deoplete#custom#set()|.
+	You can change it by |deoplete#custom#source()|.
 
 					*deoplete-filter-converter_default*
 Default converters: ['converter_remove_overlap', 'converter_truncate_abbr',
                      'converter_truncate_menu'].
 
-	You can change it by |deoplete#custom#set()|.
+	You can change it by |deoplete#custom#source()|.
 
 						*deoplete-filter-matcher_head*
 matcher_head	Head matching matcher.
@@ -829,10 +865,22 @@ on_post_filter
 
 					*deoplete-source-attribute-on_event*
 on_event	(Function)			(Optional)
-		It is called when |BufRead|, |BufNewFile|, |BufWritePost| or
-		deoplete is initialized.
+		It is called when |BufRead|, |BufNewFile|, |BufWritePost|,
+		|VimLeavePre| or deoplete is initialized.
 		It is useful to make cache.
 		It takes {self} and {context} as its parameter.
+
+		" Examples:
+		def on_event(self, context):
+		    if context['event'] == 'Init':
+			# BufNewFile, BufRead
+			pass
+		    elif context['event'] == 'BufWritePost':
+			# BufWritePost
+			pass
+		    else:
+			# VimLeavePre
+			pass
 
 					*deoplete-source-attribute-on_init*
 on_init		(Function)			(Optional)
@@ -856,6 +904,14 @@ __{name}	(Unspecified)			(Optional)
 		complete_position	(Integer)
 			The complete position of current source.
 
+			" Example:
+			pattern : r'fruits\.'
+
+				  01234567
+			input   : fruits.
+
+			complete_position : 7
+
 		complete_str		(String)
 			The complete string of current source.
 
@@ -878,7 +934,7 @@ __{name}	(Unspecified)			(Optional)
 	repeatedly.
 >
 	from .base import Base
-	
+
 	class Source(Base):
 	    def __init__(self, vim):
 	        super().__init__(vim)
@@ -886,7 +942,7 @@ __{name}	(Unspecified)			(Optional)
 	        self.mark = '[async]'
 	        self.rank = 1000
 	        self._count = 0
-	
+
 	    def gather_candidates(self, context):
 	        self._count += 1
 	        context['is_async'] = self._count < 10
@@ -980,6 +1036,9 @@ https://github.com/Shougo/vimshell.vim
 
 neco-ghc: "ghc" source for Haskell
 https://github.com/eagletmt/neco-ghc
+
+neco-look: "look" source to suggest words from sorted dictionary
+https://github.com/ujihisa/neco-look
 
 vim-racer: "racer" source for Rust
 https://github.com/racer-rust/vim-racer
@@ -1081,6 +1140,15 @@ https://github.com/callmekohei/deoplete-fsharp
 
 autocomplete-flow: "flow" source for JavaScript
 https://github.com/wokalski/autocomplete-flow
+
+deoplete-asm: "asm" source for Assembly Language
+https://github.com/zchee/deoplete-asm
+
+deoplete-abook: "abook" source for abook contacts
+https://github.com/fszymanski/deoplete-abook
+
+deoplete-emoji: "emoji" source for emoji codes
+https://github.com/fszymanski/deoplete-emoji
 
 ==============================================================================
 EXTERNAL PLUGINS				*deoplete-external-plugins*
@@ -1259,7 +1327,7 @@ Q: I want to use head matcher instead of fuzzy matcher.
 
 A: >
 	" Use head matcher instead of fuzzy matcher
-	call deoplete#custom#set('_', 'matchers', ['matcher_head'])
+	call deoplete#custom#source('_', 'matchers', ['matcher_head'])
 
 Q: Is deoplete faster than neocomplete?
 
@@ -1322,22 +1390,23 @@ And you must set |g:context_filetype#same_filetypes| variable.
 Q: I want to close the preview window after completion is done.
 
 A: >
-	autocmd CompleteDone * pclose!
+	autocmd CompleteDone * silent! pclose!
 
 Note: It conflicts with iabbr.
 https://github.com/Shougo/deoplete.nvim/issues/234
 
-Q: I want to see the typed word in the completion menu.
+Q: I don't want to see the typed word in the completion menu.
 
-A: You should remove |deoplete-filter-matcher_length| from the matchers.
+A: You should add |deoplete-filter-matcher_length| to the matchers.
 >
-	call deoplete#custom#set('_', 'matchers', ['matcher_fuzzy'])
+	call deoplete#custom#source('_', 'matchers', ['matcher_fuzzy',
+	'matcher_length'])
 <
 Q: How to prevent auto bracket completion?
 https://github.com/Shougo/deoplete.nvim/issues/150
 
 A: >
-	call deoplete#custom#set('_', 'converters',
+	call deoplete#custom#source('_', 'converters',
 	\ ['converter_remove_paren'])
 
 Q: What is the difference of |g:deoplete#omni_patterns| and
@@ -1385,7 +1454,7 @@ Q: The candidates are filtered by first character.
 https://github.com/Shougo/deoplete.nvim/issues/288
 
 A: >
-	call deoplete#custom#set('_', 'matchers', ['matcher_full_fuzzy'])
+	call deoplete#custom#source('_', 'matchers', ['matcher_full_fuzzy'])
 <
 Q: Are there any plans to support GotoDefinition feature like YouCompleteMe?
 
@@ -1395,13 +1464,13 @@ A: https://github.com/zchee/deoplete-jedi/issues/35
 Q: What about the alphabetical sorting of all entries?
 
 A: >
-	call deoplete#custom#set('_', 'sorters', ['sorter_word'])
+	call deoplete#custom#source('_', 'sorters', ['sorter_word'])
 <
 
 Q: I want to change the UltiSnips source order.
 
 A: >
-	call deoplete#custom#set('ultisnips', 'rank', 1000)
+	call deoplete#custom#source('ultisnips', 'rank', 1000)
 <
 
 Q: tag source does not work.
@@ -1415,7 +1484,7 @@ A: Please enable logging feature like this.
 >
 		let g:deoplete#enable_profile = 1
 		call deoplete#enable_logging('DEBUG', 'deoplete.log')
-		call deoplete#custom#set('jedi', 'debug_enabled', 1)
+		call deoplete#custom#source('jedi', 'debug_enabled', 1)
 <
 
 Q: Is deoplete better than completer.vim?
@@ -1435,8 +1504,35 @@ Q: I want to use the syntax files as a completion source
 A: Please install neco-syntax plugin.
 https://github.com/Shougo/neco-syntax
 
+Q: Neovim startup is slow when |g:deoplete#enable_at_startup| is enabled.
+
+A: If it is enabled, Neovim will enable and load deoplete in startup.
+It may be slow.  You should use lazy load feature in plugin manager or use
+|:autocmd| to call |deoplete#enable()|.
+>
+		" Enable deoplete when InsertEnter.
+		let g:deoplete#enable_at_startup = 0
+		autocmd InsertEnter * call deoplete#enable()
+
+And you should set |g:python3_host_prog| variable.
+It reduces almost 20ms startuptime.
+
+Q: I want to disable the preview window feature.
+https://github.com/Shougo/deoplete.nvim/issues/298
+
+A: >
+	set completeopt-=preview
+
+
+Q: Deoplete popup is not displayed immediately.
+
+A: Deoplete is initialized asynchronously.  So it is feature.
+
 ==============================================================================
 COMPATIBILITY					*deoplete-compatibility*
+
+2017.07.22
+* "deoplete#custom#set()" is deprecated.
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:noet:fen:noet:

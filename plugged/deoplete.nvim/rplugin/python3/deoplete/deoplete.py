@@ -39,6 +39,11 @@ class Deoplete(logger.LoggingMixin):
         self._loaded_paths = set()
         self._prev_results = {}
 
+        # on_init() call
+        context = self._vim.call('deoplete#init#_context', 'Init', [])
+        context['rpc'] = 'deoplete_on_event'
+        self.on_event(context)
+
     def completion_begin(self, context):
         self.check_recache(context)
 
@@ -61,7 +66,6 @@ class Deoplete(logger.LoggingMixin):
         if not candidates and ('deoplete#_saved_completeopt'
                                in context['vars']):
             self._vim.call('deoplete#mapping#_restore_completeopt')
-            return
 
         # error(self._vim, context['input'])
         # error(self._vim, candidates)
@@ -172,6 +176,7 @@ class Deoplete(logger.LoggingMixin):
             context['input'] = context_input
             context['complete_str'] = context['input'][
                 context['char_position']:]
+            context['is_sorted'] = False
 
             # Filtering
             ignorecase = context['ignorecase']
@@ -188,7 +193,18 @@ class Deoplete(logger.LoggingMixin):
                       if x in self._filters]:
                 try:
                     self.profile_start(context, f.name)
-                    context['candidates'] = f.filter(context)
+                    if (isinstance(context['candidates'], dict) and
+                            'sorted_candidates' in context['candidates']):
+                        context_candidates = []
+                        sorted_candidates = context['candidates'][
+                            'sorted_candidates']
+                        context['is_sorted'] = True
+                        for candidates in sorted_candidates:
+                            context['candidates'] = candidates
+                            context_candidates += f.filter(context)
+                        context['candidates'] = context_candidates
+                    else:
+                        context['candidates'] = f.filter(context)
                     self.profile_end(f.name)
                 except Exception:
                     self._filter_errors[f.name] += 1
@@ -262,6 +278,8 @@ class Deoplete(logger.LoggingMixin):
                                   {}))
 
         for source_name, source in sources:
+            if source.limit > 0 and context['bufsize'] > source.limit:
+                continue
             if source.filetypes is None or source_name in ignore_sources:
                 continue
             if context['sources'] and source_name not in context['sources']:
@@ -287,7 +305,6 @@ class Deoplete(logger.LoggingMixin):
                     continue
                 else:
                     source.is_initialized = True
-
             yield source_name, source
 
     def profile_start(self, context, name):
@@ -411,8 +428,6 @@ class Deoplete(logger.LoggingMixin):
                  context['input'].find(result['prev_input']) == 0))
 
     def is_skip(self, context, source):
-        if source.limit > 0 and context['bufsize'] > source.limit:
-            return True
         if 'syntax_names' in context and source.disabled_syntaxes:
             p = re.compile('(' + '|'.join(source.disabled_syntaxes) + ')$')
             if next(filter(p.search, context['syntax_names']), None):

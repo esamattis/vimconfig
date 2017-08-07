@@ -8,67 +8,62 @@ function! deoplete#handler#_init() abort
   augroup deoplete
     autocmd!
     autocmd InsertLeave * call s:on_insert_leave()
-    autocmd CompleteDone * call s:complete_done()
-    autocmd InsertCharPre * call s:on_insert_char_pre()
-
+    autocmd CompleteDone * call s:on_complete_done()
     autocmd TextChangedI * call s:completion_begin('TextChangedI')
     autocmd InsertEnter *
           \ call s:completion_begin('InsertEnter') | call s:timer_begin()
     autocmd InsertLeave * call s:timer_end()
   augroup END
 
-  for event in ['BufNewFile', 'BufRead', 'BufWritePost']
+  for event in ['BufNewFile', 'BufRead', 'BufWritePost', 'VimLeavePre']
     execute 'autocmd deoplete' event '* call s:on_event('.string(event).')'
   endfor
 
-  call s:on_event('Init')
+  if g:deoplete#enable_refresh_always
+    autocmd deoplete InsertCharPre * call s:completion_begin('InsertCharPre')
+  endif
+
+  call s:timer_begin()
 endfunction
 
 function! s:do_complete(timer) abort
   let context = g:deoplete#_context
-  if get(context, 'event', '') !=# 'InsertEnter' && mode() !=# 'i'
+  if s:is_exiting()
+        \ || (get(context, 'event', '') !=# 'InsertEnter' && mode() !=# 'i')
     call s:timer_end()
     return
   endif
-  if !has_key(context, 'candidates')
-        \ || empty(context.candidates)
-        \ || (context.event !=# 'Manual'
-        \     && s:prev_completion.complete_position == getpos('.')
-        \     && s:prev_completion.candidates ==# context.candidates)
+
+  if empty(get(context, 'candidates', []))
+        \ || deoplete#util#get_input(context.event) !=# context.input
     return
   endif
 
-  if deoplete#util#get_input(context.event) !=# context.input
-    let s:prev_completion.candidates = []
-    let s:prev_completion.complete_position = getpos('.')
+  if context.event !=# 'Manual'
+        \ && s:prev_completion.complete_position == getpos('.')
+        \ && s:prev_completion.candidates ==# context.candidates
     return
   endif
+
+  let s:prev_completion.event = context.event
+  let s:prev_completion.candidates = context.candidates
+  let s:prev_completion.complete_position = getpos('.')
 
   if context.event ==# 'Manual'
-    " Disable the manual completion
     let context.event = ''
   elseif !exists('g:deoplete#_saved_completeopt')
     call deoplete#mapping#_set_completeopt()
   endif
 
-  if (context.event ==# 'Async' || g:deoplete#enable_refresh_always)
-        \ && pumvisible()
-    " Auto refresh
-    call feedkeys("\<Plug>(deoplete_auto_refresh)")
-  endif
-
   if g:deoplete#complete_method ==# 'complete'
-    call feedkeys("\<Plug>_")
+    call feedkeys("\<Plug>_", 'i')
   elseif g:deoplete#complete_method ==# 'completefunc'
     let &l:completefunc = 'deoplete#mapping#_completefunc'
-    call feedkeys("\<C-x>\<C-u>", 'n')
+    call feedkeys("\<C-x>\<C-u>", 'in')
   elseif g:deoplete#complete_method ==# 'omnifunc'
     let &l:omnifunc = 'deoplete#mapping#_completefunc'
-    call feedkeys("\<C-x>\<C-o>", 'n')
+    call feedkeys("\<C-x>\<C-o>", 'in')
   endif
-
-  let s:prev_completion.candidates = context.candidates
-  let s:prev_completion.complete_position = getpos('.')
 endfunction
 
 function! s:timer_begin() abort
@@ -80,7 +75,9 @@ function! s:timer_begin() abort
   let s:completion_timer = timer_start(delay,
             \ function('s:do_complete'), {'repeat': -1})
 
-  let s:prev_completion = { 'complete_position': [], 'candidates': [] }
+  let s:prev_completion = {
+        \ 'complete_position': [], 'candidates': [], 'event': ''
+        \ }
 endfunction
 function! s:timer_end() abort
   if !exists('s:completion_timer')
@@ -108,7 +105,7 @@ function! deoplete#handler#_async_timer_stop() abort
   endif
 endfunction
 function! s:completion_async(timer) abort
-  if mode() !=# 'i'
+  if mode() !=# 'i' || s:is_exiting()
     call deoplete#handler#_async_timer_stop()
     return
   endif
@@ -124,23 +121,26 @@ function! s:completion_begin(event) abort
     return
   endif
 
-  " Call omni completion
-  for filetype in context.filetypes
-    for pattern in deoplete#util#convert2list(
-          \ deoplete#util#get_buffer_config(filetype,
-          \ 'b:deoplete_omni_patterns',
-          \ 'g:deoplete#omni_patterns',
-          \ 'g:deoplete#_omni_patterns'))
-      if pattern !=# '' && &l:omnifunc !=# ''
-            \ && context.input =~# '\%('.pattern.'\)$'
-        call deoplete#mapping#_set_completeopt()
-        call feedkeys("\<C-x>\<C-o>", 'n')
-        return
-      endif
+  if exists('s:prev_completion') && s:prev_completion.event !=# 'Manual'
+    " Call omni completion
+    for filetype in context.filetypes
+      for pattern in deoplete#util#convert2list(
+            \ deoplete#util#get_buffer_config(filetype,
+            \ 'b:deoplete_omni_patterns',
+            \ 'g:deoplete#omni_patterns',
+            \ 'g:deoplete#_omni_patterns'))
+        if pattern !=# '' && &l:omnifunc !=# ''
+              \ && context.input =~# '\%('.pattern.'\)$'
+          let g:deoplete#_context.candidates = []
+          call deoplete#mapping#_set_completeopt()
+          call feedkeys("\<C-x>\<C-o>", 'in')
+          return
+        endif
+      endfor
     endfor
-  endfor
+  endif
 
-  call rpcnotify(g:deoplete#_channel_id,
+  call deoplete#util#rpcnotify(
         \ 'deoplete_auto_completion_begin', context)
 endfunction
 function! s:is_skip(event, context) abort
@@ -192,8 +192,8 @@ function! s:is_skip_text(event) abort
 endfunction
 
 function! s:on_event(event) abort
-  let context = deoplete#init#_context(a:event, [])
-  call rpcnotify(g:deoplete#_channel_id, 'deoplete_on_event', context)
+  call deoplete#util#rpcnotify('deoplete_on_event',
+        \ deoplete#init#_context(a:event, []))
 endfunction
 
 function! s:on_insert_leave() abort
@@ -201,7 +201,7 @@ function! s:on_insert_leave() abort
   let g:deoplete#_context = {}
 endfunction
 
-function! s:complete_done() abort
+function! s:on_complete_done() abort
   if get(v:completed_item, 'word', '') !=# ''
     let word = v:completed_item.word
     if !has_key(g:deoplete#_rank, word)
@@ -212,21 +212,21 @@ function! s:complete_done() abort
   endif
 
   if !g:deoplete#enable_refresh_always
-    " Skip the next completion
-    let input = deoplete#util#get_input('CompleteDone')
-    if input[-1:] !=# '/'
-      let g:deoplete#_context.input = input
-    endif
+    call deoplete#handler#_skip_next_completion()
   endif
 endfunction
 
-function! s:on_insert_char_pre() abort
-  if !pumvisible()
-        \ || !g:deoplete#enable_refresh_always
-        \ || s:is_skip_text('InsertCharPre')
-    return 1
+function! deoplete#handler#_skip_next_completion() abort
+  if !exists('g:deoplete#_context')
+    return
   endif
 
-  " Auto refresh
-  call feedkeys("\<Plug>(deoplete_auto_refresh)")
+  let input = deoplete#util#get_input('CompleteDone')
+  if input[-1:] !=# '/'
+    let g:deoplete#_context.input = input
+  endif
+endfunction
+
+function! s:is_exiting() abort
+  return exists('v:exiting') && v:exiting != v:null
 endfunction
