@@ -48,9 +48,13 @@ Or perhaps run a formatter on save
 ```viml
 augroup fmt
   autocmd!
-  autocmd BufWritePre * Neoformat
+  autocmd BufWritePre * undojoin | Neoformat
 augroup END
 ```
+
+The `undojoin` command will put changes made by Neoformat into the same
+`undo-block` with the latest preceding change. See
+[Managing Undo History](#managing-undo-history).
 
 ## Install
 
@@ -119,6 +123,13 @@ let g:neoformat_basic_format_retab = 1
 let g:neoformat_basic_format_trim = 1
 ```
 
+Run all enabled formatters (by default Neoformat stops after the first formatter
+succeeds)
+
+```viml
+let g:neoformat_run_all_formatters = 1
+```
+
 Have Neoformat only msg when there is an error
 
 ```viml
@@ -162,6 +173,28 @@ function! neoformat#formatters#{{ filetype }}#{{ other formatter name }}() abort
 endfunction
 ```
 
+## Managing Undo History
+
+If you use an `autocmd` to run Neoformat on save, and you have your editor
+configured to save automatically on `CursorHold` then you might run into
+problems reverting changes. Pressing `u` will undo the last change made by
+Neoformat instead of the change that you made yourself - and then Neoformat
+will run again redoing the change that you just reverted. To avoid this
+problem you can run Neoformat with the Vim `undojoin` command to put changes
+made by Neoformat into the same `undo-block` with the preceding change. For
+example:
+
+```viml
+augroup fmt
+  autocmd!
+  autocmd BufWritePre * undojoin | Neoformat
+augroup END
+```
+
+When `undojoin` is used this way pressing `u` will "skip over" the Neoformat
+changes - it will revert both the changes made by Neoformat and the change
+that caused Neoformat to be invoked.
+
 ## Supported Filetypes
 
 - Arduino
@@ -185,7 +218,8 @@ endfunction
   - `css-beautify` (ships with [`js-beautify`](https://github.com/beautify-web/js-beautify)),
     [`prettydiff`](https://github.com/prettydiff/prettydiff),
     [`stylefmt`](https://github.com/morishitter/stylefmt),
-    [`csscomb`](http://csscomb.com)
+    [`csscomb`](http://csscomb.com),
+    [`prettier`](https://github.com/prettier/prettier)
 - CSV
   - [`prettydiff`](https://github.com/prettydiff/prettydiff)
 - D
@@ -214,21 +248,24 @@ endfunction
     [`astyle`](http://astyle.sourceforge.net)
 - Javascript
   - [`js-beautify`](https://github.com/beautify-web/js-beautify),
-    [`prettier`](https://github.com/jlongster/prettier),
+    [`prettier`](https://github.com/prettier/prettier),
     [`prettydiff`](https://github.com/prettydiff/prettydiff),
     [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html),
     [`esformatter`](https://github.com/millermedeiros/esformatter/),
     [`prettier-eslint`](https://github.com/kentcdodds/prettier-eslint-cli),
     [`eslint_d`](https://github.com/mantoni/eslint_d.js)
+    [`standard`](https://standardjs.com/)
 - JSON
   - [`js-beautify`](https://github.com/beautify-web/js-beautify),
-    [`prettydiff`](https://github.com/prettydiff/prettydiff)
+    [`prettydiff`](https://github.com/prettydiff/prettydiff),
+    [`prettier`](https://github.com/prettier/prettier),
     [`jq`](https://stedolan.github.io/jq/)
 - LaTeX
   - [`latexindent`](https://github.com/cmhughes/latexindent.pl)
 - Less
   - [`csscomb`](http://csscomb.com),
-    [`prettydiff`](https://github.com/prettydiff/prettydiff)
+    [`prettydiff`](https://github.com/prettydiff/prettydiff),
+    [`prettier`](https://github.com/prettier/prettier)
 - Lua
   - [`luaformatter`](https://github.com/LuaDevelopmentTools/luaformatter)
 - Markdown
@@ -247,6 +284,7 @@ endfunction
   - [`perltidy`](http://perltidy.sourceforge.net)
 - PHP
   - [`php_beautifier`](http://pear.php.net/package/PHP_Beautifier)
+  - [`php-cs-fixer`](http://cs.sensiolabs.org/)
 - Proto
   - [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html)
 - Pug (formally Jade)
@@ -254,8 +292,11 @@ endfunction
 - Python
   - [`yapf`](https://github.com/google/yapf),
     [`autopep8`](https://github.com/hhatto/autopep8)
-  - [`isort](https://github.com/timothycrosley/isort)
+  - [`isort`](https://github.com/timothycrosley/isort)
+- Reason
+  - [`refmt`](https://github.com/facebook/reason)
 - Ruby
+  - [`rufo`](https://github.com/ruby-formatter/rufo),
   - [`ruby-beautify`](https://github.com/erniebrodeur/ruby-beautify),
     [`rubocop`](https://github.com/bbatsov/rubocop)
 - Rust
@@ -270,13 +311,17 @@ endfunction
   - [`sass-convert`](http://sass-lang.com/documentation/#executables),
     [`stylefmt`](https://github.com/morishitter/stylefmt),
     [`prettydiff`](https://github.com/prettydiff/prettydiff),
-    [`csscomb`](http://csscomb.com)
+    [`csscomb`](http://csscomb.com),
+    [`prettier`](https://github.com/prettier/prettier)
 - Shell
   - [`shfmt`](https://github.com/mvdan/sh)
 - SQL
   - `sqlformat` (ships with [sqlparse](https://github.com/andialbrecht/sqlparse))
+- Terraform
+  - [`terraform`](https://www.terraform.io/docs/commands/fmt.html),
 - Typescript
-  - [`tsfmt`](https://github.com/vvakame/typescript-formatter)
+  - [`tsfmt`](https://github.com/vvakame/typescript-formatter),
+    [`prettier`](https://github.com/prettier/prettier)
 - VALA
   - [`uncrustify`](http://uncrustify.sourceforge.net)
 - XHTML

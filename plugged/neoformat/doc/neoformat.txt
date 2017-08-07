@@ -3,8 +3,9 @@
 CONTENTS					*neoformat-contents*
 
 Introduction		|neoformat-introduction|
-Install			    |neoformat-install|
-Usage			    |neoformat-usage|
+Install			|neoformat-install|
+Usage			|neoformat-usage|
+Managing Undo History	|neoformat-managing-undo-history|
 Supported Filetypes	|neoformat-supported-filetypes|
 
 ==============================================================================
@@ -61,9 +62,13 @@ Or perhaps run a formatter on save
 >
     augroup fmt
       autocmd!
-      autocmd BufWritePre * Neoformat
+      autocmd BufWritePre * undojoin | Neoformat
     augroup END
 <
+
+The |undojoin| command will put changes made by Neoformat into the same
+|undo-block| with the latest preceding change. See
+|neoformat-managing-undo-history|.
 
 
 ==============================================================================
@@ -117,6 +122,11 @@ Enable basic formatting when a filetype is not found. Disabled by default.
     " Enable trimmming of trailing whitespace
     let g:neoformat_basic_format_trim = 1
 
+Run all enabled formatters (by default Neoformat stops after the first
+formatter succeeds)
+
+    let g:neoformat_run_all_formatters = 1
+
 Have Neoformat only msg when there is an error
 >
     let g:neoformat_only_msg_on_error = 1
@@ -157,6 +167,29 @@ See Config above for options
 <
 
 ==============================================================================
+MANAGING UNDO HISTORY			*neoformat-managing-undo-history*
+
+If you use an |autocmd| to run Neoformat on save, and you have your editor
+configured to save automatically on |CursorHold| then you might run into
+problems reverting changes. Pressing |u| will undo the last change made by
+Neoformat instead of the change that you made yourself - and then Neoformat
+will run again redoing the change that you just reverted. To avoid this
+problem you can run Neoformat with the Vim |undojoin| command to put changes
+made by Neoformat into the same |undo-block| with the preceding change. For
+example:
+
+>
+    augroup fmt
+      autocmd!
+      autocmd BufWritePre * undojoin | Neoformat
+    augroup END
+<
+
+When |undojoin| is used this way pressing |u| will "skip over" the Neoformat
+changes - it will revert both the changes made by Neoformat and the change
+that caused Neoformat to be invoked.
+
+==============================================================================
 SUPPORTED FILETYPES				*neoformat-supported-filetypes*
 
 - Arduino
@@ -178,6 +211,7 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
   - `crystal tool format` (ships with [`crystal`](http://crystal-lang.org))
 - CSS
   - `css-beautify` (ships with [`js-beautify`](https://github.com/beautify-web/js-beautify)),
+    [`prettier`](https://github.com/prettier/prettier),
     [`prettydiff`](https://github.com/prettydiff/prettydiff),
     [`stylefmt`](https://github.com/morishitter/stylefmt),
     [`csscomb`](http://csscomb.com)
@@ -214,15 +248,17 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
     [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html),
     [`esformatter`](https://github.com/millermedeiros/esformatter/),
     [`prettier-eslint`](https://github.com/kentcdodds/prettier-eslint-cli),
-    [`eslint_d`](https://github.com/mantoni/eslint_d.js)
+    [`standard`](https://standardjs.com/)
 - JSON
   - [`js-beautify`](https://github.com/beautify-web/js-beautify),
-    [`prettydiff`](https://github.com/prettydiff/prettydiff)
+    [`prettydiff`](https://github.com/prettydiff/prettydiff),
+    [`prettier`](https://github.com/prettier/prettier),
     [`jq`](https://stedolan.github.io/jq/)
 - LaTeX
   - [`latexindent`](https://github.com/cmhughes/latexindent.pl)
 - Less
   - [`csscomb`](http://csscomb.com),
+    [`prettier`](https://github.com/prettier/prettier),
     [`prettydiff`](https://github.com/prettydiff/prettydiff)
 - Lua
   - [`luaformatter`](https://github.com/LuaDevelopmentTools/luaformatter)
@@ -242,6 +278,7 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
   - [`perltidy`](http://perltidy.sourceforge.net)
 - PHP
   - [`php_beautifier`](http://pear.php.net/package/PHP_Beautifier)
+  - [`php-cs-fixer`](http://cs.sensiolabs.org/)
 - Proto
   - [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html)
 - Pug (formally Jade)
@@ -250,8 +287,12 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
   - [`yapf`](https://github.com/google/yapf),
     [`autopep8`](https://github.com/hhatto/autopep8)
     [isort](https://github.com/timothycrosley/isort)
+- Reason
+  - [`refmt`](https://github.com/facebook/reason)
 - Ruby
+  - [rufo](https://github.com/asterite/rufo)
   - [`ruby-beautify`](https://github.com/erniebrodeur/ruby-beautify)
+  - [`rubocop`](https://github.com/bbatsov/rubocop)
 - Rust
   - [`rustfmt`](https://github.com/rust-lang-nursery/rustfmt)
 - Sass
@@ -262,12 +303,15 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
 - SCSS
   - [`sass-convert`](http://sass-lang.com/documentation/#executables),
     [`stylefmt`](https://github.com/morishitter/stylefmt),
+    [`prettier`](https://github.com/prettier/prettier),
     [`prettydiff`](https://github.com/prettydiff/prettydiff),
     [`csscomb`](http://csscomb.com)
 - Shell
   - [`shfmt`](https://github.com/mvdan/sh)
 - SQL
   - `sqlformat` (ships with [sqlparse](https://github.com/andialbrecht/sqlparse))
+- Terraform
+  - [`terraform`](https://www.terraform.io/docs/commands/fmt.html)
 - Typescript
   - [`tsfmt`](https://github.com/vvakame/typescript-formatter)
 - VALA

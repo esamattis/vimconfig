@@ -1,5 +1,5 @@
 function! neoformat#formatters#css#enabled() abort
-    return ['cssbeautify', 'prettydiff', 'stylefmt', 'csscomb']
+    return ['stylefmt', 'prettier', 'cssbeautify', 'prettydiff', 'csscomb']
 endfunction
 
 function! neoformat#formatters#css#cssbeautify() abort
@@ -34,5 +34,13 @@ function! neoformat#formatters#css#stylefmt() abort
     return {
         \ 'exe': 'stylefmt',
         \ 'stdin': 1,
+        \ }
+endfunction
+
+function! neoformat#formatters#css#prettier() abort
+    return {
+        \ 'exe': 'prettier',
+        \ 'args': ['--stdin', '--parser', 'postcss'],
+        \ 'stdin': 1
         \ }
 endfunction
