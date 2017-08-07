@@ -4,11 +4,6 @@ scriptencoding utf-8
 let s:level_to_name = {0: 'error  ', 1: 'warning', 2: 'verbose', 3: 'debug  '}
 let s:short_level_to_name = {0: 'E', 1: 'W', 2: 'V', 3: 'D'}
 
-" Use 'append' with writefile, but only if it is available.  Otherwise, just
-" overwrite the file.  'S' is used to disable fsync in Neovim
-" (https://github.com/neovim/neovim/pull/6427).
-let s:logfile_writefile_opts = has('patch-7.4.503') ? 'aS' : ''
-
 function! s:reltime_lastmsg() abort
     if exists('s:last_msg_ts')
         let cur = neomake#compat#reltimefloat()
@@ -58,10 +53,11 @@ function! neomake#utils#LogMessage(level, msg, ...) abort
     endif
 
     if a:0
-        let msg = printf('[%s.%s:%s] %s',
+        let msg = printf('[%s.%s:%s:%d] %s',
                     \ get(context, 'make_id', '-'),
                     \ get(context, 'id', '-'),
                     \ get(context, 'bufnr', get(context, 'file_mode', 0) ? '?' : '-'),
+                    \ winnr(),
                     \ a:msg)
     else
         let msg = a:msg
@@ -103,7 +99,21 @@ function! neomake#utils#LogMessage(level, msg, ...) abort
             echohl None
         endif
     endif
-    if type(logfile) ==# type('') && !empty(logfile)
+    if !empty(logfile) && type(logfile) ==# type('')
+        if !exists('s:logfile_writefile_opts')
+            " Use 'append' with writefile, but only if it is available.  Otherwise, just
+            " overwrite the file.  'S' is used to disable fsync in Neovim
+            " (https://github.com/neovim/neovim/pull/6427).
+            let s:can_append_to_logfile = v:version > 704 || (v:version == 704 && has('patch503'))
+            if !s:can_append_to_logfile
+                redraw
+                echohl WarningMsg
+                echom 'Neomake: appending to the logfile is not supported in your Vim version.'
+                echohl NONE
+            endif
+            let s:logfile_writefile_opts = s:can_append_to_logfile ? 'aS' : ''
+        endif
+
         let date = strftime('%H:%M:%S')
         if !exists('timediff')
             let timediff = s:reltime_lastmsg()
@@ -523,16 +533,19 @@ endfunction
 " i.e. the directory of the current buffer's file).)
 function! neomake#utils#FindGlobFile(glob, ...) abort
     let curDir = a:0 ? a:1 : expand('%:p:h')
-    let fileFound = ''
-    while empty(fileFound)
-        let fileFound = globpath(curDir, a:glob, 1)
+    let fileFound = []
+    while 1
+        let fileFound = neomake#compat#globpath_list(curDir, a:glob, 1)
+        if !empty(fileFound)
+            return fileFound[0]
+        endif
         let lastFolder = curDir
         let curDir = fnamemodify(curDir, ':h')
         if curDir ==# lastFolder
             break
         endif
     endwhile
-    return fileFound
+    return ''
 endfunction
 
 function! neomake#utils#JSONdecode(json) abort
@@ -576,4 +589,24 @@ function! neomake#utils#fnamemodify(bufnr, modifier) abort
         let path = bufname(bufnr)
     endif
     return empty(path) ? '' : fnamemodify(path, a:modifier)
+endfunction
+
+function! neomake#utils#fix_self_ref(obj, ...) abort
+    if type(a:obj) != type({})
+        return a:obj
+    endif
+    let obj = copy(a:obj)
+    for k in keys(obj)
+        if a:0
+            let self_ref = filter(copy(a:1), 'v:val[1][0] is obj[k]')
+            if !empty(self_ref)
+                let obj[k] = printf('<self-ref-%d: %s>', self_ref[0][0], self_ref[0][1][1])
+                continue
+            endif
+        endif
+        if type(obj[k]) == type({})
+            let obj[k] = neomake#utils#fix_self_ref(obj[k], a:0 ? a:1 + [[len(a:1)+1, [a:obj, k]]] : [[1, [a:obj, k]]])
+        endif
+    endfor
+    return obj
 endfunction

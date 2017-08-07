@@ -153,20 +153,17 @@ Execute (Sleep in postprocess gets handled correctly):
   " Reproduces flakiness with https://github.com/neomake/neomake/issues/899.
   call neomake#statusline#ResetCounts()
   if NeomakeAsyncTestsSetup()
-    " Vim needs longer sleep to process the output line by line.
-    let s:sleep = has('nvim') ? '0.01' : '0.1'
     Save g:neomake_test_postprocess_count
     let g:neomake_test_postprocess_count = 0
     function! s:postprocess(entry) dict
       let g:neomake_test_postprocess_count += 1
       if g:neomake_test_postprocess_count == 1
-        let sleep = has('nvim') ? 50 : 400
-        exe 'sleep '.sleep.'m'
+        exe 'sleep 200m'
       endif
     endfunction
 
     let maker = extend(neomake#utils#MakerFromCommand(
-      \ 'echo out-1; sleep '.s:sleep.'; echo out-22; sleep '.s:sleep.'; echo out-333'), {
+      \ 'echo out-1; sleep 0.1; echo out-22; sleep 0.1; echo out-333'), {
       \ 'buffer_output': 0, 'errorformat': '%m',
       \ 'append_file': 0,
       \ 'postprocess': function('s:postprocess')})
@@ -360,15 +357,13 @@ Execute (Mixed newlines get handled correctly):
 
 Execute (Exception in process_output gets logged as error):
   if NeomakeAsyncTestsSetup()
-    function! Neomake_test_maker_process_output(context) abort
-      throw "TEST_ERROR"
-    endfunction
-
     let maker = {
     \ 'exe': 'printf',
     \ 'args': ['foo'],
-    \ 'append_file': 0,
-    \ 'process_output': function('Neomake_test_maker_process_output')}
+    \ 'append_file': 0}
+    function! maker.process_output(context) abort
+      throw "TEST_ERROR"
+    endfunction
 
     let jobinfo = neomake#Make(1, [maker])[0]
 
@@ -381,19 +376,18 @@ Execute (Already running job gets restarted in case of exception):
   if NeomakeAsyncTestsSetup()
     Save g:neomake_test_counter
     let g:neomake_test_counter = 0
-    function! Neomake_test_maker_process_output(context) abort
+
+    let maker = {
+    \ 'exe': 'printf',
+    \ 'args': ['foo'],
+    \ 'append_file': 0}
+    function! maker.process_output(context) abort
       let g:neomake_test_counter += 1
       if g:neomake_test_counter == 1
         throw 'NeomakeTestsException'
       endif
       return []
     endfunction
-
-    let maker = {
-    \ 'exe': 'printf',
-    \ 'args': ['foo'],
-    \ 'append_file': 0,
-    \ 'process_output': function('Neomake_test_maker_process_output')}
 
     let jobinfo = neomake#Make({'enabled_makers': [maker]})[0]
     let make_id = neomake#GetStatus().last_make_id

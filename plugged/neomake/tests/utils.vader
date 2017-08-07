@@ -4,19 +4,20 @@ Execute (neomake#utils#LogMessage writes to logfile always):
   Save g:neomake_verbose, g:neomake_logfile
   let neomake_verbose = 0
   let g:neomake_logfile = tempname()
-  call neomake#utils#LogMessage(1, 'msg0.')
   call neomake#utils#LogMessage(1, 'msg1.')
+  call neomake#utils#LogMessage(1, 'msg2.')
   if has('patch-7.4.503')
     let logfile_msg = readfile(g:neomake_logfile)[1]
   else
     let logfile_msg = readfile(g:neomake_logfile)[0]
   endif
-  Assert logfile_msg =~# '\v\d\d:\d\d:\d\d \[W      \] msg1.$', 'unexpected msg: '.logfile_msg
+  Assert logfile_msg =~# '\v\d\d:\d\d:\d\d \[W      \] msg2.$', 'unexpected msg: '.logfile_msg
 
+  call neomake#utils#LogMessage(1, 'msg3.')
   sleep 10m
-  call neomake#utils#LogMessage(1, 'msg2.')
+  call neomake#utils#LogMessage(1, 'msg4.')
   let logfile_msg = readfile(g:neomake_logfile)[-1]
-  Assert logfile_msg =~# '\v\d\d:\d\d:\d\d \[W \+0.0\d\] msg2.$', 'Message does not match: '.logfile_msg
+  Assert logfile_msg =~# '\v\d\d:\d\d:\d\d \[W \+0.0\d\] msg4.$', 'Message does not match: '.logfile_msg
 
 Execute (NeomakeTestsCreateExe creates exe):
   Assert !executable('boobar'), 'boobar is not executable'
@@ -30,24 +31,24 @@ Execute (NeomakeTestsCreateExe overrides existing exe):
   AssertNotEqual system('which true'), true
 
 Execute (neomake#utils#CompressWhitespace):
-  function! F(text)
+  function! s:F(text)
     let entry = {'text': a:text}
     call neomake#utils#CompressWhitespace(entry)
     return entry.text
   endfunction
-  AssertEqual F('foo'), 'foo'
-  AssertEqual F(' foo'), 'foo'
-  AssertEqual F('foo '), 'foo'
-  AssertEqual F('foo bar '), 'foo bar'
-  AssertEqual F("foo\nbar "), 'foo bar'
-  AssertEqual F("foo\r\nbar "), 'foo bar'
-  AssertEqual F("foo\n bar "), 'foo bar'
-  AssertEqual F("foo\n bar \r\n"), 'foo bar'
+  AssertEqual s:F('foo'), 'foo'
+  AssertEqual s:F(' foo'), 'foo'
+  AssertEqual s:F('foo '), 'foo'
+  AssertEqual s:F('foo bar '), 'foo bar'
+  AssertEqual s:F("foo\nbar "), 'foo bar'
+  AssertEqual s:F("foo\r\nbar "), 'foo bar'
+  AssertEqual s:F("foo\n bar "), 'foo bar'
+  AssertEqual s:F("foo\n bar \r\n"), 'foo bar'
 
 Execute (neomake#utils#GetSetting serialize):
   Save g:maker
   let g:maker = {'name': 'mymaker'}
-  function! GetSetting()
+  function! s:GetSetting()
     return neomake#utils#GetSetting('serialize', g:maker, 'default',
                                   \ 'myft', bufnr('%'))
   endfunction
@@ -57,66 +58,66 @@ Execute (neomake#utils#GetSetting serialize):
   Save g:neomake_mymaker_serialize, b:neomake_mymaker_serialize
   Save g:neomake_myft_mymaker_serialize, b:neomake_myft_mymaker_serialize
 
-  AssertEqual GetSetting(), 'default'
+  AssertEqual s:GetSetting(), 'default'
 
   let g:neomake_serialize = 7
-  AssertEqual GetSetting(), 7
+  AssertEqual s:GetSetting(), 7
   " maker-only should return default.
   AssertEqual neomake#utils#GetSetting('serialize', g:maker, 'default',
                                 \ 'myft', bufnr('%'), 1), 'default'
   let g:neomake_serialize = 0
-  AssertEqual GetSetting(), 0
+  AssertEqual s:GetSetting(), 0
   let g:neomake_serialize = 99
-  AssertEqual GetSetting(), 99
+  AssertEqual s:GetSetting(), 99
 
   let b:neomake_serialize = 6
-  AssertEqual GetSetting(), 6
+  AssertEqual s:GetSetting(), 6
   let b:neomake_serialize = 0
-  AssertEqual GetSetting(), 0
+  AssertEqual s:GetSetting(), 0
   let b:neomake_serialize = 98
-  AssertEqual GetSetting(), 98
+  AssertEqual s:GetSetting(), 98
 
   let g:maker.serialize = 5
-  AssertEqual GetSetting(), 5
+  AssertEqual s:GetSetting(), 5
   let g:maker.serialize = 0
-  AssertEqual GetSetting(), 0
+  AssertEqual s:GetSetting(), 0
   let g:maker.serialize = 97
-  AssertEqual GetSetting(), 97
+  AssertEqual s:GetSetting(), 97
 
   let g:neomake_mymaker_serialize = 4
-  AssertEqual GetSetting(), 4
+  AssertEqual s:GetSetting(), 4
   let g:neomake_mymaker_serialize = 0
-  AssertEqual GetSetting(), 0
+  AssertEqual s:GetSetting(), 0
   let g:neomake_mymaker_serialize = 96
-  AssertEqual GetSetting(), 96
+  AssertEqual s:GetSetting(), 96
 
   let b:neomake_mymaker_serialize = 3
-  AssertEqual GetSetting(), 3
+  AssertEqual s:GetSetting(), 3
   let b:neomake_mymaker_serialize = 0
-  AssertEqual GetSetting(), 0
+  AssertEqual s:GetSetting(), 0
   let b:neomake_mymaker_serialize = 95
-  AssertEqual GetSetting(), 95
+  AssertEqual s:GetSetting(), 95
 
   let g:neomake_myft_mymaker_serialize = 2
-  AssertEqual GetSetting(), 2
+  AssertEqual s:GetSetting(), 2
   let g:neomake_myft_mymaker_serialize = 0
-  AssertEqual GetSetting(), 0
+  AssertEqual s:GetSetting(), 0
   let g:neomake_myft_mymaker_serialize = 94
-  AssertEqual GetSetting(), 94
+  AssertEqual s:GetSetting(), 94
 
   let b:neomake_myft_mymaker_serialize = 1
-  AssertEqual GetSetting(), 1
+  AssertEqual s:GetSetting(), 1
   let b:neomake_myft_mymaker_serialize = 0
-  AssertEqual GetSetting(), 0
+  AssertEqual s:GetSetting(), 0
   unlet b:neomake_myft_mymaker_serialize
   let b:neomake_myft_mymaker_serialize = [1]
-  AssertEqual GetSetting(), [1]
+  AssertEqual s:GetSetting(), [1]
 
   " Uses b:neomake_serialize
   let g:maker = {'name': ''}
-  AssertEqual GetSetting(), 98
+  AssertEqual s:GetSetting(), 98
   let g:maker = {}
-  AssertEqual GetSetting(), 98
+  AssertEqual s:GetSetting(), 98
   bwipe
 
 Execute (neomake#utils#GetSetting handles maker-only settings):
@@ -154,70 +155,70 @@ Execute (neomake#utils#GetSetting handles maker-only settings (dict-config)):
 
 Execute (neomake#utils#GetSetting for multiple fts):
   new
-  function! GetSetting(key)
+  function! s:GetSetting(key)
     return neomake#utils#GetSetting(a:key, {}, 'default',
                                   \ 'jsx.javascript', bufnr('%'))
   endfunction
   let b:neomake_jsx_javascript_setting = '1'
-  AssertEqual GetSetting('setting'), '1'
+  AssertEqual s:GetSetting('setting'), '1'
   bwipe
 
 Execute (neomake#utils#GetSetting for multiple fts (new-style)):
   new
-  function! GetSetting(key)
+  function! s:GetSetting(key)
     return neomake#utils#GetSetting(a:key, {}, 'default',
                                   \ 'jsx.javascript', bufnr('%'))
   endfunction
   call neomake#config#set_buffer(bufnr('%'), ['ft', 'jsx.javascript', 'setting'], 1)
-  AssertEqual GetSetting('setting'), 1
+  AssertEqual s:GetSetting('setting'), 1
   call neomake#config#set(['b:ft', 'jsx.javascript', 'setting'], 2)
-  AssertEqual GetSetting('setting'), 2
+  AssertEqual s:GetSetting('setting'), 2
   let b:neomake = {'ft': {'jsx.javascript': {'setting': 3}}}
-  AssertEqual GetSetting('setting'), 3
+  AssertEqual s:GetSetting('setting'), 3
   let b:neomake = {'ft': {'jsx': {'setting': 4}}}
-  AssertEqual GetSetting('setting'), 4
+  AssertEqual s:GetSetting('setting'), 4
   let b:neomake = {'ft': {'javascript': {'setting': 5}}}
-  AssertEqual GetSetting('setting'), 5
+  AssertEqual s:GetSetting('setting'), 5
   let b:neomake = {'ft': {'javascript.jsx': {'setting': 6}}}
-  AssertEqual GetSetting('setting'), 'default'
+  AssertEqual s:GetSetting('setting'), 'default'
   bwipe
 
 Execute (neomake#utils#GetSetting accepts lists):
   Save g:maker
   let g:maker = {'name': 'mymaker'}
-  function! GetSetting()
+  function! s:GetSetting()
     return neomake#utils#GetSetting('args', g:maker, 'default',
                                   \ 'myft', bufnr('%'))
   endfunction
 
   Save g:neomake_myft_mymaker_args, b:neomake_myft_mymaker_args
   let g:neomake_myft_mymaker_args = [ 'global', 'shallow', 'list' ]
-  AssertEqual GetSetting(), [ 'global', 'shallow', 'list' ]
+  AssertEqual s:GetSetting(), [ 'global', 'shallow', 'list' ]
   let b:neomake_myft_mymaker_args = [ 'buffer', 'shallow', 'list' ]
-  AssertEqual GetSetting(), [ 'buffer', 'shallow', 'list' ]
+  AssertEqual s:GetSetting(), [ 'buffer', 'shallow', 'list' ]
 
   Save g:maker
   Restore
   let g:maker = {'name': 'mymaker'}
   Save b:neomake_myft_mymaker_args
   let b:neomake_myft_mymaker_args = 'string'
-  AssertEqual GetSetting(), 'string'
+  AssertEqual s:GetSetting(), 'string'
 
 Execute (neomake#utils#GetSetting without name):
   Save g:maker
   let g:maker = {}
-  function! GetSetting(key)
+  function! s:GetSetting(key)
     return neomake#utils#GetSetting(a:key, g:maker, [],
                                   \ 'myft', bufnr('%'))
   endfunction
-  AssertEqual GetSetting('args'), []
+  AssertEqual s:GetSetting('args'), []
 
   Save g:neomake_setting, g:neomake_myft_setting
-  AssertEqual GetSetting('setting'), []
+  AssertEqual s:GetSetting('setting'), []
   let g:neomake_setting = 42
-  AssertEqual GetSetting('setting'), 42
+  AssertEqual s:GetSetting('setting'), 42
   let g:neomake_myft_setting = {'custom': 1}
-  AssertEqual GetSetting('setting'), {'custom': 1}
+  AssertEqual s:GetSetting('setting'), {'custom': 1}
 
 Execute (neomake#utils#GetSetting with new-style config):
   Save g:neomake
@@ -233,12 +234,12 @@ Execute (neomake#utils#GetSetting with new-style config):
   call neomake#config#set('ft.neomake_tests.foo', 'new_bar')
   AssertEqual neomake#utils#GetSetting(
   \ 'foo', maker, -1, 'neomake_tests', bufnr('%')), 'new_bar'
-  AssertNeomakeMessage "Using setting foo='new_bar' from 'global'."
+  AssertNeomakeMessage "Using setting foo='new_bar' from 'global' (prefix: ['ft', 'neomake_tests'])."
 
   call neomake#config#set('ft.neomake_tests.foo', function('tr'))
   AssertEqual neomake#utils#GetSetting(
   \ 'foo', maker, -1, 'neomake_tests', bufnr('%')), function('tr')
-  AssertNeomakeMessage "Using setting foo=function('tr') from 'global'."
+  AssertNeomakeMessage "Using setting foo=function('tr') from 'global' (prefix: ['ft', 'neomake_tests'])."
 
   bwipe
 
@@ -338,20 +339,20 @@ Execute (neomake#utils#wstrpart):
   AssertEqual neomake#utils#wstrpart('…after', 1, 10), 'after'
 
 Execute (neomake#utils#sort_by_col):
-  function! S(l)
+  function! s:sort(l)
     call sort(a:l, function('neomake#utils#sort_by_col'))
     return a:l
   endfunction
 
   let a = {'col': 1}
   let b = {'col': 5}
-  AssertEqual S([a, b]), [a, b]
+  AssertEqual s:sort([a, b]), [a, b]
   norm i1234
   AssertEqual getpos('.')[2], 4, 'position is correct'
-  AssertEqual S([a, b]), [a, b]
+  AssertEqual s:sort([a, b]), [a, b]
   norm a5
   AssertEqual getpos('.')[2], 5, 'position is correct'
-  AssertEqual S([a, b]), [b, a]
+  AssertEqual s:sort([a, b]), [b, a]
 
 Execute (neomake#utils#MakerFromCommand splits shell/shellcmdflag):
   Save &shell, &shellcmdflag
@@ -482,15 +483,15 @@ Execute (neomake#utils#MakerFromCommand uses tempfile):
   bwipe!
 
 Execute (neomake#utils#get_config_fts):
-  function! F(ft) abort
+  function! s:F(ft) abort
     return neomake#utils#get_config_fts(a:ft)
   endfunction
-  AssertEqual F('foo'), ['foo']
-  AssertEqual F('foo.bar'), ['foo_bar', 'foo', 'bar']
-  AssertEqual F('bar.foo'), ['bar_foo', 'bar', 'foo']
-  AssertEqual F('jsx.javascript'), ['jsx_javascript', 'jsx', 'javascript']
-  AssertEqual F('javascript.jsx'), ['javascript_jsx', 'javascript', 'jsx']
-  AssertEqual F('jsx'), ['jsx', 'javascript']
+  AssertEqual s:F('foo'), ['foo']
+  AssertEqual s:F('foo.bar'), ['foo_bar', 'foo', 'bar']
+  AssertEqual s:F('bar.foo'), ['bar_foo', 'bar', 'foo']
+  AssertEqual s:F('jsx.javascript'), ['jsx_javascript', 'jsx', 'javascript']
+  AssertEqual s:F('javascript.jsx'), ['javascript_jsx', 'javascript', 'jsx']
+  AssertEqual s:F('jsx'), ['jsx', 'javascript']
 
 Execute (neomake#utils#fnamemodify handles fugitive buffer):
   NeomakeTestsLoadPlugin 'fugitive'
@@ -528,6 +529,8 @@ Execute (neomake#utils#FindGlobFile):
   call writefile([], subfile)
   let file_in_subdir = subdir.slash.'common-file'
   call writefile([], file_in_subdir)
+  let anotherfile_in_subdir = subdir.slash.'common-file-2'
+  call writefile([], anotherfile_in_subdir)
 
   new
   exe 'lcd' subdir
@@ -545,6 +548,10 @@ Execute (neomake#utils#FindGlobFile):
   AssertEqual neomake#utils#FindGlobFile('common-file'), file_in_tempdir
   AssertEqual neomake#utils#FindGlobFile('common-file'), file_in_tempdir
   AssertEqual neomake#utils#FindGlobFile('common-file', subdir), file_in_subdir
+
+  " Only the first found file gets returned.
+  AssertEqual neomake#utils#FindGlobFile('common-file{,-2}', subdir), file_in_subdir
+  AssertEqual neomake#utils#FindGlobFile('common-file{-2,}', subdir), anotherfile_in_subdir
   bwipe
 
 Execute (neomake#utils#shellescape):
@@ -565,3 +572,99 @@ Execute (neomake#utils#shellescape):
   AssertEqual neomake#utils#shellescape('"foo"'), '"""foo"""'
   AssertEqual neomake#utils#shellescape('"foo bar"'), '"""foo bar"""'
   AssertEqual neomake#utils#shellescape('-c "foo bar"'), '"-c ""foo bar"""'
+
+Execute (neomake#utils#fix_self_ref):
+  AssertEqual neomake#utils#fix_self_ref(''), ''
+
+  let obj = {'foo': 1, 'bar': {}}
+  AssertEqual neomake#utils#fix_self_ref(obj), {
+  \ 'foo': 1,
+  \ 'bar': {}}
+  let fixed = neomake#utils#fix_self_ref(obj)
+  Assert fixed isnot obj, 'copies the obj'
+  AssertEqual fixed, obj
+
+  let obj.bar.self_ref = obj
+  let exception = ''
+  try
+    let str_obj = string(obj)
+  catch /^Vim(let):E724:/
+    let exception = v:exception
+  endtry
+  if has('nvim')
+    AssertEqual exception, 'Vim(let):E724: unable to correctly dump variable with self-referencing container'
+  elseif has('patch-7.4.1644')
+    AssertEqual str_obj, "{'foo': 1, 'bar': {'self_ref': {...}}}"
+  else
+    AssertEqual exception, 'Vim(let):E724: variable nested too deep for displaying'
+  endif
+  let fixed = neomake#utils#fix_self_ref(obj)
+  call string(fixed)
+  AssertEqual fixed, {
+  \ 'foo': 1,
+  \ 'bar': {'self_ref': '<self-ref-1: bar>'}}
+
+  Assert obj.bar.self_ref is obj, 'self_ref is obj'
+
+  let obj.baz = {}
+  let obj.baz.self_ref_obj = obj
+  let obj.baz.self_ref_baz = obj.baz
+  let fixed = neomake#utils#fix_self_ref(obj)
+  AssertEqual fixed, {
+  \ 'foo': 1,
+  \ 'bar': {'self_ref': '<self-ref-1: bar>'},
+  \ 'baz': {
+  \   'self_ref_obj': '<self-ref-1: baz>',
+  \   'self_ref_baz': {
+  \     'self_ref_obj': '<self-ref-1: baz>',
+  \     'self_ref_baz': '<self-ref-2: self_ref_baz>'
+  \   }
+  \ }}
+
+Execute (neomake#utils#write_tempfile):
+  Save &endofline, &binary
+  let vim_temp = tempname()
+  let neomake_temp = tempname()
+
+  if !exists('+fixeol')
+    NeomakeTestsSkip 'Skipping +fixeol variants'
+    let variants = [
+    \ 'endofline   binary',
+    \ 'endofline   nobinary',
+    \ 'noendofline binary',
+    \ 'noendofline nobinary',
+    \ ]
+  else
+    Save &fixeol
+    let variants = [
+    \ 'fixeol   endofline   binary',
+    \ 'fixeol   endofline   nobinary',
+    \ 'fixeol   noendofline binary',
+    \ 'fixeol   noendofline nobinary',
+    \ 'nofixeol endofline   binary',
+    \ 'nofixeol endofline   nobinary',
+    \ 'nofixeol noendofline binary',
+    \ 'nofixeol noendofline nobinary',
+    \ ]
+  endif
+
+  for variant in variants
+    new
+    let bufnr = bufnr('%')
+    exe 'set' variant
+
+    exe 'w!' vim_temp
+    new
+    call neomake#utils#write_tempfile(bufnr, neomake_temp)
+    AssertEqual readfile(vim_temp, 'b'), readfile(neomake_temp, 'b')
+
+    b#
+    normal! ifoo
+    exe 'w!' vim_temp
+    b#
+    call neomake#utils#write_tempfile(bufnr, neomake_temp)
+    AssertEqual readfile(vim_temp, 'b'), readfile(neomake_temp, 'b')
+
+    bwipe!
+    bwipe
+  endfor

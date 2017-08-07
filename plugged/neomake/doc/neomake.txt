@@ -73,6 +73,30 @@ fantastic Vim plugins such as syntastic and dispatch.
                         Terminate all jobs.
 
 ==============================================================================
+2.1. Toggle commands                                          *neomake-toggle*
+
+The following commands enable, disable or toggle Neomake globally, per tab or
+per buffer by changing the `disabled` setting, which is checked when Neomake
+is called via autocommands. Calling |:Neomake| manually will not use this
+setting.
+In verbose mode (e.g. when called with |:verbose|) the new status gets
+displayed.
+
+*:NeomakeToggle* toggles Neomake globally.
+*:NeomakeToggleBuffer* toggles Neomake for the current buffer.
+*:NeomakeToggleTab* toggles Neomake for the current tab.
+                                                             *neomake-disable*
+*:NeomakeDisable* disables Neomake globally.
+*:NeomakeDisableBuffer* disables Neomake for the current buffer.
+*:NeomakeDisableTab* disables Neomake for the current tab.
+                                                              *neomake-enable*
+*:NeomakeEnable* enables Neomake globally.
+*:NeomakeEnableBuffer* enables Neomake for the current buffer.
+*:NeomakeEnableTab* enables Neomake for the current tab.
+
+*:NeomakeStatus* displays the current status.
+
+==============================================================================
 3. Configuration                                       *neomake-configuration*
 
 If you just want an easy way to run |:make| asynchronously, you're all set.
@@ -296,17 +320,16 @@ Example: change to the buffer's directory: >
         \ }
 <
                                              *neomake-makers-tempfile_enabled*
-Default: 0
-In case the buffer is not readable or modified, the maker will get passed a
-temporary file with the buffer's contents.
-The temporary filename is based on |tempname()| by default, and will be set as
-`tempfile_name` in the maker dict.  You can set it dynamically through the
-experimental `maker.fn` callback (which is not documented on purpose yet).
+Default: 1
+This will pass a temporary file with the buffer's contents to the maker, in
+case the buffer is not readable, modified, or has no filename.
+A maker can specify the temporary file's name through the `tempfile_name`
+property, and you can set it through the experimental `maker.fn` callback (for
+advanced usage).
+Otherwise it gets generated based on the original filename/filetype, and
+falls back to using |tempname()|.
 
-This feature is considered to be experimental, and therefore disabled by
-default.  You can set it like other settings, i.e. to enable it globally,
-but disable it for some maker only: >
-        let g:neomake_tempfile_enabled = 1
+You can configure this per buffer or maker as usual, e.g.: >
         let g:neomake_<ft>_<name>_tempfile_enabled = 0
 <
                                                 *neomake-makers-output_stream*
@@ -621,10 +644,16 @@ get triggered, e.g. |WinEnter| for the qf window that gets opened/created): >
         autocmd User NeomakeFinished nested call MyOnNeomakeFinished()
     augroup END
 <
-                                                             *NeomakeFinished*
-The NeomakeFinished user autocommand gets triggered after all jobs of a build
-have finished.
-You can use this to e.g. close an empty location or quickfix window.
+                                                              *NeomakeJobInit*
+The NeomakeJobInit autocommand gets triggered before a job gets started.
+You can use this to change the command (`jobinfo.argv`).
+Context:
+ - `g:neomake_hook_context.jobinfo`: see |neomake-object-jobinfo|.
+   The `argv` entry contains the command to run (executable and arguments).
+   This can be a list or a string, depending on the maker and the job backend.
+
+                                                           *NeomakeJobStarted*
+The NeomakeJobStarted autocommand gets triggered after a job started.
 Context:
  - `g:neomake_hook_context.jobinfo`: see |neomake-object-jobinfo|.
 
@@ -637,6 +666,13 @@ Context:
  - `g:neomake_hook_context.reset`: 1 if the list got reset, 0 otherwise.
  - `g:neomake_hook_context.jobinfo`: when the list is not reset; see
    |neomake-object-jobinfo|.
+
+                                                             *NeomakeFinished*
+The NeomakeFinished user autocommand gets triggered after all jobs of a build
+have finished.
+You can use this to e.g. close an empty location or quickfix window.
+Context:
+ - `g:neomake_hook_context.jobinfo`: see |neomake-object-jobinfo|.
 
                                                           *NeomakeJobFinished*
 The NeomakeJobFinished autocommand gets triggered after a single job has
@@ -655,6 +691,8 @@ The `jobinfo` dictionary contains information about a job.
    this job.  See |neomake-object-maker|.
  - `file_mode`: 1 for file mode, 0 for project/directory mode.
  - `make_id`: the ID of the make run
+ - `get_pid()`: get the process ID (PID) of the job (-1 if not running
+                anymore).
 
  - Relevant for file mode:
    - `bufnr`: the number of the buffer.

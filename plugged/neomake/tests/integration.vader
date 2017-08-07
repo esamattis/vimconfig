@@ -27,12 +27,12 @@ Execute (Test Neomake on errors.sh with one maker):
   endfor
 
   " Basic verification that signs are placed.
-  AssertNeomakeMessage 'Placing sign: sign place 5000 line=5 name=neomake_err buffer='.bufnr.'.', 3, {}
-  AssertNeomakeMessage 'Reusing sign: id=5000, type=neomake_err, lnum=5.', 3, {}
+  AssertNeomakeMessage 'Placing sign: sign place 5000 line=5 name=neomake_file_err buffer='.bufnr.'.', 3, {}
+  AssertNeomakeMessage 'Reusing sign: id=5000, type=neomake_file_err, lnum=5.', 3, {}
 
   AssertEqual NeomakeTestsGetSigns(), [
     \ 'Signs for tests/fixtures/errors.sh:',
-    \ 'line=5  id=5000  name=neomake_err']
+    \ 'line=5  id=5000  name=neomake_file_err']
   bwipe
 
 Execute (Test Neomake on errors.sh with two makers):
@@ -73,16 +73,16 @@ Execute (Test Neomake on errors.sh with shellcheck):
   AssertEqual len(g:neomake_test_finished), 1
   AssertNeomakeMessage 'Running makers: shellcheck.'
   AssertEqual getloclist(0), [
-  \ {'lnum': 3, 'bufnr': bufnr, 'col': 1, 'valid': 1, 'vcol': 0, 'nr': -1,
-  \  'type': 'w', 'pattern': '', 'text': 'a appears unused. Verify it or export it. [SC2034]'},
-  \ {'lnum': 3, 'bufnr': bufnr, 'col': 3, 'valid': 1, 'vcol': 0, 'nr': -1,
-  \ 'type': 'I', 'pattern': '', 'text': 'Expressions don''t expand in single quotes, use double quotes for that. [SC2016]'},
-  \ {'lnum': 5, 'bufnr': bufnr, 'col': 4, 'valid': 1, 'vcol': 0, 'nr': -1,
-  \  'type': 'e', 'pattern': '', 'text': '''('' is invalid here. Did you forget to escape it? [SC1036]'},
-  \ {'lnum': 5, 'bufnr': bufnr, 'col': 4, 'valid': 1, 'vcol': 0, 'nr': -1,
-  \  'type': 'e', 'pattern': '', 'text': 'Parsing stopped here. Invalid use of parentheses? [SC1088]'},
-  \ {'lnum': 5, 'bufnr': bufnr, 'col': 4, 'valid': 1, 'vcol': 0, 'nr': -1,
-  \  'type': 'e', 'pattern': '', 'text': 'Trying to declare parameters? Don''t. Use () and refer to params as $1, $2.. [SC1065]'},
+  \ {'lnum': 3, 'bufnr': bufnr, 'col': 1, 'valid': 1, 'vcol': 0, 'nr': 2034,
+  \  'type': 'w', 'pattern': '', 'text': 'a appears unused. Verify it or export it.'},
+  \ {'lnum': 3, 'bufnr': bufnr, 'col': 3, 'valid': 1, 'vcol': 0, 'nr': 2016,
+  \ 'type': 'I', 'pattern': '', 'text': 'Expressions don''t expand in single quotes, use double quotes for that.'},
+  \ {'lnum': 5, 'bufnr': bufnr, 'col': 4, 'valid': 1, 'vcol': 0, 'nr': 1036,
+  \  'type': 'e', 'pattern': '', 'text': '''('' is invalid here. Did you forget to escape it?'},
+  \ {'lnum': 5, 'bufnr': bufnr, 'col': 4, 'valid': 1, 'vcol': 0, 'nr': 1088,
+  \  'type': 'e', 'pattern': '', 'text': 'Parsing stopped here. Invalid use of parentheses?'},
+  \ {'lnum': 5, 'bufnr': bufnr, 'col': 4, 'valid': 1, 'vcol': 0, 'nr': 1065,
+  \  'type': 'e', 'pattern': '', 'text': 'Trying to declare parameters? Don''t. Use () and refer to params as $1, $2..'},
   \ ]
   AssertNeomakeMessage 'exit: shellcheck: 1.', 3
   bwipe
@@ -311,93 +311,38 @@ Execute (NeomakeSh: project: handle removed window on exit (bwipe)):
   AssertEqual len(g:neomake_test_finished), 1
   AssertEqual len(g:neomake_test_countschanged), 1
 
-Execute (NeomakeInfo):
-  Save g:neomake_c_enabled_makers, g:neomaker_not_a_setting
-  let g:neomake_c_enabled_makers = ['doesnotexist']
-  let g:neomaker_not_a_setting = 1
-
-  let info = split(neomake#utils#redir('NeomakeInfo'), '\n')
-  Assert len(filter(copy(info), "v:val =~ '\\v^#+ Settings$'")), 'Settings header exists'
-  Assert index(info, "g:neomake_c_enabled_makers = ['doesnotexist']") != -1,
-  \ 'neomake_c_enabled_makers setting gets reported'
-  AssertEqual filter(copy(info), "v:val =~ 'neomaker'"), []
-
-Execute (NeomakeInfo with FuncRef):
-  Save g:neomake_c_enabled_makers, g:neomake_c_doesnotexist_maker
-  new
-  set filetype=c
-  let g:neomake_c_enabled_makers = ['doesnotexist']
-  let g:neomake_c_doesnotexist_maker = {
-  \ 'args': function('getcwd'),
-  \ 'errorformat': 'custom_efm: %m'}
-
-  let info = split(neomake#utils#redir('NeomakeInfo'), '\n')
-  let idx = 0
-  for line in [
-      \ 'Current filetype: c',
-      \ 'For the current filetype (with :Neomake):',
-      \ ' - doesnotexist',
-      \ '   - args: function(''getcwd'')',
-      \ '   - errorformat: ''custom_efm: %m''',
-      \ '   - exe: ''doesnotexist''']
-    let i = index(info, line)
-    Assert i > idx, 'line not found: "'.line.'" (idx: '.idx.')'
-    let idx = i
-  endfor
-  bwipe
-
-Execute (NeomakeInfo with unusual filetype):
-  new
-  set filetype=ft1.gentoo-package-keywords
-  let info = split(neomake#utils#redir('NeomakeInfo'), '\n')
-  Assert index(info, 'NOTE: you can define g:neomake_ft1_gentoo_package_keywords_enabled_makers to configure it (or b:neomake_ft1_gentoo_package_keywords_enabled_makers).') != -1, 'Line was found'
-  bwipe
-
-Execute (NeomakeInfo: displays issues):
-  Save g:neomake_enabled_makers, g:neomake_mymaker_maker
-
-  let g:neomake_enabled_makers = ['mymaker']
-  let g:neomake_mymaker_maker = {
-  \ 'exe': 'doesnotexist',
-  \ 'args': function('getcwd'),
-  \ 'errorformat': 'custom_efm: %m',
-  \ 'mapexpr': '',
-  \ 'postprocess': function('tr'),
-  \ 'process_output': function('tr'),
-  \ }
-
-  let info = split(neomake#utils#redir('NeomakeInfo'), '\n')
-  let idx = 0
-  for line in [
-      \ 'For the project (with :Neomake!):',
-      \ ' - mymaker',
-      \ '   - args: function(''getcwd'')',
-      \ '   - errorformat: ''custom_efm: %m''',
-      \ '   - exe: ''doesnotexist''',
-      \ '   - ERRORS:',
-      \ "     - maker's exe (doesnotexist) is not executable.",
-      \ '   - WARNINGS:',
-      \ '     - maker has mapexpr, but only process_output will be used.',
-      \ '     - maker has postprocess, but only process_output will be used.',
-      \ ]
-    let i = index(info, line)
-    Assert i > idx, 'line not found: "'.line.'" (idx: '.idx.')'
-    let idx = i
-  endfor
-
 Execute (NeomakeListJobs):
   let maker1 = NeomakeTestsCommandMaker('cmd maker 1', 'sleep .1')
-  let maker2 = NeomakeTestsCommandMaker('cmd maker 2', 'sleep .1')
-  let jobs1 = neomake#Make({'enabled_makers': [maker1]})
-  let jobs2 = neomake#Make({'enabled_makers': [maker2], 'name': 'My custom name'})
+  let maker2 = NeomakeTestsCommandMaker('cmd maker 2', 'sleep .1; echo job2')
+  let maker3 = {'exe': 'sleep', 'args': '.1', 'append_file': 0, 'name': ''}
+  let job1 = neomake#Make({'enabled_makers': [maker1]})[0]
+  let job2 = neomake#Make({'enabled_makers': [maker2], 'name': 'My custom name'})[0]
+  let job3 = neomake#Make({'enabled_makers': [maker3]})[0]
+
   let info = split(neomake#utils#redir('NeomakeListJobs'), '\n')
   if neomake#has_async_support()
     AssertEqual info, [
     \        'make_id | job_id | name/maker',
-    \ printf('     %d |     %d | neomake_%d (cmd maker 1)', jobs1[0].make_id, jobs1[0].id, jobs1[0].id),
-    \ printf('     %d |     %d | My custom name (cmd maker 2)', jobs2[0].make_id, jobs2[0].id),
+    \ printf('     %d |     %d | cmd maker 1', job1.make_id, job1.id),
+    \ printf('     %d |     %d | My custom name (cmd maker 2)', job2.make_id, job2.id),
+    \ printf('     %d |     %d | neomake_%d', job3.make_id, job3.id, job3.id),
     \ ]
+    AssertEqual map(copy(neomake#GetJobs()), 'v:val.as_string()'), [
+    \ 'Job '.job1.id.': cmd maker 1',
+    \ 'Job '.job2.id.': My custom name',
+    \ 'Job '.job3.id.': neomake_'.job3.id]
+    call neomake#CancelJob(job1.id)
+    AssertEqual map(copy(neomake#GetJobs()), 'v:val.as_string()'), [
+    \ 'Job '.job1.id.': cmd maker 1 [canceled]',
+    \ 'Job '.job2.id.': My custom name',
+    \ 'Job '.job3.id.': neomake_'.job3.id]
+    normal! V
     NeomakeTestsWaitForFinishedJobs
+    AssertNeomakeMessage 'Not processing output for mode "V".'
+    AssertEqual map(copy(neomake#GetJobs()), 'v:val.as_string()'), [
+    \ 'Job '.job2.id.': My custom name [finished]']
+    exe "normal! \<Esc>"
+    doautocmd CursorHold
   else
     AssertEqual info, ['This Vim version has no support for jobs.']
   endif
@@ -712,38 +657,64 @@ Execute (Quickfix list should be cleared only after maker finished):
 Execute (neomake#Sh: exit_callback):
   Save g:neomake_test_cb
   let g:neomake_test_cb = []
-  function! g:NeomakeTestsAfterExit(job_status) dict
+  function! NeomakeTestsAfterExit(job_status) dict
     call add(g:neomake_test_cb, [self, a:job_status])
   endfunction
-  call neomake#Sh('true', function('g:NeomakeTestsAfterExit'))
+  call neomake#Sh('true', function('NeomakeTestsAfterExit'))
   NeomakeTestsWaitForFinishedJobs
   AssertEqual len(g:neomake_test_cb), 1
   AssertEqual g:neomake_test_cb[0][1], {'status': 0, 'name': 'sh: true', 'has_next': 0}
+  delfunction NeomakeTestsAfterExit
 
 Execute (neomake#Make: exit_callback):
   Save g:neomake_test_cb
   let g:neomake_test_cb = []
-  function! g:NeomakeTestsAfterExit(job_status) dict
+  function! NeomakeTestsAfterExit(job_status) dict
     call add(g:neomake_test_cb, [self, a:job_status])
   endfunction
   let maker = {'exe': 'true', 'serialize': 1}
-  call neomake#Make(0, [maker, maker], function('g:NeomakeTestsAfterExit'))
+  call neomake#Make(0, [maker, maker], function('NeomakeTestsAfterExit'))
   NeomakeTestsWaitForFinishedJobs
   AssertEqual len(g:neomake_test_cb), 2
   AssertEqual g:neomake_test_cb[0][1], {'status': 0, 'name': 'unnamed_maker', 'has_next': 1}
   AssertEqual g:neomake_test_cb[1][1], {'status': 0, 'name': 'unnamed_maker', 'has_next': 0}
+  delfunction NeomakeTestsAfterExit
 
 Execute (neomake#Make: exit_callback with maker names):
   Save g:neomake_test_cb
   let g:neomake_test_cb = []
-  function! g:NeomakeTestsAfterExit(job_status) dict
+  function! NeomakeTestsAfterExit(job_status) dict
     call add(g:neomake_test_cb, [self, a:job_status])
   endfunction
   Save g:neomake_mymaker_maker
   let g:neomake_mymaker_maker = {'exe': 'true'}
-  call neomake#Make(0, ['mymaker'], function('g:NeomakeTestsAfterExit'))
+  call neomake#Make(0, ['mymaker'], function('NeomakeTestsAfterExit'))
   NeomakeTestsWaitForFinishedJobs
   AssertEqual g:neomake_test_cb[0][1], {'status': 0, 'name': 'mymaker', 'has_next': 0}
+  delfunction NeomakeTestsAfterExit
+
+Execute (neomake#Make: exit_callback with unknown function (E700)):
+  call neomake#Make({
+  \ 'enabled_makers': [g:true_maker],
+  \ 'exit_callback': 'NeomakeUnknownFunction',
+  \ })
+  NeomakeTestsWaitForFinishedJobs
+  AssertNeomakeMessage 'Error during exit_callback: Vim(let):E700: Unknown function: NeomakeUnknownFunction.'
+
+Execute (neomake#Make: exit_callback with wrong script function):
+  function! s:NeomakeScriptFunction()
+  endfunction
+  call neomake#Make({
+  \ 'enabled_makers': [g:true_maker],
+  \ 'exit_callback': function('s:NeomakeScriptFunction'),
+  \ })
+  NeomakeTestsWaitForFinishedJobs
+
+  if v:version > 703 || (v:version == 703 && has('patch1058'))
+    AssertNeomakeMessage '\mError during exit_callback: Vim(call):E118: Too many arguments for function: .*NeomakeScriptFunction.', 0
+  else
+    AssertNeomakeMessage '\mError during exit_callback: Vim(call):E117: Unknown function: s:NeomakeScriptFunction.', 0
+  endif
 
 Execute (Location list should be cleared only after first output):
   call g:NeomakeSetupAutocmdWrappers()
@@ -789,14 +760,13 @@ Execute (Highlights should be cleared after successful run):
   let maker_success = NeomakeTestsCommandMaker('success-maker', 'true')
   let maker_error = NeomakeTestsCommandMaker('error-maker', 'echo error')
   let maker_error.errorformat = '%E%m'
-  function! PostProcess(entry) abort
+  function! maker_error.postprocess(entry) abort
     let e = a:entry
     let a:entry.lnum = 1
     let a:entry.col = 1
     let a:entry.length = 5
     let a:entry.bufnr = bufnr('%')
   endfunction
-  let maker_error.postprocess = function('PostProcess')
 
   call neomake#Make(1, [maker_error])
   NeomakeTestsWaitForFinishedJobs

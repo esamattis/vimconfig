@@ -3,7 +3,6 @@
 
 function! s:wait_for_jobs(filter)
   let max = 45
-  let filter = a:filter
   while 1
     let jobs = copy(neomake#GetJobs())
     if len(a:filter)
@@ -15,7 +14,7 @@ function! s:wait_for_jobs(filter)
     let max -= 1
     if max == 0
       for j in jobs
-        Log "Remaining job: ".string(j)
+        call vader#log('Remaining job: '.string(neomake#utils#fix_self_ref(j)))
       endfor
       call neomake#CancelJobs(1)
       throw len(jobs).' jobs did not finish after 3s.'
@@ -300,7 +299,7 @@ function! s:monkeypatch_highlights() abort
   runtime autoload/neomake/highlights.vim
   Save g:neomake_tests_highlight_lengths
   let g:neomake_tests_highlight_lengths = []
-  function! neomake#highlights#AddHighlight(entry, type) abort
+  function! neomake#highlights#AddHighlight(entry, ...) abort
     call add(g:neomake_tests_highlight_lengths,
     \ [get(a:entry, 'lnum', -1), get(a:entry, 'length', -1)])
   endfunction
@@ -320,6 +319,10 @@ let g:sleep_efm_maker = {
 let g:sleep_maker = NeomakeTestsCommandMaker('sleep-maker', 'sleep .05; echo slept')
 let g:error_maker = NeomakeTestsCommandMaker('error-maker', 'echo error; false')
 let g:error_maker.errorformat = '%E%m'
+function! g:error_maker.postprocess(entry) abort
+  let a:entry.bufnr = bufnr('')
+  let a:entry.lnum = 1
+endfunction
 let g:success_maker = NeomakeTestsCommandMaker('success-maker', 'echo success')
 let g:true_maker = NeomakeTestsCommandMaker('true-maker', 'true')
 let g:doesnotexist_maker = {'exe': 'doesnotexist'}
@@ -370,14 +373,25 @@ function! s:After()
     \ .string(map(jobs, "v:val.make_id.'.'.v:val.id")))
   endif
 
-  let make_info = neomake#GetStatus().make_info
+  let status = neomake#GetStatus()
+  let make_info = status.make_info
   if has_key(make_info, -42)
     unlet make_info[-42]
   endif
   if !empty(make_info)
     call add(errors, 'make_info is not empty: '.string(make_info))
   endif
-  NeomakeTestsWaitForRemovedJobs
+  let actions = filter(copy(status.action_queue), '!empty(v:val)')
+  if !empty(actions)
+    call add(errors, printf('action_queue is not empty: %d entries: %s',
+          \ len(actions), string(status.action_queue)))
+  endif
+  try
+    NeomakeTestsWaitForRemovedJobs
+  catch
+    call neomake#CancelJobs(1)
+    call add(errors, v:exception)
+  endtry
 
   if exists('#neomake_tests')
     autocmd! neomake_tests
@@ -394,6 +408,8 @@ function! s:After()
           exe 'bwipe!' b
         endif
       endfor
+      " In case there are two windows with Vader-workbench.
+      only
     catch
       Log "Error while cleaning windows: ".v:exception
     endtry
@@ -427,7 +443,27 @@ function! s:After()
     unlet make_info[k]
   endfor
 
+  " Check that no new global functions are defined.
+  redir => output_func
+    silent function /\C^[A-Z]
+  redir END
+  let funcs = map(split(output_func, '\n'),
+        \ "substitute(v:val, '\\v^function (.*)\\(.*$', '\\1', '')")
+  let new_funcs = filter(copy(funcs), 'index(g:neomake_test_funcs_before, v:val) == -1')
+  if !empty(new_funcs)
+    call add(errors, 'New global functions (use script-local ones, or :delfunction to clean them): '.string(new_funcs))
+    call extend(g:neomake_test_funcs_before, new_funcs)
+  endif
+
+  if exists('#neomake_event_queue')
+    call add(errors, '#neomake_event_queue was not empty.')
+    autocmd! neomake_event_queue
+    augroup! neomake_event_queue
+  endif
+
   if !empty(errors)
+    " Reload to reset e.g. s:action_queue.
+    runtime autoload/neomake.vim
     throw len(errors).' error(s) in teardown: '.join(errors, "\n")
   endif
 endfunction
