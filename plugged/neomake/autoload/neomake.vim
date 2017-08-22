@@ -673,6 +673,10 @@ function! neomake#GetMaker(name_or_maker, ...) abort
                 throw 'Neomake: Project maker not found: '.a:name_or_maker
             endif
         endif
+        if type(maker) != type({})
+            throw printf('Neomake: Got non-dict for maker %s: %s',
+                        \ a:name_or_maker, maker)
+        endif
     endif
 
     " Create the maker object.
@@ -2067,8 +2071,13 @@ function! neomake#GetCurrentErrorMsg() abort
         let ln_errors = copy(ln_errors)
         call sort(ln_errors, function('neomake#utils#sort_by_col'))
     endif
-    let error_entry = ln_errors[0]
-    return error_entry.maker_name.': '.error_entry.text
+    let entry = ln_errors[0]
+    let r = entry.maker_name . ': ' . entry.text
+    let suffix = entry.type . (entry.nr != -1 ? entry.nr : '')
+    if !empty(suffix)
+        let r .= ' ('.suffix.')'
+    endif
+    return r
 endfunction
 
 function! neomake#EchoCurrentError(...) abort
