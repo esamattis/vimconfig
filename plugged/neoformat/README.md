@@ -238,6 +238,7 @@ that caused Neoformat to be invoked.
   - [`stylish-haskell`](https://github.com/jaspervdj/stylish-haskell)
   - [`hindent`](https://github.com/chrisdone/hindent)
   - [`hfmt`](https://github.com/danstiner/hfmt)
+  - [`brittany`](https://github.com/lspitzner/brittany)
 - HTML
   - `html-beautify` (ships with [`js-beautify`](https://github.com/beautify-web/js-beautify)),
     [`prettydiff`](https://github.com/prettydiff/prettydiff)
