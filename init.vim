@@ -8,7 +8,7 @@ Plug 'neomake/neomake' " alt https://github.com/w0rp/ale
 
 if has('nvim')
     " Works only with Neovim
-    Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+    Plug 'roxma/nvim-completion-manager'
 
     " Enable only when flow is in PATH otherwise it causes errors with Javascript
     " files
@@ -43,6 +43,8 @@ Plug 'machakann/vim-highlightedyank'
 Plug 'tpope/vim-sleuth'
 Plug 'sbdchd/neoformat'
 Plug 'joshglendenning/vim-caddyfile'
+Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
+Plug 'Shougo/echodoc.vim'
 call plug#end()
 
 "" Leader mappings
@@ -283,3 +285,19 @@ command ToCamel normal f-xvgU
 "     )(Header)
 "
 command! Compose normal! yiw$%o<esc>pA = compose(<esc>o<esc>i)(<esc>pA)<esc>O
+
+nnoremap <silent> K :call LanguageClient_textDocument_hover()<CR>
+nnoremap <silent> gd :call LanguageClient_textDocument_definition()<CR>
+nnoremap <silent> <F2> :call LanguageClient_textDocument_rename()<CR>
+
+
+let g:LanguageClient_serverCommands = {
+    \ 'php': ['/var/www/git/startphp'],
+    \ }
+
+set omnifunc=LanguageClient#complete
+
+" Automatically start language servers.
+let g:LanguageClient_autoStart = 1
+
+set signcolumn=yes
