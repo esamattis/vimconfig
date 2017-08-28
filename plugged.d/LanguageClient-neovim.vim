@@ -1,11 +1,9 @@
 
-
 let g:LanguageClient_autoStart = 1
 
-
 let g:LanguageClient_serverCommands = {
-    \ 'javascript': ['./wrapper.sh'],
-    \ 'typescript': ['./wrapper.sh'],
+    \ 'javascript': ['javascript-typescript-stdio'],
+    \ 'typescript': ['javascript-typescript-stdio'],
     \ }
 
 
