@@ -37,6 +37,7 @@ Plug 'machakann/vim-highlightedyank'
 Plug 'tpope/vim-sleuth'
 Plug 'sbdchd/neoformat'
 Plug 'joshglendenning/vim-caddyfile'
+Plug 'leafgarland/typescript-vim'
 call plug#end()
 
 "" Leader mappings
