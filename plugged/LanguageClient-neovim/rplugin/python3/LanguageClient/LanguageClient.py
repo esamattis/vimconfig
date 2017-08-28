@@ -69,6 +69,8 @@ class LanguageClient:
         self.serverCommands = {}
         self.changeThreshold = 0
         self.trace = "off"  # trace settings passed to server
+        self.languageServerLogFilePath = os.path.join(
+                os.getenv("TMP", "/tmp"), "LanguageServer.log")
         self.autoStart = self.nvim.vars.get(
             "LanguageClient_autoStart", False)
 
@@ -79,14 +81,14 @@ class LanguageClient:
         return text
 
     def getFileLine(self, filepath: str, line: int) -> str:
-        modifiedBuffers = (buffer for buffer in self.nvim.buffers if buffer.options["mod"])
-        modifiedBuffer = next((buffer for buffer in modifiedBuffers if buffer.name == filepath), None)
-        if modifiedBuffer != None:
-            lineContent = modifiedBuffer[line - 1]
-            if not(line == len(modifiedBuffer) and not modifiedBuffer.options['endofline']):
-                lineContent += "\n"
-            return lineContent
-        return linecache.getline(filepath, line)
+        modifiedBuffers = [buffer for buffer in self.nvim.buffers
+                           if buffer.name == filepath
+                           and buffer.options["mod"]]
+
+        if len(modifiedBuffers) == 0:
+            return linecache.getline(filepath, line).strip()
+        else:
+            return modifiedBuffers[0][line - 1]
 
     def asyncCommand(self, cmds: str) -> None:
         self.nvim.async_call(self.nvim.command, cmds)
@@ -185,8 +187,8 @@ class LanguageClient:
             msg = "Language client is not running. Try :LanguageClientStart"
         elif self.server[languageId].poll() is not None:
             ret = False
-            msg = "Failed to start language server: {}".format(
-                self.server[languageId].stderr.readlines())
+            msg = ("Failed to start language server."
+                   " See {}").format(self.languageServerLogFilePath)
             logger.error(msg)
 
         if ret is False and warn:
@@ -272,7 +274,7 @@ class LanguageClient:
                 command,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+                stderr=open(self.languageServerLogFilePath, "wb"))
         except Exception as ex:
             msg = "Failed to start language server: " + ex.args[1]
             logger.exception(msg)
@@ -456,7 +458,7 @@ class LanguageClient:
         value = ""
         if isinstance(contents, list):
             for markedString in contents:
-                value += self.markedStringToString(markedString)
+                value += self.markedStringToString(markedString) + "\n"
         else:
             value += self.markedStringToString(contents)
         self.asyncEcho(value)
@@ -644,11 +646,13 @@ call fzf#run(fzf#wrap({{
             "query": query
         }, cbs)
 
-    def handleWorkspaceSymbolResponse(self, symbols: list, languageId: str) -> None:
+    def handleWorkspaceSymbolResponse(
+            self, symbols: list, languageId: str) -> None:
         if self.selectionUI == "fzf":
             source = []
             for sb in symbols:
-                path = os.path.relpath(sb["location"]["uri"], self.rootUri[languageId])
+                path = os.path.relpath(sb["location"]["uri"],
+                                       self.rootUri[languageId])
                 start = sb["location"]["range"]["start"]
                 line = start["line"] + 1
                 character = start["character"] + 1
@@ -719,20 +723,23 @@ call fzf#run(fzf#wrap({{
             },
         }, cbs)
 
-    def handleTextDocumentReferencesResponse(self, locations: List, languageId: str) -> None:
+    def handleTextDocumentReferencesResponse(
+            self, locations: List, languageId: str) -> None:
         logger.error("Handling response")
         if self.selectionUI == "fzf":
             def setLocationsList():
                 source = []  # type: List[str]
                 for loc in locations:
-                    path = os.path.relpath(loc["uri"], self.rootUri[languageId])
+                    path = os.path.relpath(loc["uri"],
+                                           self.rootUri[languageId])
                     start = loc["range"]["start"]
                     line = start["line"] + 1
                     character = start["character"] + 1
-                    text = self.getFileLine(uriToPath(loc["uri"]), line).strip()
+                    text = self.getFileLine(uriToPath(loc["uri"]), line)
                     entry = "{}:{}:{}: {}".format(path, line, character, text)
                     source.append(entry)
-                self.fzf(source, "LanguageClient#FZFSinkTextDocumentReferences")
+                self.fzf(source,
+                         "LanguageClient#FZFSinkTextDocumentReferences")
             self.nvim.async_call(setLocationsList)
         elif self.selectionUI == "location-list":
             def setLocationsList():
@@ -1198,4 +1205,3 @@ call fzf#run(fzf#wrap({{
 
     def handleError(self, message) -> None:
         self.asyncEcho(json.dumps(message))
-
