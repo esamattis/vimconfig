@@ -75,9 +75,7 @@ func! cm#enable_for_buffer(...)
 
 	augroup cm
 		autocmd! * <buffer>
-		autocmd InsertEnter <buffer> call s:notify_core_channel('cm_insert_enter')
-		autocmd InsertLeave <buffer> call s:notify_core_channel('cm_insert_leave')
-		autocmd InsertEnter <buffer>  call s:change_tick_start()
+		autocmd InsertEnter <buffer> call s:notify_core_channel('cm_insert_enter') | call s:on_insert_enter()
 		autocmd InsertLeave <buffer> call s:change_tick_stop()
 		autocmd BufEnter    <buffer> let &completeopt=g:cm_completeopt
 		" working together with timer, the timer is for detecting changes
@@ -89,6 +87,7 @@ func! cm#enable_for_buffer(...)
 
     call s:start_core_channel()
 
+    call s:check_rtp()
 endfunc
 
 func! cm#disable_for_buffer()
@@ -270,7 +269,8 @@ let g:_cm_channel_id = -1
 let s:channel_started = 0
 let g:_cm_start_py_path = globpath(&rtp,'pythonx/cm_start.py',1)
 let s:snippets = []
-let s:complete_begin_timer = 0
+let s:complete_start_timer = 0
+let s:old_rtp = &rtp
 
 " global lock for being compatible with other plugins:
 " 1 - vim-multiple-cursors
@@ -463,7 +463,16 @@ func! s:should_skip()
     return !get(b:,'cm_enable',0)  || &paste!=0 || g:_cm_lock || mode() != 'i'
 endfunc
 
-func! s:change_tick_start()
+func! s:check_rtp()
+    if s:old_rtp != &rtp
+        let s:old_rtp = &rtp
+        call s:notify_core_channel('cm_detect_modules')
+    endif
+endfunc
+
+func! s:on_insert_enter()
+    call s:check_rtp()
+
 	if s:change_timer!=-1
 		return
 	endif
@@ -498,18 +507,18 @@ func! s:check_changes(...)
         if g:cm_complete_start_delay == 0
             call s:on_changed()
         else
-            if s:complete_begin_timer
-                call timer_stop(s:complete_begin_timer)
+            if s:complete_start_timer
+                call timer_stop(s:complete_start_timer)
             endif
-            let s:complete_begin_timer = timer_start(g:cm_complete_start_delay, function('s:on_changed'), {'repeat': 1})
+            let s:complete_start_timer = timer_start(g:cm_complete_start_delay, function('s:complete_start_timer_handler'), {'repeat': 1})
         endif
 	endif
 
 	call s:check_and_inject_snippet()
 endfunc
 
-func! s:complete_begin_timer_handler(...)
-    let s:complete_begin_timer = 0
+func! s:complete_start_timer_handler(...)
+    let s:complete_start_timer = 0
     call s:on_changed()
 endfunc
 
