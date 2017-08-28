@@ -9,6 +9,7 @@ Plug 'neomake/neomake' " alt https://github.com/w0rp/ale
 if has('nvim')
     " Works only with Neovim
     Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+    Plug 'Shougo/denite.nvim', { 'do': ':UpdateRemotePlugins' }
     Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
 
     " Breaks normal vim paste
