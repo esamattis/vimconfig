@@ -29,11 +29,17 @@ let g:neoformat_javascript_prettier = {
     \ 'stdin': 1,
     \ }
 
+let g:neoformat_typescript_prettier = {
+    \ 'exe': 'prettier-config',
+    \ 'args': ['--stdin'],
+    \ 'stdin': 1,
+    \ }
+
 let g:neoformat_enabled_javascript = ['prettier']
 
 let g:neoformat_enabled_json = ['jq']
 
-autocmd BufWritePre *.js exe ":call AutoFormat()"
+autocmd BufWritePre *.js,*.ts,*.tsx exe ":call AutoFormat()"
 
 let g:neoformat_enabled_php = ['phpcbf']
 autocmd BufWritePre *.php exe ":call AutoFormat()"
