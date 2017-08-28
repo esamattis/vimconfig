@@ -140,14 +140,14 @@ function! deoplete#init#_variables() abort
   " Note: HTML omni func use search().
   call deoplete#util#set_pattern(
         \ g:deoplete#_omni_patterns,
-        \ 'html,xhtml,xml', ['<', '<[^>]*\s[[:alnum:]-]*'])
+        \ 'html,xhtml,xml', ['<', '</', '<[^>]*\s[[:alnum:]-]*'])
 endfunction
 
 function! deoplete#init#_context(event, sources) abort
   let input = deoplete#util#get_input(a:event)
 
   let [filetype, filetypes, same_filetypes] =
-        \ deoplete#util#get_context_filetype(input)
+        \ deoplete#util#get_context_filetype(input, a:event)
 
   let sources = deoplete#util#convert2list(a:sources)
   if a:event !=# 'Manual' && empty(sources)
