@@ -10,13 +10,6 @@ if has('nvim')
     " Works only with Neovim
     Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
 
-    " Enable only when flow is in PATH otherwise it causes errors with Javascript
-    " files
-    call system('which flow')
-    if  v:shell_error == 0 || $PLUG_UPDATE == 1
-        Plug 'steelsojka/deoplete-flow'
-    endif
-
     " Breaks normal vim paste
     Plug 'bfredl/nvim-miniyank'
 endif
