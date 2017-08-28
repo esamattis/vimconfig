@@ -1,3 +1,5 @@
+" Just disable the default ctrlp mapping. Miniyank is mapped to it.
+let g:ctrlp_map = ''
 
 let s:mode = ""
 
@@ -27,9 +29,10 @@ function s:GitRepo()
     CtrlP
 endfunction
 
-nnoremap <leader>f :call <sid>FileDir()<CR>
-nnoremap <leader>t :call <sid>GitRepo()<CR>
-nnoremap <leader>m :CtrlPBuffer<CR>
 
-" Just disable the default ctrlp mapping. Miniyank is mapped to it.
-let g:ctrlp_map = ''
+if !has('nvim')
+    nnoremap <leader>f :call <sid>FileDir()<CR>
+    nnoremap <leader>t :call <sid>GitRepo()<CR>
+    nnoremap <leader>m :CtrlPBuffer<CR>
+endif
+
