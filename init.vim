@@ -284,3 +284,7 @@ command ToCamel normal f-xvgU
 "     )(Header)
 "
 command! Compose normal! yiw$%o<esc>pA = compose(<esc>o<esc>i)(<esc>pA)<esc>O
+
+" Load new .prettierc files with personal defaults
+autocmd BufNewFile .prettierrc setfiletype json | read $HOME/.config/nvim/defaults/.prettierrc
+
