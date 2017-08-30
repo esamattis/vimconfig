@@ -27,7 +27,7 @@ let g:neoformat_enabled_javascript = ['prettier']
 
 let g:neoformat_enabled_json = ['prettier', 'jq']
 
-autocmd BufWritePre *.js,*.ts,*.tsx,*.json exe ":call AutoFormat()"
+autocmd BufWritePre *.js,*.ts,*.tsx,*.json,.eslintrc,.babelrc,.prettierrc exe ":call AutoFormat()"
 
 let g:neoformat_enabled_php = ['phpcbf']
 autocmd BufWritePre *.php exe ":call AutoFormat()"
