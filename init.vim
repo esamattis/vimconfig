@@ -1,10 +1,4 @@
-" PLUG_UPDATE=1 nvim -c 'PlugClean | PlugUpdate'
 call plug#begin()
-if !has('nvim') || $PLUG_UPDATE == 1
-    Plug 'tpope/vim-sensible'
-endif
-Plug 'neomake/neomake' " alt https://github.com/w0rp/ale
-
 
 if has('nvim')
     " Works only with Neovim
@@ -16,6 +10,7 @@ if has('nvim')
     Plug 'bfredl/nvim-miniyank'
 endif
 
+Plug 'tpope/vim-sensible', { 'on': 'OldVim' }
 Plug 'Shougo/neosnippet.vim'
 Plug 'Shougo/neosnippet-snippets'
 Plug 'pangloss/vim-javascript'
@@ -28,6 +23,7 @@ Plug 'tpope/vim-fugitive'
 Plug 'vim-scripts/Rename'
 Plug 'jeetsukumaran/vim-buffersaurus'
 Plug 'tomtom/tcomment_vim'
+Plug 'neomake/neomake' " alt https://github.com/w0rp/ale
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'tpope/vim-repeat' " makes surround work with . (repeat)
 Plug 'tmux-plugins/vim-tmux-focus-events'
@@ -52,6 +48,10 @@ else
     let s:vim_home = $HOME . '/.vim'
 endif
 
+if !has("nvim")
+    silent! OldVim
+endif
+
 
 for plugin in keys(g:plugs)
     let s:plugin_config = s:vim_home . '/plugged.d/' . plugin . '.vim'
@@ -61,7 +61,7 @@ for plugin in keys(g:plugs)
 endfor
 
 
-if has('nvim')
+if has("nvim")
     set icm=split
 endif
 
