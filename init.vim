@@ -44,16 +44,17 @@ call plug#end()
 "" Leader mappings
 let mapleader = ","
 
+if has("win32")
+    let s:vim_home = $HOME . '/AppData/Local/nvim'
+elseif has('nvim')
+    let s:vim_home = $HOME . '/.config/nvim'
+else
+    let s:vim_home = $HOME . '/.vim'
+endif
+
 
 for plugin in keys(g:plugs)
-    if has("win32")
-        let s:plugin_config = $HOME . '/AppData/Local/nvim/plugged.d/' . plugin . '.vim'
-    elseif has('nvim')
-        let s:plugin_config = $HOME . '/.config/nvim/plugged.d/' . plugin . '.vim'
-    else
-        let s:plugin_config = $HOME . '/.vim/plugged.d/' . plugin . '.vim'
-    endif
-
+    let s:plugin_config = s:vim_home . '/plugged.d/' . plugin . '.vim'
     if filereadable(s:plugin_config)
         execute 'source ' . s:plugin_config
     endif
@@ -287,4 +288,8 @@ command! Compose normal! yiw$%o<esc>pA = compose(<esc>o<esc>i)(<esc>pA)<esc>O
 
 " Load new .prettierc files with personal defaults
 autocmd BufNewFile .prettierrc setfiletype json | read $HOME/.config/nvim/defaults/.prettierrc
+
+if filereadable(s:vim_home . "/local.vim")
+    execute 'source ' . s:vim_home . "/local.vim"
+endif
 

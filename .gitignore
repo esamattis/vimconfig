@@ -1,3 +1,4 @@
 .netrwhist
 *.pyc
 plugged/deoplete-flow/rplugin/python3/deoplete/sources/__pycache__
+/local.vim
