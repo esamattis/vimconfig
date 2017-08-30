@@ -261,7 +261,7 @@ au FocusGained,BufEnter * :silent! !
 " Assume json file type for these files
 augroup json
     au!
-    au BufNewFile,BufRead .eslintrc,.babelrc setlocal filetype=json
+    au BufNewFile,BufRead .eslintrc,.babelrc,.prettierrc setlocal filetype=json
 augroup END
 
 
