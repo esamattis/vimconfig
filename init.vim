@@ -61,6 +61,11 @@ endfor
 
 
 if has('nvim')
+    set icm=split
+endif
+
+
+if has('nvim')
     " Legacy 'easy paste' helper
     map <C-i> :echo 'No need'<cr>
 else
