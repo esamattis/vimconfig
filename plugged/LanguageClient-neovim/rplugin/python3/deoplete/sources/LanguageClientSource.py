@@ -47,7 +47,7 @@ class Source(Base):
         self.__errors[contextid] = error
 
     def convertToDeopleteCandidate(self, item) -> Dict:
-        word = (item.get("textEdit", {}).get("newText") or
+        word = ((item.get("textEdit", {}) or {}).get("newText") or
                 item.get("insertText") or
                 item.get("label"))
         if item.get("insertTextFormat", 0) == 2:  # snippet

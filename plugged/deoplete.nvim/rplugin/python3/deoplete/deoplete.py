@@ -249,8 +249,8 @@ class Deoplete(logger.LoggingMixin):
                 # Set default menu and icase
                 candidate['icase'] = 1
                 if (source.mark != '' and
-                        candidate.get('menu', '').find(mark) != 0):
-                    candidate['menu'] = mark + candidate.get('menu', '')
+                        (candidate.get('menu', '') or '').find(mark) != 0):
+                    candidate['menu'] = mark + (candidate.get('menu', '') or '')
                 if source.filetypes:
                     candidate['dup'] = 1
 
