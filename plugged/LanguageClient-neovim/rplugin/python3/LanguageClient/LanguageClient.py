@@ -240,7 +240,6 @@ class LanguageClient:
             signTexthl = level["signTexthl"]
             cmd += ("| execute 'sign define LanguageClient{}"
                     " text={} texthl={}'").format(name, signText, signTexthl)
-        cmd += ("| execute 'sign define LanguageClientDummy'")
         self.asyncCommand(cmd)
 
     @neovim.function("LanguageClient_registerServerCommands")
@@ -827,6 +826,7 @@ call fzf#run(fzf#wrap({{
             return
         if uri not in self.textDocuments:
             self.textDocument_didOpen()
+            return
         newText = self.currentBufferText()
         text_doc = self.textDocuments[uri]
         if newText == text_doc.text:
