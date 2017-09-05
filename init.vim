@@ -276,6 +276,10 @@ command -nargs=1 Tab setlocal noexpandtab shiftwidth=<args> tabstop=<args> softt
 " Convert foo-bar to fooBar
 command ToCamel normal f-xvgU
 
+" Close other window splits
+command O only
+map <Leader>o :only<cr>
+
 " Adds
 "
 "     var Header = simple(View, {
