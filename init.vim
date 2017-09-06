@@ -5,6 +5,7 @@ if has('nvim')
     Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
     Plug 'Shougo/denite.nvim', { 'do': ':UpdateRemotePlugins' }
     Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
+    Plug 'mhartington/nvim-typescript', { 'do': ':UpdateRemotePlugins' }
 
     " Breaks normal vim paste
     Plug 'bfredl/nvim-miniyank'
