@@ -24,7 +24,7 @@ Plug 'tpope/vim-fugitive'
 Plug 'vim-scripts/Rename'
 Plug 'jeetsukumaran/vim-buffersaurus'
 Plug 'tomtom/tcomment_vim'
-Plug 'neomake/neomake' " alt https://github.com/w0rp/ale
+Plug 'w0rp/ale'
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'tpope/vim-repeat' " makes surround work with . (repeat)
 Plug 'tmux-plugins/vim-tmux-focus-events'
