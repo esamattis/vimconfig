@@ -4,7 +4,6 @@ set -x
 
 ln -s .vim/others/tmux.conf ~/.tmux.conf
 ln -s .vim/others/gitconfig ~/.gitconfig
-ln -s .vim/others/jshintrc ~/.jshintrc
 
 grep -xq 'source ~/.vim/others/bashrc' ~/.bash_profile || {
     echo 'source ~/.vim/others/bashrc' >> ~/.bash_profile

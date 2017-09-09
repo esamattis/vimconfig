@@ -1,7 +1,0 @@
-{
-    "undef":  true,
-    "unused": "vars",
-    "boss": true,
-    "node": true,
-    "browser": true
-}
