@@ -30,10 +30,6 @@ if [ -x "$(which apt-get)" ]; then
     install_if_missing vim-nox
     install_if_missing git
     install_if_missing tmux
-
-    if [ "$install_packages" != "" ]; then
-        sudo apt-get install -y $install_packages
-    fi
 fi
 
 
@@ -69,6 +65,13 @@ read -p "Neovim? y/n? [y]>" neovim
 [ "$neovim" = "" ] && neovim="y"
 
 
+read -p "Bash config? y/n? [y]>" dotfiles
+[ "$dotfiles" = "" ] && dotfiles="y"
+
+if [ "$install_packages" != "" ]; then
+    sudo apt-get install -y $install_packages
+fi
+
 backup $HOME/.vim
 backup $HOME/.vimrc
 
@@ -90,14 +93,17 @@ fi
 
 echo
 if [ "$use_subshell" = "y" ]; then
-    # Always install othrer dotfiles for subshells. Cannot conflict.
+    # Always install other dotfiles for subshells. Cannot conflict.
     $HOME/.vim/bin/dotfiles-install
     echo
     echo "Cool, Vim config installed to a subhell in $HOME/.vim"
     echo "Use $subshell_loc/login to activate the subshell and Vim config."
 else
-    echo "Cool, Vim config installed to $HOME/.vim"
-    echo "Install other dotfiles with ~/.vim/bin/dotfiles-install"
+    if [ "$dotfiles" = "y" ]; then
+        $HOME/.vim/bin/dotfiles-install
+    fi
 fi
+
+
 
 }
