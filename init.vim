@@ -54,6 +54,7 @@ if !has("nvim")
 endif
 
 
+" Load plugin specific custom config
 for plugin in keys(g:plugs)
     let s:plugin_config = s:vim_home . '/plugged.d/' . plugin . '.vim'
     if filereadable(s:plugin_config)
@@ -62,6 +63,7 @@ for plugin in keys(g:plugs)
 endfor
 
 
+" Use cool visual search&replace on neovim
 if has("nvim")
     set icm=split
 endif
