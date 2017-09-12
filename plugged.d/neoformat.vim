@@ -29,5 +29,9 @@ let g:neoformat_enabled_json = ['prettier', 'jq']
 
 autocmd BufWritePre *.js,*.ts,*.tsx,*.json,.eslintrc,.babelrc,.prettierrc exe ":call AutoFormat()"
 
-let g:neoformat_enabled_php = ['phpcbf']
-autocmd BufWritePre *.php exe ":call AutoFormat()"
+let g:neoformat_php_phpcbf = {
+            \ 'exe': 'sh',
+            \ 'args': ['-c', 'phpcbf || true'],
+            \ 'stdin': 1,
+            \ }
+
