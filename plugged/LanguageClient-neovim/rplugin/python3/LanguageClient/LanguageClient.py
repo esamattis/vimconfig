@@ -13,7 +13,9 @@ from .RPC import RPC
 from .Sign import Sign
 from .TextDocumentItem import TextDocumentItem
 from .logger import logger, logpath_server, setLoggingLevel
-from .state import state, update_state, execute_command, echo, echomsg, echo_ellipsis, make_serializable
+from .state import (
+    state, update_state, execute_command, echo, echomsg, echoerr,
+    echo_ellipsis, make_serializable, set_state)
 from .util import (
     get_rootPath, path_to_uri, uri_to_path, get_command_goto_file, get_command_update_signs,
     convert_vim_command_args_to_kwargs, apply_TextEdit, markedString_to_str,
@@ -61,7 +63,8 @@ def gather_args(keys: List, args: List = [], kwargs: Dict = {}) -> List:
         elif k == "buftype":
             res[k] = state["nvim"].current.buffer.options["buftype"]
         elif k == "uri":
-            res[k] = path_to_uri(state["nvim"].current.buffer.name)
+            filename = kwargs.get("filename") or state["nvim"].current.buffer.name
+            res[k] = path_to_uri(filename)
         elif k == "line":
             cursor = state["nvim"].current.window.cursor
             res[k] = cursor[0] - 1
@@ -111,7 +114,7 @@ def alive(languageId: str, warn: bool) -> bool:
         msg = "Failed to start language server. See {}.".format(logpath_server)
     if msg and warn:
         logger.warn(msg)
-        echomsg(msg)
+        echoerr(msg)
     return msg is None
 
 
@@ -259,9 +262,7 @@ def show_diagnostics(diagnostics_params):
         })
 
     cmd = get_command_update_signs(state["signs"], signs)
-    update_state({
-        "signs": signs,
-    })
+    set_state(["signs"], signs)
     execute_command(cmd)
 
     if state["diagnosticsList"] == "quickfix":
@@ -350,7 +351,7 @@ class LanguageClient:
                 return
             msg = "No language server command found for type: {}.".format(languageId)
             logger.error(msg)
-            echomsg(msg)
+            echoerr(msg)
             return
 
         logger.info("Begin LanguageClientStart")
@@ -369,7 +370,7 @@ class LanguageClient:
         except Exception as ex:
             msg = "Failed to start language server: " + ex.args[1]
             logger.exception(msg)
-            echomsg(msg)
+            echoerr(msg)
             return
 
         rpc = RPC(proc.stdout, proc.stdin, self.handle_request_and_notify)
@@ -467,11 +468,11 @@ class LanguageClient:
             logger.warn("register completion manager source failed. Error: " +
                         repr(ex))
 
-    @neovim.autocmd("BufReadPost", pattern="*")
-    def handle_BufReadPost(self):
+    @neovim.autocmd("BufReadPost", pattern="*", eval="{'languageId': &filetype, 'filename': expand('%:p')}")
+    def handle_BufReadPost(self, kwargs):
         logger.info("Begin handleBufReadPost")
 
-        languageId, uri = gather_args(["languageId", "uri"])
+        languageId, uri = gather_args(["languageId", "uri"], kwargs=kwargs)
         if not uri:
             return
         # Language server is running but file is not within rootUri.
@@ -483,16 +484,11 @@ class LanguageClient:
             return
 
         if alive(languageId, warn=False):
-            self.textDocument_didOpen(uri=uri)
+            self.textDocument_didOpen(uri=uri, languageId=languageId)
         elif state["autoStart"]:
             self.start(warn=False)
 
         logger.info("End handleBufReadPost")
-
-    @neovim.autocmd("VimEnter", pattern="*")
-    def handle_VimEnter(self):
-        # Fix the issue that BufReadPost is not triggered using `nvim file`.
-        self.handle_BufReadPost()
 
     @deco_args(warn=False)
     def textDocument_didOpen(self, uri: str, languageId: str) -> None:
@@ -592,7 +588,7 @@ class LanguageClient:
             msg = ("Handling multiple definitions is not implemented yet."
                    " Jumping to first.")
             logger.error(msg)
-            echomsg(msg)
+            echoerr(msg)
 
         if isinstance(result, list):
             if len(result) == 0:
@@ -693,7 +689,7 @@ class LanguageClient:
         else:
             msg = "No selection UI found. Consider install fzf or denite.vim."
             logger.warn(msg)
-            echomsg(msg)
+            echoerr(msg)
 
         logger.info("End textDocument/documentSymbol")
         return symbols
@@ -750,7 +746,7 @@ class LanguageClient:
         else:
             msg = "No selection UI found. Consider install fzf or denite.vim."
             logger.warn(msg)
-            echomsg(msg)
+            echoerr(msg)
 
         logger.info("End workspace/symbol")
         return symbols
@@ -823,9 +819,67 @@ class LanguageClient:
         else:
             msg = "No selection UI found. Consider install fzf or denite.vim."
             logger.warn(msg)
-            echomsg(msg)
+            echoerr(msg)
 
         logger.info("End textDocument/references")
+        return locations
+
+    @neovim.function("LanguageClient_rustDocument_implementations")
+    @deco_args()
+    def rustDocument_implementations(
+            self, uri: str, languageId: str, line: int, character: int,
+            handle=True) -> List:
+        logger.info("Begin rustDocument/implementations")
+
+        self.textDocument_didChange()
+
+        locations = state["rpcs"][languageId].call("rustDocument/implementations", {
+            "textDocument": {
+                "uri": uri,
+            },
+            "position": {
+                "line": line,
+                "character": character,
+            }
+        })
+
+        if locations is None or not handle:
+            return locations
+
+        if state["selectionUI"] == "fzf":
+            source = []  # type: List[str]
+            for loc in locations:
+                path = os.path.relpath(loc["uri"],
+                                       state["rootUris"][languageId])
+                start = loc["range"]["start"]
+                line = start["line"] + 1
+                character = start["character"] + 1
+                text = get_file_line(uri_to_path(loc["uri"]), line)
+                entry = "{}:{}:{}: {}".format(path, line, character, text)
+                source.append(entry)
+            fzf(source, "LanguageClient#FZFSinkTextDocumentReferences")
+        elif state["selectionUI"] == "location-list":
+            loclist = []
+            for loc in locations:
+                path = uri_to_path(loc["uri"])
+                start = loc["range"]["start"]
+                line = start["line"] + 1
+                character = start["character"] + 1
+                text = get_file_line(path, line)
+                loclist.append({
+                    "filename": path,
+                    "lnum": line,
+                    "col": character,
+                    "text": text
+                })
+            state["nvim"].funcs.setloclist(0, loclist)
+            echo("References populated to location list.")
+        else:
+            msg = "No selection UI found. Consider install fzf or denite.vim."
+            logger.warn(msg)
+            echoerr(msg)
+
+        logger.info("End rustDocument/implementations")
         return locations
 
     @neovim.function("LanguageClient_FZFSinkTextDocumentReferences")
@@ -880,8 +934,9 @@ class LanguageClient:
 
         doc.commit_change()
 
-    @neovim.autocmd("BufWritePost", pattern="*")
-    def handle_BufWritePost(self):
+    @neovim.autocmd("BufWritePost", pattern="*", eval="{'languageId': &filetype, 'filename': expand('%:p')}")
+    def handle_BufWritePost(self, kwargs):
+        uri, languageId = gather_args(["uri", "languageId"], kwargs=kwargs)
         self.textDocument_didSave()
 
     @deco_args(warn=False)
@@ -954,6 +1009,9 @@ class LanguageClient:
         result = self.textDocument_completion()
         logger.debug("result: %s", result)
 
+        if result is None:
+            return
+
         items = result
         isIncomplete = False
         if isinstance(result, dict):
@@ -1006,11 +1064,8 @@ class LanguageClient:
         for entry in diagnostics_params["diagnostics"]:
             line = entry["range"]["start"]["line"]
             line_diagnostics[line] = entry
-        update_state({
-            "line_diagnostics": {
-                uri: line_diagnostics,
-            }})
-        state["nvim"].async_call(show_diagnostics, diagnostics_params)
+        set_state(["line_diagnostics", uri], line_diagnostics)
+        show_diagnostics(diagnostics_params)
 
     @neovim.autocmd("CursorMoved", pattern="*", eval="[&buftype, line('.')]")
     def handle_CursorMoved(self, args: List) -> None:
@@ -1203,11 +1258,23 @@ class LanguageClient:
             4: "Log",
         }[params["type"]]
         msg = "[{}] {}".format(msgType, params["message"])  # noqa: F841
-        # echomsg(msg)
+        echomsg(msg)
 
     # Extension by JDT language server.
     def language_status(self, params: Dict) -> None:
         msg = "{} {}".format(params["type"], params["message"])
+        echomsg(msg)
+
+    def rustDocument_beginBuild(self, params: Dict) -> None:
+        msg = "rustDocument/beginBuild"
+        echomsg(msg)
+
+    def rustDocument_diagnosticsBegin(self, params: Dict) -> None:
+        msg = "rustDocument/diagnosticsBegin"
+        echomsg(msg)
+
+    def rustDocument_diagnosticsEnd(self, params: Dict) -> None:
+        msg = "rustDocument/diagnosticsEnd"
         echomsg(msg)
 
     def handle_request_and_notify(self, message: Dict) -> None:
