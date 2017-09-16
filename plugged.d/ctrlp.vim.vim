@@ -30,9 +30,7 @@ function s:GitRepo()
 endfunction
 
 
-if !has('nvim')
-    nnoremap <leader>f :call <sid>FileDir()<CR>
-    nnoremap <leader>t :call <sid>GitRepo()<CR>
-    nnoremap <leader>m :CtrlPBuffer<CR>
-endif
+nnoremap <leader>f :call <sid>FileDir()<CR>
+nnoremap <leader>t :call <sid>GitRepo()<CR>
+nnoremap <leader>m :CtrlPBuffer<CR>
 
