@@ -10,9 +10,8 @@ function! deoplete#handler#_init() abort
     autocmd InsertLeave * call s:on_insert_leave()
     autocmd CompleteDone * call s:on_complete_done()
     autocmd TextChangedI * call s:completion_begin('TextChangedI')
-    autocmd InsertEnter *
-          \ call s:completion_begin('InsertEnter') | call s:timer_begin()
-    autocmd InsertLeave * call s:timer_end()
+    autocmd InsertEnter * call s:completion_begin('InsertEnter')
+    autocmd InsertLeave * call s:completion_timer_stop()
   augroup END
 
   for event in ['BufNewFile', 'BufRead', 'BufWritePost', 'VimLeavePre']
@@ -22,15 +21,13 @@ function! deoplete#handler#_init() abort
   if g:deoplete#enable_refresh_always
     autocmd deoplete InsertCharPre * call s:completion_begin('InsertCharPre')
   endif
-
-  call s:timer_begin()
 endfunction
 
 function! s:do_complete(timer) abort
   let context = g:deoplete#_context
   if s:is_exiting()
         \ || (get(context, 'event', '') !=# 'InsertEnter' && mode() !=# 'i')
-    call s:timer_end()
+    call s:completion_timer_stop()
     return
   endif
 
@@ -66,20 +63,19 @@ function! s:do_complete(timer) abort
   endif
 endfunction
 
-function! s:timer_begin() abort
+function! deoplete#handler#_completion_timer_start() abort
   if exists('s:completion_timer')
-    return
+    call s:completion_timer_stop()
   endif
 
   let delay = max([50, g:deoplete#auto_complete_delay])
-  let s:completion_timer = timer_start(delay,
-            \ function('s:do_complete'), {'repeat': -1})
+  let s:completion_timer = timer_start(delay, function('s:do_complete'))
 
   let s:prev_completion = {
         \ 'complete_position': [], 'candidates': [], 'event': ''
         \ }
 endfunction
-function! s:timer_end() abort
+function! s:completion_timer_stop() abort
   if !exists('s:completion_timer')
     return
   endif
