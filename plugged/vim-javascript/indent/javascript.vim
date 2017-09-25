@@ -2,7 +2,7 @@
 " Language: Javascript
 " Maintainer: Chris Paul ( https://github.com/bounceme )
 " URL: https://github.com/pangloss/vim-javascript
-" Last Change: August 30, 2017
+" Last Change: September 18, 2017
 
 " Only load this indent file when no other was loaded.
 if exists('b:did_indent')
@@ -259,9 +259,9 @@ function s:DoWhile()
   endif
 endfunction
 
-" returns braceless levels started by 'i' and above lines * &sw. 'num' is the
-" lineNr which encloses the entire context, 'cont' if whether line 'i' + 1 is
-" a continued expression, which could have started in a braceless context
+" returns total offset from braceless contexts. 'num' is the lineNr which
+" encloses the entire context, 'cont' if whether a:firstline is a continued
+" expression, which could have started in a braceless context
 function s:IsContOne(num,cont)
   let [l:num, b_l] = [a:num + !a:num, 0]
   let pind = a:num ? indent(a:num) + s:sw() : 0
@@ -383,9 +383,9 @@ function GetJavascriptIndent()
   let [b:js_cache[0], num] = [v:lnum, b:js_cache[1]]
 
   let [num_ind, is_op, b_l, l:switch_offset] = [s:Nat(indent(num)),0,0,0]
-  if !b:js_cache[2] || s:LookingAt() == '{' && s:IsBlock()
+  if !num || s:LookingAt() == '{' && s:IsBlock()
     let ilnum = line('.')
-    if b:js_cache[2] && s:LookingAt() == ')' && s:GetPair('(',')','bW',s:skip_expr)
+    if num && s:LookingAt() == ')' && s:GetPair('(',')','bW',s:skip_expr)
       if ilnum == num
         let [num, num_ind] = [line('.'), indent('.')]
       endif
@@ -405,7 +405,7 @@ function GetJavascriptIndent()
         if s:Continues(l:lnum,pline)
           let is_op = s:sw()
         endif
-      elseif b:js_cache[2] && sol =~# '^\%(in\%(stanceof\)\=\|\*\)$'
+      elseif num && sol =~# '^\%(in\%(stanceof\)\=\|\*\)$'
         call call('cursor',b:js_cache[1:])
         if s:PreviousToken() =~ '\k' && s:Class()
           return num_ind + s:sw()
