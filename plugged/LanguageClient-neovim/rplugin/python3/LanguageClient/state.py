@@ -3,7 +3,7 @@ import json
 from typing import Dict, Any, List
 
 from .DiagnosticsDisplay import DiagnosticsDisplay
-from .logger import logger
+from .logger import logger, logpath_server
 from .util import escape
 
 state = {
@@ -13,11 +13,9 @@ state = {
     "handlers": {},  # Dict[int, PyGreenlet]. message id to greenlet.
     "capabilities": {},  # Dict[str, Dict]. language id to capabilities.
     "rootUris": {},  # Dict[str, str]. language id to rootUri.
-    "textDocuments": {},  # Dict[str, TextDocumentItem]. uri to TextDocumentItem.
-    "line_diagnostics": {},  # Dict[str, Dict[int, Dict]]. uri to line number to diagnostic message.
+
     "last_cursor_line": -1,
-    "highlight_source_id": None,
-    "signs": [],  # diagnostic signs
+    "codeActionCommands": [],  # List[Command]. Stashed codeAction commands.
 
     # Settings
     "serverCommands": {},  # Dict[str, List[str]]. language id to server command.
@@ -162,3 +160,16 @@ def echo_ellipsis(msg: str, columns: int) -> None:
         msg = msg[:columns - 15] + "..."
 
     echo(msg)
+
+
+def alive(languageId: str, warn: bool) -> bool:
+    """Check if language server for language id is alive."""
+    msg = None
+    if state["servers"].get(languageId) is None:
+        msg = "Language client is not running. Try :LanguageClientStart"
+    elif state["servers"][languageId].poll() is not None:
+        msg = "Failed to start language server. See {}.".format(logpath_server)
+    if msg and warn:
+        logger.warn(msg)
+        echoerr(msg)
+    return msg is None

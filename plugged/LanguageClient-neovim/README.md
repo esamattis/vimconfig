@@ -19,7 +19,8 @@ More recordings at [Updates, screenshots & GIFs](https://github.com/autozimu/Lan
 - [Goto definition.](https://github.com/autozimu/LanguageClient-neovim/issues/35#issuecomment-288731744)
 - Goto reference locations.
 - [Workspace/Document symbols query](https://github.com/autozimu/LanguageClient-neovim/issues/35#issuecomment-288731839).
-- [Formatting](https://github.com/autozimu/LanguageClient-neovim/issues/35#issuecomment-324497559)
+- [Formatting](https://github.com/autozimu/LanguageClient-neovim/issues/35#issuecomment-324497559).
+- [Code Action/Fix](https://github.com/autozimu/LanguageClient-neovim/issues/35#issuecomment-331016526).
 
 (Note: Most of the functionality are provided by language servers. Specific
 language servers may implement only a subset of the features, see
@@ -76,7 +77,7 @@ for Vundle and dein.vim plugin managers.
 
 # Language Servers
 
-Please see <http://langserver.org>.
+Please see <http://langserver.org> and/or <https://github.com/Microsoft/language-server-protocol/wiki/Protocol-Implementations>.
 
 # Documentation
 
