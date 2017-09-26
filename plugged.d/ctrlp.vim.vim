@@ -16,7 +16,7 @@ function s:FileDir()
     CtrlP
 endfunction
 
-function s:GitRepo()
+function s:GitRepo(root)
     let g:ctrlp_working_path_mode = 'r'
     " let g:ctrlp_user_command = 'find %s -type f'
     let g:ctrlp_user_command = ['.git', 'cd %s && git ls-files -co --exclude-standard']
@@ -26,11 +26,17 @@ function s:GitRepo()
     endif
 
     let s:mode = "project"
-    CtrlP
+
+    if a:root == 1
+        CtrlP
+    else
+        CtrlPCurWD
+    endif
 endfunction
 
 
 nnoremap <leader>f :call <sid>FileDir()<CR>
-nnoremap <leader>t :call <sid>GitRepo()<CR>
+nnoremap <leader>t :call <sid>GitRepo(0)<CR>
+nnoremap <leader>T :call <sid>GitRepo(1)<CR>
 nnoremap <leader>m :CtrlPBuffer<CR>
 

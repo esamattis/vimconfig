@@ -239,6 +239,7 @@ vnoremap _ :
 " and abbreviations
 abbreviate lenght length
 abbreviate lenghts lengths
+abbreviate heigth height
 
 " Open git diff window when editing a commit message
 autocmd FileType gitcommit DiffGitCached | wincmd p
