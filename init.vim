@@ -244,6 +244,8 @@ abbreviate heigth height
 " Open git diff window when editing a commit message
 autocmd FileType gitcommit DiffGitCached | wincmd p
 
+" allow the . to execute once for each line of a visual selection
+vnoremap . :normal .<CR>
 
 " Vim’s defaults are awful messy, leaving .swp files everywhere if the editor
 " isn’t closed properly. This can save you a lot of time.
