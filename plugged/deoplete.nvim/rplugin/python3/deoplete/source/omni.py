@@ -7,8 +7,7 @@
 import re
 from .base import Base
 from deoplete.util import (
-    get_buffer_config, error, error_vim, convert2list,
-    set_pattern, convert2candidates)
+    get_buffer_config, convert2list, set_pattern, convert2candidates)
 
 
 class Source(Base):
@@ -47,8 +46,7 @@ class Source(Base):
             if omnifunc == '' and (filetype == current_ft or
                                    filetype in ['css', 'javascript']):
                 omnifunc = context['omni__omnifunc']
-            if omnifunc == '' or not self.vim.call(
-                    'deoplete#util#exists_omnifunc', omnifunc):
+            if omnifunc == '':
                 continue
             self.__omnifunc = omnifunc
             for input_pattern in convert2list(
@@ -69,19 +67,16 @@ class Source(Base):
                         'htmlcomplete#CompleteTags',
                         'phpcomplete#CompletePHP']:
                     # In the blacklist
-                    error(self.vim,
-                          'omni source does not support: ' +
-                          self.__omnifunc)
-                    error(self.vim,
-                          'You must use g:deoplete#omni_patterns' +
-                          ' instead.')
+                    self.print_error('omni source does not support: ' +
+                                     self.__omnifunc)
+                    self.print_error('You must use g:deoplete#omni_patterns' +
+                                     ' instead.')
                     return -1
                 try:
                     complete_pos = self.vim.call(self.__omnifunc, 1, '')
                 except:
-                    error_vim(self.vim,
-                              'Error occurred calling omnifunction: ' +
-                              self.__omnifunc)
+                    self.print_error('Error occurred calling omnifunction: ' +
+                                     self.__omnifunc)
                     return -1
                 return complete_pos
         return -1
@@ -94,9 +89,8 @@ class Source(Base):
             elif candidates is int:
                 candidates = []
         except:
-            error_vim(self.vim,
-                      'Error occurred calling omnifunction: ' +
-                      self.__omnifunc)
+            self.print_error('Error occurred calling omnifunction: ' +
+                             self.__omnifunc)
             candidates = []
 
         candidates = convert2candidates(candidates)
