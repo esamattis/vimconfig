@@ -36,6 +36,8 @@ def convert_to_deoplete_candidate(item: Dict) -> Dict:
         cand["info"] = item["documentation"]
     if item.get("detail") is not None:
         cand["menu"] = item["detail"]
+    if item.get("additionalTextEdits") is not None:
+        cand["additionalTextEdits"] = item["additionalTextEdits"]
     return cand
 
 
@@ -53,8 +55,7 @@ class Source(Base):
         logger.info("deoplete LanguageClientSource initialized.")
 
     def get_complete_position(self, context):
-        m = re.search('(?:' + context['keyword_patterns'] + ')*$',
-                      context['input'])
+        m = re.search('\w*$', context['input'])
         return m.start() if m else -1
 
     def gather_candidates(self, context):

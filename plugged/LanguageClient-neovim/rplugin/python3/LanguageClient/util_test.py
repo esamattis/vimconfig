@@ -49,17 +49,41 @@ def test_getGotoFileCommand():
 
 def test_getCommandDeleteSign():
     sign = Sign(1, "Error", 1)
-    assert get_command_delete_sign(sign) == " | execute('sign unplace 1')"
+    assert get_command_delete_sign(sign) == " | execute('sign unplace 75000 buffer=1')"
+
+    sign = Sign(1, "Hint", 2)
+    assert get_command_delete_sign(sign) == " | execute('sign unplace 75001 buffer=2')"
+
+    sign = Sign(1, "Information", 3)
+    assert get_command_delete_sign(sign) == " | execute('sign unplace 75002 buffer=3')"
+
+    sign = Sign(1, "Warning", 4)
+    assert get_command_delete_sign(sign) == " | execute('sign unplace 75003 buffer=4')"
 
 
 def test_getCommandAddSign():
-    sign = Sign(1, "Error", 1)
+    sign = Sign(7, "Error", 4)
     assert (get_command_add_sign(sign) ==
-            " | execute('sign place 1 line=1"
-            " name=LanguageClientError buffer=1')")
+            " | execute('sign place 75024 line=7"
+            " name=LanguageClientError buffer=4')")
+
+    sign = Sign(7, "Hint", 3)
+    assert (get_command_add_sign(sign) ==
+            " | execute('sign place 75025 line=7"
+            " name=LanguageClientHint buffer=3')")
+
+    sign = Sign(7, "Information", 2)
+    assert (get_command_add_sign(sign) ==
+            " | execute('sign place 75026 line=7"
+            " name=LanguageClientInformation buffer=2')")
+
+    sign = Sign(7, "Warning", 1)
+    assert (get_command_add_sign(sign) ==
+            " | execute('sign place 75027 line=7"
+            " name=LanguageClientWarning buffer=1')")
 
 
-def test_getCommandUpdateSigns():
+def test_getCommandUpdateSigns_unique():
     signs = [
         Sign(1, "Error", 1),
         Sign(3, "Error", 1),
@@ -70,8 +94,32 @@ def test_getCommandUpdateSigns():
         Sign(3, "Error", 1),
     ]
     assert (get_command_update_signs(signs, nextSigns) ==
-            "echo | execute('sign place 2 line=2"
+            "echo | execute('sign place 75004 line=2"
             " name=LanguageClientError buffer=1')")
+
+
+def test_getCommandUpdateSigns_withDuplicates():
+    signs = [
+        Sign(1, "Error", 1),
+        Sign(3, "Error", 1),
+        Sign(3, "Error", 1),
+        Sign(4, "Error", 1),
+        Sign(4, "Error", 1),
+    ]
+
+    nextSigns = [
+        Sign(1, "Error", 1),
+        Sign(1, "Error", 1),  # A duplicate value (1) has been added
+        Sign(2, "Error", 1),  # A unique value (2) has been added
+                              # A unique value (3) has been removed
+        Sign(4, "Error", 1),  # A duplicate value (4) has been removed
+    ]
+
+    cmd = get_command_update_signs(signs, nextSigns)
+    assert "execute('sign place 75000 line=1 name=LanguageClientError buffer=1')" not in cmd
+    assert "execute('sign place 75004 line=2 name=LanguageClientError buffer=1')" in cmd
+    assert "execute('sign unplace 75008 buffer=1')" in cmd
+    assert "execute('sign unplace 75012 buffer=1')" not in cmd
 
 
 def test_convertVimCommandArgsToKwargs():
