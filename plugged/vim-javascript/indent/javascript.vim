@@ -113,13 +113,13 @@ function s:SkipFunc()
     let s:check_in = 0
   elseif getline('.') =~ '\%<'.col('.').'c\/.\{-}\/\|\%>'.col('.').'c[''"]\|\\$'
     if eval(s:skip_expr)
-      let s:looksyn = a:firstline
       return 1
     endif
   elseif search('\m`\|\${\|\*\/','nW'.s:z,s:looksyn) && eval(s:skip_expr)
     let s:check_in = 1
     return 1
   endif
+  let s:synid_cache[:] += [[line2byte('.') + col('.') - 1], ['']]
   let [s:looksyn, s:top_col] = getpos('.')[1:2]
 endfunction
 
@@ -183,23 +183,30 @@ function s:SearchLoop(pat,flags,expr)
 endfunction
 
 function s:ExprCol()
+  if getline('.')[col('.')-2] == ':'
+    return 1
+  endif
   let bal = 0
-  while s:SearchLoop('[{}?]\|\_[^:]\zs::\@!','bW',s:skip_expr)
+  while s:SearchLoop('[{}?:]','bW',s:skip_expr)
     if s:LookingAt() == ':'
+      if getline('.')[col('.')-2] == ':'
+        call cursor(0,col('.')-1)
+        continue
+      endif
       let bal -= 1
     elseif s:LookingAt() == '?'
-      let bal += 1
-      if bal == 1
-        break
+      if getline('.')[col('.'):col('.')+1] =~ '^\.\d\@!'
+        continue
+      elseif !bal
+        return 1
       endif
+      let bal += 1
     elseif s:LookingAt() == '{'
-      let bal = !s:IsBlock()
-      break
+      return !s:IsBlock()
     elseif !s:GetPair('{','}','bW',s:skip_expr)
       break
     endif
   endwhile
-  return s:Nat(bal)
 endfunction
 
 " configurable regexes that define continuation lines, not including (, {, or [.
@@ -282,14 +289,9 @@ function s:IsContOne(num,cont)
   return b_l
 endfunction
 
-function s:Class()
-  return (s:Token() ==# 'class' || s:PreviousToken() =~# '^class$\|^extends$') &&
-        \ s:PreviousToken() != '.'
-endfunction
-
 function s:IsSwitch()
-  return s:PreviousToken() !~ '[.*]' &&
-        \ (!s:GetPair('{','}','cbW',s:skip_expr) || s:IsBlock() && !s:Class())
+  call call('cursor',b:js_cache[1:])
+  return search('\m\C\%#.\_s*\%(\%(\/\/.*\_$\|\/\*\_.\{-}\*\/\)\@>\_s*\)*\%(case\|default\)\>','nWc'.s:z)
 endfunction
 
 " https://github.com/sweet-js/sweet.js/wiki/design#give-lookbehind-to-the-reader
@@ -406,8 +408,11 @@ function GetJavascriptIndent()
           let is_op = s:sw()
         endif
       elseif num && sol =~# '^\%(in\%(stanceof\)\=\|\*\)$'
-        call call('cursor',b:js_cache[1:])
-        if s:PreviousToken() =~ '\k' && s:Class()
+        call cursor(l:lnum, len(pline))
+        if s:LookingAt() == '}' && s:GetPair('{','}','bW',s:skip_expr) &&
+              \ s:PreviousToken() == ')' && s:GetPair('(',')','bW',s:skip_expr) &&
+              \ (s:PreviousToken() == ']' || s:Token() =~ '\k' &&
+              \ s:{s:PreviousToken() == '*' ? 'Previous' : ''}Token() !=# 'function')
           return num_ind + s:sw()
         endif
         let is_op = s:sw()
