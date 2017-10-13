@@ -247,6 +247,9 @@ autocmd FileType gitcommit DiffGitCached | wincmd p
 " allow the repeat command (.) to execute once for each line of a visual selection
 vnoremap . :normal .<CR>
 
+" Allow visual block selection go beyond end of lines
+set virtualedit=block
+
 " Vim’s defaults are awful messy, leaving .swp files everywhere if the editor
 " isn’t closed properly. This can save you a lot of time.
 set nobackup
