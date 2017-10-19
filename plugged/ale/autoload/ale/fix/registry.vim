@@ -57,6 +57,11 @@ let s:default_registry = {
 \       'suggested_filetypes': [],
 \       'description': 'Remove all blank lines at the end of a file.',
 \   },
+\   'trim_whitespace': {
+\       'function': 'ale#fixers#generic#TrimWhitespace',
+\       'suggested_filetypes': [],
+\       'description': 'Remove all trailing whitespace characters at the end of every line.',
+\   },
 \   'yapf': {
 \       'function': 'ale#fixers#yapf#Fix',
 \       'suggested_filetypes': ['python'],
@@ -96,6 +101,11 @@ let s:default_registry = {
 \       'function': 'ale#fixers#gofmt#Fix',
 \       'suggested_filetypes': ['go'],
 \       'description': 'Fix Go files with go fmt.',
+\   },
+\   'tslint': {
+\       'function': 'ale#fixers#tslint#Fix',
+\       'suggested_filetypes': ['typescript'],
+\       'description': 'Fix typescript files with tslint --fix.',
 \   },
 \}
 
