@@ -10,25 +10,6 @@ from client import Client
 import utils
 RELOAD_INTERVAL = 1
 
-"""
-These default args are arbitrary
-They could be anything, but this
-is better than nothing. Feel free
-to change to fit your needs
-"""
-defaultArgs = {
-    "compilerOptions": {
-        "target": "es2017",
-        "module": "es6",
-        "jsx": "preserve",
-        "allowSyntheticDefaultImports": "true",
-        "allowNonTsExtensions": "true",
-        "allowJs": "true",
-        "lib": ["dom", "es2015"]
-    }
-}
-
-
 @neovim.plugin
 class TypescriptHost(object):
 
@@ -70,24 +51,6 @@ class TypescriptHost(object):
         except:
             pass
         os.unlink(tmpfile.name)
-
-    def writeFile(self):
-        jsSupport = self.vim.eval('g:nvim_typescript#javascript_support')
-        if bool(jsSupport):
-            input = self.vim.call(
-                'input', 'nvim-ts: config is not present, create one [yes|no]? ')
-            if input == "yes":
-                with open('jsconfig.json', 'w') as config:
-                    json.dump(defaultArgs, config, indent=2,
-                              separators=(',', ': '))
-                    config.close()
-                    self.vim.command('redraws')
-                    self.vim.out_write(
-                        'nvim-ts: js support was enable, but no config is present, writting defualt jsconfig.json \n')
-                    self.tsstart()
-            else:
-                self.vim.command('redraws')
-                self.printError('Server not started')
 
     @neovim.command("TSStop")
     def tsstop(self):
@@ -315,6 +278,29 @@ class TypescriptHost(object):
         else:
             self.printError('Server is not Running')
 
+    @neovim.function("TSGetErrFunc")
+    def getErrFunc(self, args):
+        getErrRes = self._client.getErr([self.relative_file()])
+        if not getErrRes:
+            pass
+        else:
+            filename = getErrRes['file']
+            errorList = getErrRes['diagnostics']
+            if len(errorList) > 0:
+                errorLoc = list(map(lambda error: {
+                    'type': error['category'][0].title(),
+                    'filename': re.sub(self.cwd + '/', '', filename),
+                    'lnum': error['start']['line'],
+                    'col': error['start']['offset'],
+                    'text': error['text'],
+                    'length': error['end']['offset'] - error['start']['offset']
+                }, errorList))
+
+        if args is None:
+            return errorLoc
+        else:
+            self.vim.call('neomake#process_remote_maker', errorLoc, args[0])
+
     @neovim.command("TSRename", nargs="*")
     def tsrename(self, args=""):
         """
@@ -339,19 +325,16 @@ class TypescriptHost(object):
                 changeCount = 0
                 for loc in locs:
                     defFile = loc['file']
-
-                    self.vim.command('e ' + defFile)
-
+                    # self.vim.command('e ' + defFile)
                     for rename in loc['locs']:
                         line = rename['start']['line']
                         col = rename['start']['offset']
                         self.vim.command(
                             'cal cursor({}, {})'.format(line, col))
                         self.vim.command('normal cw{}'.format(newName))
-                        self.vim.command('write')
+                        # self.vim.command('write')
                         changeCount += 1
-
-                self.vim.command('e ' + file)
+                # self.vim.command('e ' + file)
                 self.vim.command(
                     'cal cursor({}, {})'.format(originalLine, offset))
                 self.vim.out_write(
@@ -362,36 +345,46 @@ class TypescriptHost(object):
     @neovim.command("TSImport")
     def tsimport(self):
         symbol = self.vim.call('expand', '<cword>')
-        currentlyImportedItems, lastImportLine = utils.getCurrentImports(
-            self._client, self.relative_file())
+        currentlyImportedItems, lastImportLine = utils.getCurrentImports(self._client, self.relative_file())
+
         if symbol in currentlyImportedItems:
             self.vim.out_write("nvim-ts: %s is already imported\n" % symbol)
             return
 
-        results = utils.getImportCandidates(
-            self._client, self.relative_file(), symbol)
+        results = utils.getImportCandidates(self._client, self.relative_file(), symbol)
+
+        # No imports
         if len(results) == 0:
-            self.vim.out_write('nvim-ts: No import candidates were found.\n')
+            self.printMsg('No import candidates were found.')
             return
 
+        # Only one
         if len(results) == 1:
-            importBlock = utils.createImportBlock(symbol,
-                                                  utils.getRelativeImportPath(
-                                                      self.relative_file(), results[0]),
-                                                  self.vim.vars[
-                                                      "nvim_typescript#tsimport#template"]
-                                                  )
+            importBlock = utils.createImportBlock(symbol, utils.getRelativeImportPath(
+                self.relative_file(), results[0]), self.vim.vars["nvim_typescript#tsimport#template"])
+
+        # More than one, need to choose
         else:
             candidates = "\n".join(["[%s]: %s" % (ix, result)
                                     for ix, result in enumerate(results)])
             input = self.vim.call(
-                'input', 'nvim-ts: More than 1 candidate found, Select from the following options:\n%s\n please choose one: ' % candidates, '',)
-            importBlock = utils.createImportBlock(symbol,
-                                                  utils.getRelativeImportPath(
-                                                      self.relative_file(), results[int(input)]),
-                                                  self.vim.vars[
-                                                      "nvim_typescript#tsimport#template"]
-                                                  )
+                'input', 'nvim-ts: More than 1 candidate found, Select from the following options:\n%s\nplease choose one: ' % candidates, '',)
+
+            self.log(int(input))
+            # Input has been canceled
+            if not input:
+                self.printError('Import canceled')
+                return
+
+            # Input is out of range
+            if int(input) > (len(results)-1):
+                self.printError('Selection not valid')
+                return
+
+            # Value input is present
+            else:
+                importBlock = utils.createImportBlock(symbol, utils.getRelativeImportPath(
+                    self.relative_file(), results[int(input)]), self.vim.vars["nvim_typescript#tsimport#template"])
 
         self.vim.current.buffer.append(importBlock, lastImportLine)
 
@@ -455,6 +448,18 @@ class TypescriptHost(object):
                                 }, symbolList))
         else:
             self.printError('Server is not running')
+
+    @neovim.command("TSExtractFunction", range='')
+    def extractFunction(self, range):
+        # requestData = {
+        #             'file': self.relative_file(),
+        #             'startLine': range[0],
+        #             'startOffset': self.vim.eval('col({})'.range[0]),
+        #             'endLine': range[1],
+        #             'endOffset':
+        #         }
+        # range = [2,6]
+        pass
 
     @neovim.command("TSSig")
     def tssig(self):
@@ -542,35 +547,49 @@ class TypescriptHost(object):
 
     @neovim.function('TSComplete', sync=True)
     def tsomnifunc(self, args):
-        line_str = self.vim.current.line
-        line, offset = self.vim.current.window.cursor
+
+        line = self.vim.eval("line('.')")
+        col = self.vim.eval("col('.')")
+
         if args[0]:
-            while offset > 0 and re.match('[\w\d]', line_str[offset - 1]):
-                offset -= 1
-            return offset
+            line_str = self.vim.current.line
+            m = re.search(r"\w*$", line_str)
+            return m.start() if m else -1
+
         else:
+
+            prefix = args[1]
+            file = self.relative_file()
+
             if self._client.server_handle is not None:
+
                 if time() - self._last_input_reload > RELOAD_INTERVAL or re.search(r"\w*\.", args[1]):
                     self._last_input_reload = time()
                     self.reload()
-                data = self._client.completions(
-                    self.relative_file(), line, offset + 1, args[1])
+
+                data = self._client.completions(file, line, col, prefix)
+                self.log(data)
                 if len(data) == 0:
                     return []
+
                 if len(data) > self.vim.vars["nvim_typescript#max_completion_detail"]:
                     filtered = []
                     for entry in data:
                         if entry["kind"] != "warning":
                             filtered.append(entry)
-                    return [utils.convert_completion_data(e, self.vim) for e in filtered]
+                        return [utils.convert_completion_data(e, self.vim) for e in filtered]
+
                 names = []
                 for entry in data:
                     if (entry["kind"] != "warning"):
                         names.append(entry["name"])
+
                 detailed_data = self._client.completion_entry_details(
-                    self.relative_file(), line, offset + 1, names)
+                    file, line, col, names)
+
                 if len(detailed_data) == 0:
                     return []
+
                 return [utils.convert_detailed_completion_data(e, self.vim, isDeoplete=False) for e in detailed_data]
 
     @neovim.function('TSGetServerPath', sync=True)
@@ -596,6 +615,71 @@ class TypescriptHost(object):
        On save, reload to detect changes
         """
         self.reload()
+
+    @neovim.function('TSCmRefresh', sync=False)
+    def on_cm_refresh(self, args):
+        info = args[0]
+        ctx = args[1]
+
+        lnum = ctx['lnum']
+        col = ctx['col']
+        base = ctx['base']
+        startcol = ctx['startcol']
+
+        # recheck
+        if self.vim.call('cm#context_changed', ctx):
+            return
+
+        max_detail = self.vim.vars["nvim_typescript#max_completion_detail"]
+
+        self.reload()
+
+        data = self._client.completions(
+            file=self.relative_file(),
+            line=lnum,
+            offset=col,
+            prefix=base
+        )
+
+        if len(data) == 0:
+            return []
+
+        matches = []
+        if len(data) > max_detail:
+            filtered = []
+            for entry in data:
+                if entry["kind"] != "warning":
+                    filtered.append(entry)
+            matches = [
+                    utils.convert_completion_data(e, self.vim)
+                    for e in filtered]
+            self.vim.call('cm#complete', info, ctx, startcol, matches)
+            return
+
+        names = []
+        maxNameLength = 0
+
+        for entry in data:
+            if entry["kind"] != "warning":
+                names.append(entry["name"])
+                maxNameLength = max(maxNameLength, len(entry["name"]))
+
+        detailed_data = self._client.completion_entry_details(
+            file=self.relative_file(),
+            line=lnum,
+            offset=col,
+            entry_names=names
+        )
+
+        if len(detailed_data) == 0:
+            return
+
+        matches = [
+                utils.convert_detailed_completion_data(e,
+                                                       self.vim,
+                                                       isDeoplete=True)
+                for e in detailed_data]
+        self.vim.call('cm#complete', info, ctx, startcol, matches)
 
     def printError(self, message):
         self.vim.err_write('nvim-ts: {0}\n'.format(message))
