@@ -35,8 +35,9 @@ function s:GitRepo(root)
 endfunction
 
 
+" nnoremap <leader>t :call <sid>GitRepo(0)<CR>
+" nnoremap <leader>T :call <sid>GitRepo(1)<CR>
+
 nnoremap <leader>f :call <sid>FileDir()<CR>
-nnoremap <leader>t :call <sid>GitRepo(0)<CR>
-nnoremap <leader>T :call <sid>GitRepo(1)<CR>
 nnoremap <leader>m :CtrlPBuffer<CR>
 
