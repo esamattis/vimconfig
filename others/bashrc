@@ -29,6 +29,9 @@ export HISTFILESIZE=100000
 # tmux
 source $HOME/.vim/others/bash_completion_tmux.sh
 
+source $HOME/.vim/others/fzf.sh
+
+
 alias node_modules_to_path='export PATH="$(pwd)/node_modules/.bin":$PATH'
 
 if [ -d ~/.local/bin ] ; then
