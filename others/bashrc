@@ -15,6 +15,9 @@ bind "set show-all-if-ambiguous on"
 # Ignore from history
 export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history"
 
+# Do not save duplicates to bash history
+export HISTCONTROL=ignoreboth:erasedups
+
 # Useful timestamp format
 export HISTTIMEFORMAT='%F %T '
 
