@@ -34,7 +34,7 @@
   # Sorted tag list
   stag = for-each-ref --sort='*authordate' --format='%(refname:short)' refs/tags
   rh = reset HEAD
-  rebase-auto = rebase -i --autosquash --autostash
+  auto-rebase = rebase -i --autosquash --autostash
   fixup = commit --fixup=HEAD
   # "git stash pop" but without merging. Just force overrides workind directory files
   stash-pop-force = !git read-tree stash && git checkout-index -f && git reset HEAD && git stash drop
