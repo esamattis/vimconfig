@@ -157,6 +157,13 @@ noremap <Leader>w :w<CR>
 " http://stackoverflow.com/a/4468491/153718
 noremap <Leader>d :bp\|bd #<CR>
 
+
+" Close windows
+noremap <Leader>q :q<CR>
+vnoremap <Leader>q <esc>:q<CR>
+inoremap <Leader>q <esc>:q<CR>
+
+
 " Make Y behave like other capitals. Yank to end of line.
 map Y y$
 
