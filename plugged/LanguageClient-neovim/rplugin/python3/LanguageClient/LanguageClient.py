@@ -97,7 +97,9 @@ def gather_args(keys: List, args: List = [], kwargs: Dict = {}) -> List:
         else:
             logger.warn("Unknown parameter key: " + k)
 
-    return [res[k] for k in keys]
+    result = [res[k] for k in keys]
+    logger.debug("Gathered arguments: {} = {}".format(keys, result))
+    return result
 
 
 def get_selectionUI() -> str:
@@ -302,6 +304,9 @@ class LanguageClient:
     def getState_vim(self, args: List) -> str:
         """
         Return state object. Skip unserializable parts.
+
+        Note: this function serves only cases that state is needed from
+        vimscript. For uses inside python, import state directly.
         """
         state_copy = make_serializable(state)
         return json.dumps(state_copy)
@@ -460,11 +465,11 @@ class LanguageClient:
                         repr(ex))
 
     @neovim.autocmd("BufReadPost", pattern="*",
-                    eval="{'languageId': &filetype, 'filename': expand('%:p')}")
-    def handle_BufReadPost(self, kwargs):
+                    eval="[{'languageId': &filetype, 'filename': expand('%:p')}]")
+    def handle_BufReadPost(self, args: List) -> None:
         logger.info("Begin handleBufReadPost")
 
-        languageId, uri = gather_args(["languageId", "uri"], kwargs=kwargs)
+        languageId, uri = gather_args(["languageId", "uri"], args=args)
         if not uri:
             return
         # Language server is running but file is not within rootUri.
@@ -898,9 +903,9 @@ class LanguageClient:
         execute_command(cmd)
 
     @neovim.autocmd("TextChanged", pattern="*",
-                    eval="{'filename': expand('%:p'), 'buftype': &buftype}")
-    def handle_TextChanged(self, kwargs) -> None:
-        uri, buftype = gather_args(["uri", "buftype"], kwargs=kwargs)
+                    eval="[{'filename': expand('%:p'), 'buftype': &buftype}]")
+    def handle_TextChanged(self, args: List) -> None:
+        uri, buftype = gather_args(["uri", "buftype"], args=args)
         if buftype != "" or state.get(uri, {}).get("textDocument") is None:
             return
         text_doc = state[uri]["textDocument"]
@@ -909,10 +914,11 @@ class LanguageClient:
         self.textDocument_didChange()
 
     @neovim.autocmd("TextChangedI", pattern="*",
-                    eval="{'filename': expand('%:p'), 'buftype': &buftype}")
-    def handle_TextChangedI(self, kwargs):
-        self.handle_TextChanged(kwargs)
+                    eval="[{'filename': expand('%:p'), 'buftype': &buftype}]")
+    def handle_TextChangedI(self, args: List) -> None:
+        self.handle_TextChanged(args)
 
+    @neovim.function("textDocument_didChange")
     @deco_args(warn=False)
     def textDocument_didChange(self, uri: str, languageId: str) -> None:
         if not uri or languageId not in state["serverCommands"]:
@@ -940,11 +946,12 @@ class LanguageClient:
         doc.commit_change()
 
     @neovim.autocmd("BufWritePost", pattern="*",
-                    eval="{'languageId': &filetype, 'filename': expand('%:p')}")
-    def handle_BufWritePost(self, kwargs):
-        uri, languageId = gather_args(["uri", "languageId"], kwargs=kwargs)
+                    eval="[{'languageId': &filetype, 'filename': expand('%:p')}]")
+    def handle_BufWritePost(self, args: List) -> None:
+        uri, languageId = gather_args(["uri", "languageId"], args=args)
         self.textDocument_didSave()
 
+    @neovim.function("textDocument_didSave")
     @deco_args(warn=False)
     def textDocument_didSave(self, uri: str, languageId: str) -> None:
         if languageId not in state["serverCommands"]:
@@ -958,7 +965,7 @@ class LanguageClient:
             }
         })
 
-    @neovim.function("LanguageClient_textDocument_completion")
+    @neovim.function("LanguageClient_textDocument_completion", sync=True)
     @deco_args(warn=False)
     def textDocument_completion(
             self, uri: str, languageId: str, line: int, character: int) -> Union[List, Dict]:
@@ -1028,10 +1035,10 @@ class LanguageClient:
         for item in items:
             match = convert_lsp_completion_item_to_vim_style(item)
 
-            # snippet & textEdit support
-            match['textEdits'] = []
             if item.get('additionalTextEdits', None):
-                match['textEdits'] = item['additionalTextEdits']
+                match['additionalTextEdits'] = item['additionalTextEdits']
+            if item.get('textEdit'):
+                match['textEdit'] = item['textEdit']
 
             insertText = item.get('insertText', "") or ""
             label = item['label']
@@ -1047,8 +1054,8 @@ class LanguageClient:
                     match['snippet'] = item['textEdit']['newText'] + '$0'
             elif item.get('textEdit', None):
                 # ignore insertText
-                match['word'] = ''
-                match['textEdits'].append(item['textEdit'])
+                # TODO: Not fully conforming to LSP
+                match['word'] = item['textEdit']['newText']
             matches.append(match)
 
         state["nvim"].call('cm#complete', info['name'], ctx,
@@ -1091,9 +1098,10 @@ class LanguageClient:
         line, columns = gather_args(["line", "columns"])
         show_line_diagnostic(uri, line, columns)
 
-    @neovim.autocmd("CursorMoved", pattern="*", eval="[&buftype, line('.')]")
+    @neovim.autocmd("CursorMoved", pattern="*",
+                    eval="[{'buftype': &buftype, 'line': line('.')}]")
     def handle_CursorMoved(self, args: List) -> None:
-        buftype, line = args
+        buftype, line = gather_args(["buftype", "line"], args=args)
         # Regular file buftype is "".
         if buftype != "" or line == state["last_cursor_line"]:
             return
@@ -1323,7 +1331,7 @@ class LanguageClient:
     @neovim.function("LanguageClient_call")
     def call_vim(self, args: List) -> Any:
         """
-        Expose call() to vimscript.
+        Expose RPC call() to vimscript.
         """
         languageId, = gather_args(["languageId"])
 
@@ -1332,7 +1340,7 @@ class LanguageClient:
     @neovim.function("LanguageClient_notify")
     def notify_vim(self, args: List) -> None:
         """
-        Expose notify() to vimscript.
+        Expose RPC notify() to vimscript.
         """
         languageId, = gather_args(["languageId"])
 
@@ -1356,7 +1364,7 @@ class LanguageClient:
 
     def rustDocument_beginBuild(self, params: Dict) -> None:
         msg = "rustDocument/beginBuild"
-        echomsg(msg)
+        logger.info(msg)
 
     def rustDocument_diagnosticsBegin(self, params: Dict) -> None:
         msg = "rustDocument/diagnosticsBegin"  # noqa: F841
