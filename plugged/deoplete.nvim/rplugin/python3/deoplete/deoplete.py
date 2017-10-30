@@ -34,8 +34,6 @@ class Deoplete(logger.LoggingMixin):
         self._source_errors = defaultdict(int)
         self._filter_errors = defaultdict(int)
         self.name = 'core'
-        self._ignored_sources = set()
-        self._ignored_filters = set()
         self._loaded_paths = set()
         self._prev_results = {}
 
@@ -43,6 +41,15 @@ class Deoplete(logger.LoggingMixin):
         context = self._vim.call('deoplete#init#_context', 'Init', [])
         context['rpc'] = 'deoplete_on_event'
         self.on_event(context)
+
+        self._vim.vars['deoplete#_initialized'] = True
+        if hasattr(self._vim, 'channel_id'):
+            self._vim.vars['deoplete#_channel_id'] = self._vim.channel_id
+
+    def enable_logging(self, context):
+        logging = self._vim.vars['deoplete#_logging']
+        logger.setup(self._vim, logging['level'], logging['logfile'])
+        self.debug_enabled = True
 
     def completion_begin(self, context):
         self.check_recache(context)
@@ -112,10 +119,14 @@ class Deoplete(logger.LoggingMixin):
 
                 ctx['max_abbr_width'] = min(source.max_abbr_width,
                                             ctx['max_abbr_width'])
+                ctx['max_kind_width'] = min(source.max_kind_width,
+                                            ctx['max_kind_width'])
                 ctx['max_menu_width'] = min(source.max_menu_width,
                                             ctx['max_menu_width'])
                 if ctx['max_abbr_width'] > 0:
                     ctx['max_abbr_width'] = max(20, ctx['max_abbr_width'])
+                if ctx['max_kind_width'] > 0:
+                    ctx['max_kind_width'] = max(10, ctx['max_kind_width'])
                 if ctx['max_menu_width'] > 0:
                     ctx['max_menu_width'] = max(10, ctx['max_menu_width'])
 
@@ -147,7 +158,6 @@ class Deoplete(logger.LoggingMixin):
                     error(self._vim, 'Too many errors from "%s". '
                           'This source is disabled until Neovim '
                           'is restarted.' % source.name)
-                    self._ignored_sources.add(source.path)
                     self._sources.pop(source.name)
                     continue
                 error_tb(self._vim,
@@ -216,7 +226,6 @@ class Deoplete(logger.LoggingMixin):
                         error(self._vim, 'Too many errors from "%s". '
                               'This filter is disabled until Neovim '
                               'is restarted.' % f.name)
-                        self._ignored_filters.add(f.path)
                         self._filters.pop(f.name)
                         continue
                     error_tb(self._vim, 'Could not filter using: %s' % f)
@@ -304,7 +313,6 @@ class Deoplete(logger.LoggingMixin):
                         error_tb(self._vim,
                                  'Error when loading source {}: {}. '
                                  'Ignoring.'.format(source_name, exc))
-                    self._ignored_sources.add(source.path)
                     self._sources.pop(source_name)
                     continue
                 else:
@@ -331,7 +339,7 @@ class Deoplete(logger.LoggingMixin):
     def load_sources(self, context):
         # Load sources from runtimepath
         for path in find_rplugins(context, 'source'):
-            if path in self._ignored_sources or path in self._loaded_paths:
+            if path in self._loaded_paths:
                 continue
             self._loaded_paths.add(path)
 
@@ -346,15 +354,6 @@ class Deoplete(logger.LoggingMixin):
                 source = Source(self._vim)
                 source.name = getattr(source, 'name', name)
                 source.path = path
-                source.min_pattern_length = getattr(
-                    source, 'min_pattern_length',
-                    context['vars']['deoplete#auto_complete_start_length'])
-                source.max_abbr_width = getattr(
-                    source, 'max_abbr_width',
-                    context['vars']['deoplete#max_abbr_width'])
-                source.max_menu_width = getattr(
-                    source, 'max_menu_width',
-                    context['vars']['deoplete#max_menu_width'])
             except Exception:
                 error_tb(self._vim, 'Could not load source: %s' % name)
             finally:
@@ -368,7 +367,7 @@ class Deoplete(logger.LoggingMixin):
     def load_filters(self, context):
         # Load filters from runtimepath
         for path in find_rplugins(context, 'filter'):
-            if path in self._ignored_filters or path in self._loaded_paths:
+            if path in self._loaded_paths:
                 continue
             self._loaded_paths.add(path)
 
@@ -405,6 +404,7 @@ class Deoplete(logger.LoggingMixin):
             ('min_pattern_length', 'deoplete#auto_complete_start_length'),
             'max_pattern_length',
             ('max_abbr_width', 'deoplete#max_abbr_width'),
+            ('max_kind_width', 'deoplete#max_menu_width'),
             ('max_menu_width', 'deoplete#max_menu_width'),
             'matchers',
             'sorters',
@@ -421,8 +421,8 @@ class Deoplete(logger.LoggingMixin):
                 else:
                     default_val = None
                 source_attr = getattr(source, attr, default_val)
-                setattr(source, attr, get_custom(context['custom'], name,
-                                                 attr, source_attr))
+                setattr(source, attr, get_custom(context['custom'],
+                                                 name, attr, source_attr))
 
     def use_previous_result(self, context, result):
         return (context['position'][1] == result['prev_linenr'] and
@@ -443,9 +443,6 @@ class Deoplete(logger.LoggingMixin):
             return False
         return not (source.min_pattern_length <=
                     len(context['complete_str']) <= source.max_pattern_length)
-
-    def position_has_changed(self, tick):
-        return tick != self._vim.eval('b:changedtick')
 
     def check_recache(self, context):
         if context['runtimepath'] != self._runtimepath:
