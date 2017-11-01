@@ -38,5 +38,6 @@
   fixup = commit --fixup=HEAD
   # "git stash pop" but without merging. Just force overrides workind directory files
   stash-pop-force = !git read-tree stash && git checkout-index -f && git reset HEAD && git stash drop
+  not-pushed = !git l $1..HEAD
 [push]
 	default = simple
