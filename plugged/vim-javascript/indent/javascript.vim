@@ -10,10 +10,6 @@ if exists('b:did_indent')
 endif
 let b:did_indent = 1
 
-" indent correctly if inside <script>
-" vim/vim@690afe1 for the switch from cindent
-let b:html_indent_script1 = 'inc'
-
 " Now, set up our indentation expression and keys that trigger it.
 setlocal indentexpr=GetJavascriptIndent()
 setlocal autoindent nolisp nosmartindent
@@ -25,13 +21,6 @@ setlocal indentkeys+=0],0)
 
 let b:undo_indent = 'setlocal indentexpr< smartindent< autoindent< indentkeys<'
 
-" Regex of syntax group names that are or delimit string or are comments.
-let b:syng_strcom = get(b:,'syng_strcom','string\|comment\|regex\|special\|doc\|template\%(braces\)\@!')
-let b:syng_str = get(b:,'syng_str','string\|template\|special')
-" template strings may want to be excluded when editing graphql:
-" au! Filetype javascript let b:syng_str = '^\%(.*template\)\@!.*string\|special'
-" au! Filetype javascript let b:syng_strcom = '^\%(.*template\)\@!.*string\|comment\|regex\|special\|doc'
-
 " Only define the function once.
 if exists('*GetJavascriptIndent')
   finish
@@ -39,6 +28,23 @@ endif
 
 let s:cpo_save = &cpo
 set cpo&vim
+
+" indent correctly if inside <script>
+" vim/vim@690afe1 for the switch from cindent
+" overridden with b:html_indent_script1
+call extend(g:,{'html_indent_script1': 'inc'},'keep')
+
+" Regex of syntax group names that are or delimit string or are comments.
+let s:bvars = {
+      \ 'syng_strcom': 'string\|comment\|regex\|special\|doc\|template\%(braces\)\@!',
+      \ 'syng_str': 'string\|template\|special' }
+" template strings may want to be excluded when editing graphql:
+" au! Filetype javascript let b:syng_str = '^\%(.*template\)\@!.*string\|special'
+" au! Filetype javascript let b:syng_strcom = '^\%(.*template\)\@!.*string\|comment\|regex\|special\|doc'
+
+function s:GetVars()
+  call extend(b:,extend(s:bvars,{'js_cache': [0,0,0]}),'keep')
+endfunction
 
 " Get shiftwidth value
 if exists('*shiftwidth')
@@ -159,19 +165,29 @@ function s:Token()
   return s:LookingAt() =~ '\k' ? expand('<cword>') : s:LookingAt()
 endfunction
 
-function s:PreviousToken()
-  let l:col = col('.')
+function s:PreviousToken(...)
+  let [l:pos, tok] = [getpos('.'), '']
   if search('\m\k\{1,}\|\S','ebW')
-    if search('\m\*\%#\/\|\/\/\%<'.a:firstline.'l','nbW',line('.')) && eval(s:in_comm)
-      if s:SearchLoop('\S\ze\_s*\/[/*]','bW',s:in_comm)
-        return s:Token()
+    if getline('.')[col('.')-2:col('.')-1] == '*/'
+      if eval(s:in_comm) && !s:SearchLoop('\S\ze\_s*\/[/*]','bW',s:in_comm)
+        call setpos('.',l:pos)
+      else
+        let tok = s:Token()
       endif
-      call cursor(a:firstline, l:col)
     else
-      return s:Token()
+      let two = a:0 || line('.') != l:pos[1] ? strridx(getline('.')[:col('.')],'//') + 1 : 0
+      if two && eval(s:in_comm)
+        call cursor(0,two)
+        let tok = s:PreviousToken(1)
+        if tok is ''
+          call setpos('.',l:pos)
+        endif
+      else
+        let tok = s:Token()
+      endif
     endif
   endif
-  return ''
+  return tok
 endfunction
 
 function s:Pure(f,...)
@@ -303,6 +319,7 @@ endfunction
 function s:IsBlock()
   let tok = s:PreviousToken()
   if join(s:stack) =~? 'xml\|jsx' && s:SynAt(line('.'),col('.')-1) =~? 'xml\|jsx'
+    let s:in_jsx = 1
     return tok != '{'
   elseif tok =~ '\k'
     if tok ==# 'type'
@@ -327,7 +344,7 @@ function s:IsBlock()
 endfunction
 
 function GetJavascriptIndent()
-  let b:js_cache = get(b:,'js_cache',[0,0,0])
+  call s:GetVars()
   let s:synid_cache = [[],[]]
   let l:line = getline(v:lnum)
   " use synstack as it validates syn state and works in an empty line
@@ -389,10 +406,10 @@ function GetJavascriptIndent()
 
   let [b:js_cache[0], num] = [v:lnum, b:js_cache[1]]
 
-  let [num_ind, is_op, b_l, l:switch_offset] = [s:Nat(indent(num)),0,0,0]
+  let [num_ind, is_op, b_l, l:switch_offset, s:in_jsx] = [s:Nat(indent(num)),0,0,0,0]
   if !num || s:LookingAt() == '{' && s:IsBlock()
     let ilnum = line('.')
-    if num && s:LookingAt() == ')' && s:GetPair('(',')','bW',s:skip_expr)
+    if num && !s:in_jsx && s:LookingAt() == ')' && s:GetPair('(',')','bW',s:skip_expr)
       if ilnum == num
         let [num, num_ind] = [line('.'), indent('.')]
       endif
