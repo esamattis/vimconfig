@@ -134,6 +134,8 @@ CONTENTS                                                         *ale-contents*
       phpstan.............................|ale-php-phpstan|
     pod...................................|ale-pod-options|
       write-good..........................|ale-pod-write-good|
+    proto.................................|ale-proto-options|
+      protoc-gen-lint.....................|ale-proto-protoc-gen-lint|
     pug...................................|ale-pug-options|
       puglint.............................|ale-pug-puglint|
     puppet................................|ale-puppet-options|
@@ -145,11 +147,13 @@ CONTENTS                                                         *ale-contents*
       mypy................................|ale-python-mypy|
       pycodestyle.........................|ale-python-pycodestyle|
       pylint..............................|ale-python-pylint|
+      pyls................................|ale-python-pyls|
       yapf................................|ale-python-yapf|
     r.....................................|ale-r-options|
       lintr...............................|ale-r-lintr|
     reasonml..............................|ale-reasonml-options|
       merlin..............................|ale-reasonml-merlin|
+      refmt...............................|ale-reasonml-refmt|
     restructuredtext......................|ale-restructuredtext-options|
       write-good..........................|ale-restructuredtext-write-good|
     ruby..................................|ale-ruby-options|
@@ -172,6 +176,7 @@ CONTENTS                                                         *ale-contents*
     sh....................................|ale-sh-options|
       shell...............................|ale-sh-shell|
       shellcheck..........................|ale-sh-shellcheck|
+      shfmt...............................|ale-sh-shfmt|
     sml...................................|ale-sml-options|
       smlnj...............................|ale-sml-smlnj|
     solidity..............................|ale-solidity-options|
@@ -255,8 +260,8 @@ Notes:
 * Ansible: `ansible-lint`
 * AsciiDoc: `proselint`, `write-good`
 * Awk: `gawk`
-* Bash: `shell` (-n flag), `shellcheck`
-* Bourne Shell: `shell` (-n flag), `shellcheck`
+* Bash: `shell` (-n flag), `shellcheck`, `shfmt`
+* Bourne Shell: `shell` (-n flag), `shellcheck`, `shfmt`
 * C: `cppcheck`, `cpplint`!!, `gcc`, `clang`, `clangtidy`!!, `clang-format`
 * C++ (filetype cpp): `clang`, `clangcheck`!!, `clangtidy`!!, `cppcheck`, `cpplint`!!, `gcc`, `clang-format`
 * CUDA: `nvcc`!!
@@ -268,7 +273,8 @@ Notes:
 * CSS: `csslint`, `stylelint`, `prettier`
 * Cython (pyrex filetype): `cython`
 * D: `dmd`
-* Dart: `dartanalyzer`!!
+* Dafny: `dafny`!!
+* Dart: `dartanalyzer`!!, `language_server`
 * Dockerfile: `hadolint`
 * Elixir: `credo`, `dogma`!!
 * Elm: `elm-format, elm-make`
@@ -277,7 +283,7 @@ Notes:
 * Fortran: `gcc`
 * FusionScript: `fusion-lint`
 * GLSL: glslang
-* Go: `gofmt`, `go vet`, `golint`, `gometalinter`!!, `go build`!!, `gosimple`, `staticcheck`
+* Go: `gofmt`, `go vet`, `golint`, `gometalinter`!!, `go build`!!, `gosimple`!!, `staticcheck`!!
 * GraphQL: `gqlint`
 * Haml: `haml-lint`
 * Handlebars: `ember-template-lint`
@@ -304,11 +310,12 @@ Notes:
 * Perl: `perl -c`, `perl-critic`
 * PHP: `hack`, `hackfmt`, `langserver`, `phan`, `php -l`, `phpcs`, `phpmd`, `phpstan`, `phpcbf`
 * Pod: `proselint`, `write-good`
+* proto: `protoc-gen-lint`
 * Pug: `pug-lint`
 * Puppet: `puppet`, `puppet-lint`
-* Python: `autopep8`, `flake8`, `isort`, `mypy`, `pycodestyle`, `pylint`!!, `yapf`
+* Python: `autopep8`, `flake8`, `isort`, `mypy`, `pycodestyle`, `pyls`, `pylint`!!, `yapf`
 * R: `lintr`
-* ReasonML: `merlin`
+* ReasonML: `merlin`, `refmt`
 * reStructuredText: `proselint`, `write-good`
 * RPM spec: `rpmlint`
 * Ruby: `brakeman`, `rails_best_practices`!!, `reek`, `rubocop`, `ruby`
@@ -440,6 +447,26 @@ are supported for running the commands.
                       temporary file created for `%t`. This option can be used
                       for commands which need to modify some file on disk in
                       order to fix files.
+
+  `chain_with`          An optional key for defining a callback to call next.
+
+                      The callback must accept two or three arguments,
+                      `(buffer, output)` or `(buffer, output, input)` .
+                      Functions receiving a variable number of arguments will
+                      only receive the first two values. The `output` argument
+                      will contain the lines of output from the command run.
+                      The `input` argument is the List of lines for the
+                      buffer, after applying any previous fixers.
+
+                      The callback must return the same values returned for
+                      any fixer function. This allows fixer functions to be
+                      chained recursively.
+
+                      When the command string returned for a fixer is an empty
+                      string, the next command in the chain will still be run.
+                      This allows commands to be skipped, like version checks
+                      that are cached. An empty List will be passed to the
+                      next callback in the chain for the `output`.
 
                                                         *ale-fix-configuration*
 
@@ -668,6 +695,7 @@ g:ale_fixers                                                     *g:ale_fixers*
 
 
 g:ale_fix_on_save                                           *g:ale_fix_on_save*
+b:ale_fix_on_save                                           *b:ale_fix_on_save*
 
   Type: |Number|
   Default: `0`
@@ -677,6 +705,9 @@ g:ale_fix_on_save                                           *g:ale_fix_on_save*
   If |g:ale_lint_on_save| is set to 1, files will be checked with linters
   after files are fixed, only when the buffer is open, or re-opened. Changes
   to the file will be saved to the file on disk.
+
+  Fixing files can be disabled or enabled for individual buffers by setting
+  `b:ale_fix_on_save` to `0` or `1`.
 
 
 g:ale_history_enabled                                   *g:ale_history_enabled*

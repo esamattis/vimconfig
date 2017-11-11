@@ -43,22 +43,39 @@ function! ale_linters#sh#shellcheck#GetDialectArgument(buffer) abort
     return ''
 endfunction
 
-function! ale_linters#sh#shellcheck#GetCommand(buffer) abort
+function! ale_linters#sh#shellcheck#VersionCheck(buffer) abort
+    let l:executable = ale_linters#sh#shellcheck#GetExecutable(a:buffer)
+
+    " Don't check the version again if we've already cached it.
+    return !ale#semver#HasVersion(l:executable)
+    \   ? ale#Escape(l:executable) . ' --version'
+    \   : ''
+endfunction
+
+function! ale_linters#sh#shellcheck#GetCommand(buffer, version_output) abort
+    let l:executable = ale_linters#sh#shellcheck#GetExecutable(a:buffer)
+    let l:version = ale#semver#GetVersion(l:executable, a:version_output)
+
     let l:options = ale#Var(a:buffer, 'sh_shellcheck_options')
     let l:exclude_option = ale#Var(a:buffer, 'sh_shellcheck_exclusions')
     let l:dialect = ale_linters#sh#shellcheck#GetDialectArgument(a:buffer)
+    let l:external_option = ale#semver#GTE(l:version, [0, 4, 0]) ? ' -x' : ''
 
     return ale#path#BufferCdString(a:buffer)
-    \   . ale#Escape(ale_linters#sh#shellcheck#GetExecutable(a:buffer))
+    \   . ale#Escape(l:executable)
     \   . (!empty(l:dialect) ? ' -s ' . l:dialect : '')
     \   . (!empty(l:options) ? ' ' . l:options : '')
     \   . (!empty(l:exclude_option) ? ' -e ' . l:exclude_option : '')
-    \   . ' -x -f gcc -'
+    \   . l:external_option
+    \   . ' -f gcc -'
 endfunction
 
 call ale#linter#Define('sh', {
 \   'name': 'shellcheck',
 \   'executable_callback': 'ale_linters#sh#shellcheck#GetExecutable',
-\   'command_callback': 'ale_linters#sh#shellcheck#GetCommand',
+\   'command_chain': [
+\       {'callback': 'ale_linters#sh#shellcheck#VersionCheck'},
+\       {'callback': 'ale_linters#sh#shellcheck#GetCommand'},
+\   ],
 \   'callback': 'ale#handlers#gcc#HandleGCCFormat',
 \})

@@ -62,6 +62,49 @@ Before:
     return [{'lnum': 1, 'col': 1, 'text': 'xxx'}]
   endfunction
 
+  function! FirstChainCallback(buffer)
+    return {'command': 'echo echoline', 'chain_with': 'SecondChainCallback'}
+  endfunction
+
+  function! FirstChainCallbackSkipped(buffer)
+    return {'command': '', 'chain_with': 'SecondChainCallback'}
+  endfunction
+
+  function! FirstChainCallbackSecondSkipped(buffer)
+    return {'command': 'echo skipit', 'chain_with': 'SecondChainCallback'}
+  endfunction
+
+  function! SecondChainCallback(buffer, output)
+    let l:previous_line = empty(a:output)
+    \ ? 'emptydefault'
+    \ : join(split(a:output[0]))
+
+    if l:previous_line is# 'skipit'
+      return {'command': '', 'chain_with': 'ThirdChainCallback'}
+    endif
+
+    return {
+    \ 'command': 'echo ' . l:previous_line,
+    \ 'chain_with': 'ThirdChainCallback',
+    \}
+  endfunction
+
+  function! ThirdChainCallback(buffer, output, input)
+    let l:previous_line = empty(a:output)
+    \ ? 'thirddefault'
+    \ : join(split(a:output[0]))
+
+    return a:input + [l:previous_line]
+  endfunction
+
+  function! ChainWhereLastIsSkipped(buffer)
+    return {'command': 'echo echoline', 'chain_with': 'ChainEndSkipped'}
+  endfunction
+
+  function! ChainEndSkipped(buffer, output)
+    return {'command': ''}
+  endfunction
+
   function! SetUpLinters()
     call ale#linter#Define('testft', {
     \ 'name': 'testlinter',
@@ -71,12 +114,23 @@ Before:
     \})
   endfunction
 
+  function GetLastMessage()
+    redir => l:output
+      silent mess
+    redir END
+
+    let l:lines = split(l:output, "\n")
+
+    return empty(l:lines) ? '' : l:lines[-1]
+  endfunction
+
 After:
   Restore
   unlet! g:ale_run_synchronously
   unlet! g:ale_set_lists_synchronously
   unlet! g:ale_emulate_job_failure
   unlet! b:ale_fixers
+  unlet! b:ale_fix_on_save
   delfunction AddCarets
   delfunction AddDollars
   delfunction DoNothing
@@ -86,7 +140,15 @@ After:
   delfunction RemoveLastLine
   delfunction RemoveLastLineOneArg
   delfunction TestCallback
+  delfunction FirstChainCallback
+  delfunction FirstChainCallbackSkipped
+  delfunction FirstChainCallbackSecondSkipped
+  delfunction SecondChainCallback
+  delfunction ThirdChainCallback
+  delfunction ChainWhereLastIsSkipped
+  delfunction ChainEndSkipped
   delfunction SetUpLinters
+  delfunction GetLastMessage
 
   call ale#test#RestoreDirectory()
 
@@ -103,14 +165,17 @@ After:
 
   let g:ale_fix_buffer_data = {}
 
+  " Clear the messages between tests.
+  echomsg ''
+
 Given testft (A file with three lines):
   a
   b
   c
 
 Execute(ALEFix should complain when there are no functions to call):
-  AssertThrows ALEFix
-  AssertEqual 'Vim(echoerr):No fixers have been defined. Try :ALEFixSuggest', g:vader_exception
+  ALEFix
+  AssertEqual 'No fixers have been defined. Try :ALEFixSuggest', GetLastMessage()
 
 Execute(ALEFix should apply simple functions):
   let g:ale_fixers.testft = ['AddCarets']
@@ -412,6 +477,29 @@ Expect(There should be only two lines):
   a
   b
 
+Execute(b:ale_fix_on_save = 1 should override g:ale_fix_on_save = 0):
+  let g:ale_fix_on_save = 0
+  let b:ale_fix_on_save = 1
+
+  let g:ale_fixers.testft = ['RemoveLastLineOneArg']
+  call ale#events#SaveEvent(bufnr(''))
+
+Expect(There should be only two lines):
+  a
+  b
+
+Execute(b:ale_fix_on_save = 0 should override g:ale_fix_on_save = 1):
+  let g:ale_fix_on_save = 1
+  let b:ale_fix_on_save = 0
+
+  let g:ale_fixers.testft = ['RemoveLastLineOneArg']
+  call ale#events#SaveEvent(bufnr(''))
+
+Expect(The lines should be the same):
+  a
+  b
+  c
+
 Execute(ALEFix functions returning jobs should be able to accept one argument):
   if has('win32')
     " Just skip this test on Windows, we can't run it.
@@ -426,3 +514,48 @@ Expect(An extra line should be added):
   b
   c
   d
+
+Execute(ALE should print a message telling you something isn't a valid fixer when you type some nonsense):
+  let g:ale_fixers.testft = ['CatLine', 'invalidname']
+  ALEFix
+
+  AssertEqual 'There is no fixer named `invalidname`. Check :ALEFixSuggest', GetLastMessage()
+
+Execute(Test fixing with chained callbacks):
+  let g:ale_fixers.testft = ['FirstChainCallback']
+  ALEFix
+
+Expect(The echoed line should be added):
+  a
+  b
+  c
+  echoline
+
+Execute(Test fixing with chained callback where the first command is skipped):
+  let g:ale_fixers.testft = ['FirstChainCallbackSkipped']
+  ALEFix
+
+Expect(The default line should be added):
+  a
+  b
+  c
+  emptydefault
+
+Execute(Test fixing with chained callback where the second command is skipped):
+  let g:ale_fixers.testft = ['FirstChainCallbackSecondSkipped']
+  ALEFix
+
+Expect(The default line should be added):
+  a
+  b
+  c
+  thirddefault
+
+Execute(Test fixing with chained callback where the final callback is skipped):
+  let g:ale_fixers.testft = ['ChainWhereLastIsSkipped']
+  ALEFix
+
+Expect(The lines should be the same):
+  a
+  b
+  c

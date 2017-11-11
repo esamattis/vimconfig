@@ -18,6 +18,8 @@ function! ale#python#FindProjectRootIni(buffer) abort
         \|| filereadable(l:path . '/setup.cfg')
         \|| filereadable(l:path . '/pytest.ini')
         \|| filereadable(l:path . '/tox.ini')
+        \|| filereadable(l:path . '/pycodestyle.cfg')
+        \|| filereadable(l:path . '/flake8.cfg')
             return l:path
         endif
     endfor
@@ -74,12 +76,6 @@ function! ale#python#FindVirtualenv(buffer) abort
     return $VIRTUAL_ENV
 endfunction
 
-" Run an executable check for Python scripts.
-" On Windows, 1 will be returned if the file is merely readable.
-function! ale#python#IsExecutable(path) abort
-    return has('win32') ? filereadable(a:path) : executable(a:path)
-endfunction
-
 " Given a buffer number and a command name, find the path to the executable.
 " First search on a virtualenv for Python, if nothing is found, try the global
 " command. Returns an empty string if cannot find the executable
@@ -96,7 +92,7 @@ function! ale#python#FindExecutable(buffer, base_var_name, path_list) abort
             \   join([l:virtualenv, s:bin_dir, l:path], s:sep)
             \)
 
-            if ale#python#IsExecutable(l:ve_executable)
+            if executable(l:ve_executable)
                 return l:ve_executable
             endif
         endfor
