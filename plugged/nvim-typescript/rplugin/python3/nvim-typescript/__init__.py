@@ -69,6 +69,7 @@ class TypescriptHost(object):
             self._client.serverPath = self.vim.vars[
                 "nvim_typescript#server_path"]
             if self._client.start():
+                self._client.setTsConfig()
                 self._client.open(self.relative_file())
                 self.printMsg('Server Started')
 
