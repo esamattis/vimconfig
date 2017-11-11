@@ -23,6 +23,7 @@ from .util import (
     convert_lsp_completion_item_to_vim_style)
 from .MessageType import MessageType
 from .DiagnosticSeverity import DiagnosticSeverity
+from .CommandsClient import CommandsClient
 
 
 def deco_args(f=None, warn=True):
@@ -154,10 +155,10 @@ def apply_TextDocumentEdit(textDocumentEdit: Dict) -> None:
     """
     filename = uri_to_path(textDocumentEdit["textDocument"]["uri"])
     edits = textDocumentEdit["edits"]
-    # Sort edits. Make edits from right to left, bottom to top.
-    edits = sorted(edits, key=lambda edit: (
-        -1 * edit["range"]["start"]["character"],
+    # Sort edits. From bottom to top, right to left.
+    edits = sorted(reversed(edits), key=lambda edit: (
         -1 * edit["range"]["start"]["line"],
+        -1 * edit["range"]["start"]["character"],
     ))
     buffer = next((buffer for buffer in state["nvim"].buffers
                    if buffer.name == filename), None)
@@ -279,8 +280,14 @@ def show_diagnostics(uri: str, diagnostics: List) -> None:
 
 
 def show_line_diagnostic(uri: str, line: int, columns: int) -> None:
+    logger.info("Begin show_line_diagnostic")
     entry = state.get(uri, {}).get("line_diagnostics", {}).get(line, "")
+    if entry == state["last_line_diagnostic"]:
+        return
 
+    update_state({
+        "last_line_diagnostic": entry,
+    })
     echo_ellipsis(entry, columns)
 
 
@@ -464,13 +471,14 @@ class LanguageClient:
             logger.warn("register completion manager source failed. Error: " +
                         repr(ex))
 
-    @neovim.autocmd("BufReadPost", pattern="*",
-                    eval="[{'languageId': &filetype, 'filename': expand('%:p')}]")
+    @neovim.autocmd(
+        "BufReadPost", pattern="*",
+        eval="[{'buftype': &buftype, 'languageId': &filetype, 'filename': expand('%:p')}]")
     def handle_BufReadPost(self, args: List) -> None:
-        logger.info("Begin handleBufReadPost")
+        logger.info("Begin handle BufReadPost")
 
-        languageId, uri = gather_args(["languageId", "uri"], args=args)
-        if not uri:
+        buftype, languageId, uri = gather_args(["buftype", "languageId", "uri"], args=args)
+        if buftype != "" or not uri:
             return
         # Language server is running but file is not within rootUri.
         if (state["rootUris"].get(languageId) and
@@ -507,6 +515,8 @@ class LanguageClient:
                 "text": textDocumentItem.text,
             }
         })
+
+        state["nvim"].current.buffer.options["omnifunc"] = "LanguageClient#complete"
 
         logger.info("End textDocument/didOpen")
 
@@ -905,6 +915,7 @@ class LanguageClient:
     @neovim.autocmd("TextChanged", pattern="*",
                     eval="[{'filename': expand('%:p'), 'buftype': &buftype}]")
     def handle_TextChanged(self, args: List) -> None:
+        logger.info("Begin handle TextChanged")
         uri, buftype = gather_args(["uri", "buftype"], args=args)
         if buftype != "" or state.get(uri, {}).get("textDocument") is None:
             return
@@ -916,6 +927,7 @@ class LanguageClient:
     @neovim.autocmd("TextChangedI", pattern="*",
                     eval="[{'filename': expand('%:p'), 'buftype': &buftype}]")
     def handle_TextChangedI(self, args: List) -> None:
+        logger.info("Begin handle TextChangedI")
         self.handle_TextChanged(args)
 
     @neovim.function("textDocument_didChange")
@@ -948,6 +960,7 @@ class LanguageClient:
     @neovim.autocmd("BufWritePost", pattern="*",
                     eval="[{'languageId': &filetype, 'filename': expand('%:p')}]")
     def handle_BufWritePost(self, args: List) -> None:
+        logger.info("Begin handle BufWritePost")
         uri, languageId = gather_args(["uri", "languageId"], args=args)
         self.textDocument_didSave()
 
@@ -986,7 +999,7 @@ class LanguageClient:
         return result
 
     @neovim.function("LanguageClient_textDocument_completionOmnifunc")
-    @deco_args
+    @deco_args(warn=False)
     def textDocument_completionOmnifunc(self, completeFromColumn: int) -> None:
         result = self.textDocument_completion()
         if result is None:
@@ -1101,6 +1114,7 @@ class LanguageClient:
     @neovim.autocmd("CursorMoved", pattern="*",
                     eval="[{'buftype': &buftype, 'line': line('.')}]")
     def handle_CursorMoved(self, args: List) -> None:
+        logger.info("Begin handle CursorMoved")
         buftype, line = gather_args(["buftype", "line"], args=args)
         # Regular file buftype is "".
         if buftype != "" or line == state["last_cursor_line"]:
@@ -1142,7 +1156,7 @@ class LanguageClient:
         self.textDocument_didChange()
         result = state["rpcs"][languageId].call("textDocument/signatureHelp", {
             "textDocument": {
-                uri: uri,
+                "uri": uri,
             },
             "position": {
                 "line": line,
@@ -1220,20 +1234,39 @@ class LanguageClient:
     @neovim.function("LanguageClient_FZFSinkTextDocumentCodeAction")
     def fzfSinkTextDocumentCodeAction(self, lines: str) -> None:
         command, _ = lines[0].split(":")
-        entries = [entry for entry in state["codeActionCommands"]
-                   if entry["command"] == command]
+        entry = next((entry for entry in state["codeActionCommands"]
+                      if entry["command"] == command), None)
 
-        if len(entries) is None:
+        if entry is None:
             msg = "Failed to find command: {}".format(command)
             logger.error(msg)
             echoerr(msg)
             return
 
-        entry = entries[0]
+        if self.try_handle_command_by_client(entry):
+            return
+
         self.workspace_executeCommand(command=command, arguments=entry.get("arguments"))
         update_state({
             "codeActionCommands": [],
         })
+
+    def try_handle_command_by_client(self, entry: Dict) -> bool:
+        """
+        Try handle a Command by client itself.
+        """
+        try:
+            command = CommandsClient(entry["command"])
+        except KeyError:
+            return False
+
+        if command == CommandsClient.JavaApplyWorkspaceEdit:
+            for edit in entry["arguments"]:
+                apply_WorkspaceEdit(edit)
+        else:
+            return False
+
+        return True
 
     @neovim.function("LanguageClient_workspace_executeCommand")
     @deco_args
