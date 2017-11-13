@@ -16,7 +16,7 @@ from .TextDocumentItem import TextDocumentItem
 from .logger import logger, logpath_server, setLoggingLevel
 from .state import (
     state, update_state, execute_command, echo, echomsg, echoerr,
-    echo_ellipsis, make_serializable, set_state, alive)
+    echo_ellipsis, echo_signature, make_serializable, set_state, alive)
 from .util import (
     get_rootPath, path_to_uri, uri_to_path, get_command_goto_file, get_command_update_signs,
     convert_vim_command_args_to_kwargs, apply_TextEdit, markedString_to_str,
@@ -170,7 +170,10 @@ def apply_TextDocumentEdit(textDocumentEdit: Dict) -> None:
     text = buffer[:]
     for edit in edits:
         text = apply_TextEdit(text, edit)
-    buffer[:] = text
+    if buffer.options["fixendofline"] and text[-1] == "":
+        buffer[:] = text[:-1]
+    else:
+        buffer[:] = text
 
 
 def apply_WorkspaceEdit(workspaceEdit: Dict) -> None:
@@ -1167,10 +1170,25 @@ class LanguageClient:
         if result is None or not handle:
             return result
 
-        # TODO: proper integration.
-        logger.warn(result)
-        echomsg(json.dumps(result))
+        signatures = result['signatures']
+        if len(signatures) == 0:
+            return result
+        if 'activeSignature' not in result:
+            echoerr('No active signature found')
+            return result
 
+        activeSignature = signatures[result['activeSignature']]
+        if ('activeParameter' not in result or 'parameters' not in activeSignature):
+            echo_signature(activeSignature['label'])
+            return result
+
+        parameters = activeSignature['parameters']
+        activeParamterIdx = result['activeParameter']
+        if activeParamterIdx >= len(parameters):
+            echo_signature(activeSignature['label'])
+            return result
+        activeParameter = parameters[activeParamterIdx]
+        echo_signature(activeSignature['label'], activeParameter['label'])
         logger.info("End textDocument/signatureHelp")
         return result
 
@@ -1233,12 +1251,18 @@ class LanguageClient:
 
     @neovim.function("LanguageClient_FZFSinkTextDocumentCodeAction")
     def fzfSinkTextDocumentCodeAction(self, lines: str) -> None:
-        command, _ = lines[0].split(":")
+        command, title = lines[0].split(": ")
+        command = command.strip()
+        title = title.strip()
+        logger.info("Selected action with command {} title {}".format(
+            json.dumps(command), json.dumps(title)))
         entry = next((entry for entry in state["codeActionCommands"]
-                      if entry["command"] == command), None)
+                      if entry["command"] == command and entry["title"] == title),
+                     None)
 
         if entry is None:
-            msg = "Failed to find command: {}".format(command)
+            msg = "Failed to find action entry. Command: {}. Title: {}.".format(
+                json.dumps(command), json.dumps(title))
             logger.error(msg)
             echoerr(msg)
             return
@@ -1246,7 +1270,8 @@ class LanguageClient:
         if self.try_handle_command_by_client(entry):
             return
 
-        self.workspace_executeCommand(command=command, arguments=entry.get("arguments"))
+        self.workspace_executeCommand(command=command,
+                                      arguments=entry.get("arguments"))
         update_state({
             "codeActionCommands": [],
         })
@@ -1258,6 +1283,8 @@ class LanguageClient:
         try:
             command = CommandsClient(entry["command"])
         except KeyError:
+            return False
+        except ValueError:
             return False
 
         if command == CommandsClient.JavaApplyWorkspaceEdit:
@@ -1291,8 +1318,8 @@ class LanguageClient:
 
         self.textDocument_didChange()
         options = {
-            "tabSize": state["nvim"].options["tabstop"],
-            "insertSpaces": state["nvim"].options["expandtab"],
+            "tabSize": state["nvim"].current.buffer.options["tabstop"],
+            "insertSpaces": state["nvim"].current.buffer.options["expandtab"],
         }
         textEdits = state["rpcs"][languageId].call("textDocument/formatting", {
             "textDocument": {
@@ -1326,8 +1353,8 @@ class LanguageClient:
 
         self.textDocument_didChange()
         options = {
-            "tabSize": state["nvim"].options["tabstop"],
-            "insertSpaces": state["nvim"].options["expandtab"],
+            "tabSize": state["nvim"].current.buffer.options["tabstop"],
+            "insertSpaces": state["nvim"].current.buffer.options["expandtab"],
         }
         start_line = state["nvim"].eval("v:lnum") - 1
         end_line = start_line + state["nvim"].eval("v:count")
