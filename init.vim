@@ -37,6 +37,7 @@ Plug 'joshglendenning/vim-caddyfile'
 Plug 'leafgarland/typescript-vim'
 Plug 'peitalin/vim-jsx-typescript'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+Plug 'ajmwagar/vim-deus'
 call plug#end()
 
 "" Leader mappings
