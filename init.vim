@@ -39,6 +39,7 @@ Plug 'peitalin/vim-jsx-typescript'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 Plug 'ajmwagar/vim-deus'
+Plug 'scrooloose/nerdtree'
 call plug#end()
 
 "" Leader mappings
