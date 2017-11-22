@@ -35,6 +35,7 @@ Plug 'tpope/vim-sleuth'
 Plug 'sbdchd/neoformat'
 Plug 'joshglendenning/vim-caddyfile'
 Plug 'leafgarland/typescript-vim'
+Plug 'maxmellon/vim-jsx-pretty'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 Plug 'ajmwagar/vim-deus'
