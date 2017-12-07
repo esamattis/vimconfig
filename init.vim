@@ -68,7 +68,12 @@ endfor
 
 " Use cool visual search&replace on neovim
 if has("nvim")
-    set icm=split
+    set inccommand=split
+endif
+
+" Exit Neovim terminal mode with esc
+if has("nvim")
+    tnoremap <Esc> <C-\><C-n>
 endif
 
 
