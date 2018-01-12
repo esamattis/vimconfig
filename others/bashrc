@@ -39,6 +39,10 @@ cdd() {
     cd "$(dirname "$1")"
 }
 
+git-log-date() {
+  git log --after="$1 00:00" --until="$1 23:59" --author="$(git config user.name)"
+}
+
 
 alias node_modules_to_path='export PATH="$(pwd)/node_modules/.bin":$PATH'
 
