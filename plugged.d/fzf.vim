@@ -1,2 +1,2 @@
-nnoremap <leader>T :FZF<cr>
-nnoremap <leader>t :execute 'FZF ' . expand('%:p:h')<CR>
+nnoremap <leader>t :FZF<cr>
+nnoremap <leader>T :execute 'FZF ' . expand('%:p:h')<CR>

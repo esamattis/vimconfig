@@ -36,6 +36,9 @@ Plug 'sbdchd/neoformat'
 Plug 'joshglendenning/vim-caddyfile'
 Plug 'leafgarland/typescript-vim'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+Plug 'junegunn/fzf.vim'
+Plug 'ajmwagar/vim-deus'
+Plug 'scrooloose/nerdtree'
 call plug#end()
 
 "" Leader mappings
@@ -65,7 +68,12 @@ endfor
 
 " Use cool visual search&replace on neovim
 if has("nvim")
-    set icm=split
+    set inccommand=split
+endif
+
+" Exit Neovim terminal mode with esc
+if has("nvim")
+    tnoremap <Esc> <C-\><C-n>
 endif
 
 

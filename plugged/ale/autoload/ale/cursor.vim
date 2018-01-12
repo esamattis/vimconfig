@@ -4,21 +4,6 @@
 let s:cursor_timer = -1
 let s:last_pos = [0, 0, 0]
 
-" Return a formatted message according to g:ale_echo_msg_format variable
-function! s:GetMessage(linter, type, text) abort
-    let l:msg = g:ale_echo_msg_format
-    let l:type = a:type is# 'E'
-    \   ? g:ale_echo_msg_error_str
-    \   : g:ale_echo_msg_warning_str
-
-    " Replace handlers if they exist
-    for [l:k, l:v] in items({'linter': a:linter, 'severity': l:type})
-        let l:msg = substitute(l:msg, '\V%' . l:k . '%', l:v, '')
-    endfor
-
-    return printf(l:msg, a:text)
-endfunction
-
 function! s:EchoWithShortMess(setting, message) abort
     " We need to remember the setting for shormess and reset it again.
     let l:shortmess_options = getbufvar('%', '&shortmess')
@@ -87,7 +72,7 @@ function! s:EchoImpl() abort
     let [l:info, l:loc] = s:FindItemAtCursor()
 
     if !empty(l:loc)
-        let l:msg = s:GetMessage(l:loc.linter_name, l:loc.type, l:loc.text)
+        let l:msg = ale#GetLocItemMessage(l:loc, g:ale_echo_msg_format)
         call ale#cursor#TruncatedEcho(l:msg)
         let l:info.echoed = 1
     elseif get(l:info, 'echoed')
@@ -140,9 +125,7 @@ function! ale#cursor#ShowCursorDetail() abort
     if !empty(l:loc)
         let l:message = get(l:loc, 'detail', l:loc.text)
 
-        call s:EchoWithShortMess('off', l:message)
-
-        " Set the echo marker, so we can clear it by moving the cursor.
-        let l:info.echoed = 1
+        call ale#preview#Show(split(l:message, "\n"))
+        echo
     endif
 endfunction
