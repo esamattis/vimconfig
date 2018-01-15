@@ -44,12 +44,16 @@ section|meaning (example)
  [...] | additional sections (warning/errors/statistics) from external plugins (e.g. YCM, syntastic, ...)
 
 The information in Section Z looks like this:
-percentage % ☰ current line/number of lines ln : column
-So this: `10% ☰ 10/100 ln : 20`  means:
-    `10%`     - 10 percent
-    `☰ 10`    - current line 10
-    `/100 ln` - of 100 lines
-    `: 20`    - current column 20
+
+`10% ☰ 10/100 ln : 20`
+
+This means:
+```
+10%     - 10 percent down the top of the file
+☰ 10    - current line 10
+/100 ln - of 100 lines
+: 20    - current column 20
+```
 
 For a better look, those sections can be colored differently, depending on various conditions
 (e.g. the mode or whether the current file is 'modified')
@@ -111,6 +115,26 @@ Separators can be configured independently for the tabline, so here is how you c
 
     let g:airline#extensions#tabline#left_sep = ' '
     let g:airline#extensions#tabline#left_alt_sep = '|'
+
+In addition, you can also choose which path formatter airline uses. This affects how file paths are
+displayed in each individual tab as well as the current buffer indicator in the upper right.
+To do so, set the `formatter` field with:
+
+    let g:airline#extensions#tabline#formatter = 'default'
+
+Here is a complete list of formatters with screenshots:
+
+#### `default`
+![image](https://user-images.githubusercontent.com/2652762/34422844-1d005efa-ebe6-11e7-8053-c784c0da7ba7.png)
+
+#### `jsformatter`
+![image](https://user-images.githubusercontent.com/2652762/34422843-1cf6a4d2-ebe6-11e7-810a-07e6eb08de24.png)
+
+#### `unique_tail`
+![image](https://user-images.githubusercontent.com/2652762/34422841-1ce5b4ec-ebe6-11e7-86e9-3d45c876068b.png)
+
+#### `unique_tail_improved`
+![image](https://user-images.githubusercontent.com/2652762/34422842-1cee23f2-ebe6-11e7-962d-97e068873077.png)
 
 ## Seamless integration
 
@@ -210,6 +234,7 @@ This plugin follows the standard runtime path structure, and as such it can be i
 | [VAM][22] | `call vam#ActivateAddons([ 'vim-airline' ])` |
 | [Dein][52] | `call dein#add('vim-airline/vim-airline')` |
 | [minpac][54] | `call minpac#add('vim-airline/vim-airline')` |
+| pack feature (native Vim 8 package feature)| `git clone https://github.com/vim-airline/vim-airline ~/.vim/pack/dist/start/vim-airline`<br/>Remember to run `:helptags` to generate help tags |
 | manual | copy all of the files into your `~/.vim` directory |
 
 # Documentation
