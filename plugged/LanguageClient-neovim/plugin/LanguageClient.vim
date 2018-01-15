@@ -2,6 +2,11 @@ if has('nvim')
     finish
 endif
 
+if !exists('*yarp#py3')
+    echoerr 'LanguageClient: yarp#py3 does not exist. Refusing to load.'
+    finish
+endif
+
 command LanguageClientStart call LanguageClient_start()
 command LanguageClientStop call LanguageClient_stop()
 
@@ -51,6 +56,10 @@ endfunction
 
 function! LanguageClient_textDocument_didClose()
     return s:lc.call('textDocument_didClose')
+endfunction
+
+function! LanguageClient_workspace_didChangeConfiguration()
+    return s:lc.call('workspace_didChangeConfiguration')
 endfunction
 
 function! LanguageClient_textDocument_hover()

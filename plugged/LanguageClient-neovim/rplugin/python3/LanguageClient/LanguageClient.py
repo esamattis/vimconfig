@@ -56,7 +56,11 @@ def deco_args(f=None, warn=True):
             "languageId": languageId,
         })
         kwargs_with_defaults.update(kwargs)
-        final_args = gather_args(arg_spec.args, args, kwargs_with_defaults)
+        try:
+            final_args = gather_args(arg_spec.args, args, kwargs_with_defaults)
+        except Exception:
+            logger.error("Failed to gather_args")
+            return None
         return f(*final_args)
     return wrapper
 
@@ -123,6 +127,11 @@ def sync_settings() -> None:
         "diagnosticsList": state["nvim"].vars.get("LanguageClient_diagnosticsList", "quickfix"),
         "autoStart": state["nvim"].vars.get("LanguageClient_autoStart", False),
         "diagnosticsDisplay": state["nvim"].vars.get("LanguageClient_diagnosticsDisplay", {}),
+        "settingsPath": state["nvim"].vars.get(
+            "LanguageClient_settingsPath",
+            os.path.join(".vim", "settings.json")
+        ),
+        "loadSettings": state["nvim"].vars.get("LanguageClient_loadSettings", False),
     })
     windowLogMessageLevel = state["nvim"].vars.get("LanguageClient_windowLogMessageLevel")
     if windowLogMessageLevel is not None:
@@ -252,16 +261,14 @@ def show_diagnostics(uri: str, diagnostics: List) -> None:
         start_line = entry["range"]["start"]["line"]
         start_character = entry["range"]["start"]["character"]
         end_character = entry["range"]["end"]["character"]
-        severity = entry.get("severity", 3)
-        display = state["diagnosticsDisplay"][severity]
+        severity = DiagnosticSeverity(entry.get("severity", 3))
+        display = state["diagnosticsDisplay"][severity.value]
         text_highlight = display["texthl"]
         buffer.add_highlight(text_highlight, start_line,
                              start_character, end_character,
                              highlight_source_id)
 
-        sign_name = display["name"]
-
-        signs.append(Sign(start_line + 1, sign_name, buffer.number))
+        signs.append(Sign(start_line + 1, severity))
 
         qflist.append({
             "filename": path,
@@ -269,10 +276,11 @@ def show_diagnostics(uri: str, diagnostics: List) -> None:
             "col": start_character + 1,
             "nr": entry.get("code"),
             "text": entry["message"],
-            "type": DiagnosticSeverity(severity).name,
+            "type": DiagnosticSeverity(severity.value).name,
         })
 
-    cmd = get_command_update_signs(state[uri].get("signs", []), signs)
+    signs = sorted(set(signs))
+    cmd = get_command_update_signs(state[uri].get("signs", []), signs, path)
     execute_command(cmd)
     set_state([uri, "signs"], signs)
 
@@ -399,6 +407,8 @@ class LanguageClient:
         logger.info("End LanguageClientStart")
 
         self.initialize(rootPath=rootPath, languageId=languageId)
+        self.textDocument_didOpen(languageId=languageId)
+        self.textDocument_didChange(languageId=languageId)
 
         if state["nvim"].call("exists", "#User#LanguageClientStarted") == 1:
             state["nvim"].command("doautocmd User LanguageClientStarted")
@@ -418,7 +428,7 @@ class LanguageClient:
 
     @neovim.function("LanguageClient_initialize")
     @deco_args
-    def initialize(self, rootPath: str, languageId: str, handle=True) -> Dict:
+    def initialize(self, rootPath: str, settingsPath: str, languageId: str, handle=True) -> Dict:
         logger.info("Begin initialize")
 
         if rootPath is None:
@@ -430,11 +440,35 @@ class LanguageClient:
             }
         })
 
+        if settingsPath is None:
+            settingsPath = os.path.join(rootPath, state["settingsPath"])
+        logger.info("settingsPath: " + settingsPath)
+
+        settings = {}  # type: Dict
+
+        if state["loadSettings"]:
+            if os.path.isfile(settingsPath):
+                settings = json.load(open(settingsPath))
+            else:
+                logger.info("settingsPath is not a file")
+
         result = state["rpcs"][languageId].call("initialize", {
             "processId": os.getpid(),
             "rootPath": rootPath,
             "rootUri": state["rootUris"][languageId],
-            "capabilities": {},
+            "initializationOptions": settings.get("initializationOptions"),
+            "capabilities": {
+                "workspace": {
+                    "applyEdit": True
+                },
+                "textDocument": {
+                    "completion": {
+                        "completionItem": {
+                            "snippetSupport": True
+                        }
+                    }
+                }
+            },
             "trace": state["trace"],
         })
 
@@ -446,7 +480,10 @@ class LanguageClient:
                 languageId: result["capabilities"]
             }
         })
-        self.textDocument_didOpen()
+
+        if "initializationOptions" in settings:
+            del settings["initializationOptions"]
+        self.workspace_didChangeConfiguration(settings=settings, languageId=languageId)
         self.registerCMSource(languageId, result)
         logger.info("End initialize")
 
@@ -536,10 +573,20 @@ class LanguageClient:
 
         set_state([uri, "textDocument"], None)
 
-    @neovim.function("LanguageClient_textDocument_hover")
-    @deco_args
-    def textDocument_hover(self, uri: str, languageId: str,
-                           line: int, character: int, handle=True) -> Dict:
+    @deco_args(warn=False)
+    def workspace_didChangeConfiguration(self, settings: Dict, languageId: str) -> None:
+        logger.info("workspace/didChangeConfiguration")
+
+        state["rpcs"][languageId].notify("workspace/didChangeConfiguration", {
+            "settings": settings
+        })
+
+    @neovim.function("LanguageClient_workspace_didChangeConfiguration")
+    def workspace_didChangeConfiguration_vim(self, args: List) -> None:
+        self.workspace_didChangeConfiguration(settings=args[0])
+
+    def _textDocument_hover(self, uri: str, languageId: str,
+                            line: int, character: int) -> Dict:
         logger.info("Begin textDocument/hover")
 
         self.textDocument_didChange()
@@ -554,6 +601,20 @@ class LanguageClient:
             }
         })
 
+        logger.info("End textDocument/hover")
+        return result
+
+    @neovim.function("LanguageClient_textDocument_hoverSync", sync=True)
+    @deco_args
+    def textDocument_hoverSync(self, uri: str, languageId: str,
+                               line: int, character: int) -> Dict:
+        return self._textDocument_hover(uri, languageId, line, character)
+
+    @neovim.function("LanguageClient_textDocument_hover")
+    @deco_args
+    def textDocument_hover(self, uri: str, languageId: str,
+                           line: int, character: int, handle=True) -> Dict:
+        result = self._textDocument_hover(uri, languageId, line, character)
         if result is None or not handle:
             return result
 
@@ -567,7 +628,6 @@ class LanguageClient:
             info = markedString_to_str(contents)
         echo(info)
 
-        logger.info("End textDocument/hover")
         return result
 
     @neovim.function("LanguageClient_textDocument_definition")
@@ -606,6 +666,8 @@ class LanguageClient:
             defn = result[0]
         else:
             defn = result
+        if not defn.get("uri"):
+            return None
         if not defn["uri"].startswith("file:///"):
             echo("{}:{}".format(defn["uri"], defn["range"]["start"]["line"]))
             return result
@@ -1096,11 +1158,10 @@ class LanguageClient:
         for entry in diagnostics:
             line = entry["range"]["start"]["line"]
             msg = ""
-            if "severity" in entry:
+            if entry.get("severity"):
                 msg += "[{}]".format(DiagnosticSeverity(entry["severity"]).name)
-            if "code" in entry:
-                code = entry["code"]
-                msg += str(code)
+            if entry.get("code"):
+                msg += "[]".format(entry["code"])
             msg += " " + entry["message"]
             line_diagnostics[line] = msg
 

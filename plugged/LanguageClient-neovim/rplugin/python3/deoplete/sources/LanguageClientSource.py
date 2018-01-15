@@ -15,7 +15,9 @@ from LanguageClient import (
 
 
 def simplify_snippet(snip: str) -> str:
-    return re.sub(r'(?<!\\)\$\d+', '', snip)
+    snip = re.sub(r'(?<!\\)\$(?P<num>\d+)', '<`\g<num>`>', snip)
+    return re.sub(r'(?<!\\)\${(?P<num>\d+):(?P<desc>.+?)}',
+                  '<`\g<num>:\g<desc>`>', snip)
 
 
 def convert_to_deoplete_candidate(item: Dict) -> Dict:
@@ -54,11 +56,6 @@ class Source(Base):
 
         logger.info("deoplete LanguageClientSource initialized.")
 
-    def get_complete_position(self, context):
-        m = re.search('(?:' + context['keyword_patterns'] + ')*$',
-                      context['input'])
-        return m.start() if m else -1
-
     def gather_candidates(self, context):
         # context["is_async"] = True
 
@@ -66,8 +63,12 @@ class Source(Base):
         line = context["position"][1] - 1
         character = context["position"][2] - 1
 
-        result = LanguageClient._instance.textDocument_completion(
-            languageId=languageId, line=line, character=character)
+        try:
+            result = LanguageClient._instance.textDocument_completion(
+                languageId=languageId, line=line, character=character)
+        except Exception:
+            result = []
+            logger.error("Failed to get completion")
 
         if result is None:
             return []

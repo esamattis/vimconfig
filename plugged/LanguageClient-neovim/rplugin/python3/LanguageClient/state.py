@@ -86,14 +86,14 @@ def make_serializable(d: Any) -> Any:
             d2[k] = v
         return d2
     elif isinstance(d, list):
-        l = d
-        l2 = []
-        for i in l:
+        arr = d
+        arr2 = []
+        for i in arr:
             i2 = make_serializable(i)
             if i2 is None:
                 continue
-            l2.append(i2)
-        return l2
+            arr2.append(i2)
+        return arr2
     else:
         try:
             json.dumps(d)
@@ -172,14 +172,15 @@ def echo_signature(signature: str, activeParameter: str = None) -> None:
     """
     if activeParameter is None:
         echo(signature)
+        return
     parts = signature.split(activeParameter, 1)
     if (len(parts) != 2):
-        # active paramter is not part of a signature
+        # active parameter is not part of a signature
         echo(signature)
         return
     [begin, end] = parts
     execute_command("echon '{}' | echohl Bold | echon '{}' | echohl None | echon '{}'".format(
-        begin, activeParameter, end
+        escape(begin), escape(activeParameter), escape(end)
     ))
 
 

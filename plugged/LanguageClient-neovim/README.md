@@ -1,3 +1,7 @@
+> This branch has been deprecated. Please use branch [next] if possible.
+
+[next]: https://github.com/autozimu/LanguageClient-neovim/tree/next
+
 # LanguageClient-neovim
 [![Build Status](https://travis-ci.org/autozimu/LanguageClient-neovim.svg?branch=master)](https://travis-ci.org/autozimu/LanguageClient-neovim)
 
