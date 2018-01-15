@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import subprocess
+import signal
 
 
 class Client(object):
@@ -47,10 +48,11 @@ class Client(object):
         Client.__tsConfig = val
 
     def setTsConfig(self):
-        rawOutput = subprocess.check_output(['tsc', '--version'])
-        # formats out to be a list [major, minor, patch]
+        command = self.serverPath.replace('tsserver', 'tsc')
+        rawOutput = subprocess.check_output(
+            [command + ' --version'], shell=True)
         [major, minor, patch] = rawOutput.rstrip().decode(
-            "utf-8").replace('Version ', '').split('.')
+            "utf-8").split(' ').pop().split('.')
         self.tsConfg = {"major": int(major), "minor": int(
             minor), "patch": int(patch)}
 
@@ -93,8 +95,18 @@ class Client(object):
         """
         send a stop request
         """
-        Client.server_handle.kill()
+        os.killpg(os.getpgid(Client.server_handle.pid), signal.SIGTERM)
         Client.server_handle = None
+
+    def status(self):
+        if Client.server_handle is not None:
+            poll = Client.server_handle.poll()
+            if poll is None:
+                return 'running'
+            else:
+                return 'stopped'
+        else:
+            return 'stopped'
 
     def start(self):
         """
@@ -113,6 +125,7 @@ class Client(object):
                 universal_newlines=True,
                 shell=True,
                 bufsize=-1,
+                preexec_fn=os.setsid
             )
             return True
         else:
@@ -237,6 +250,20 @@ class Client(object):
         response = self.send_request("reload", args)
 
         return response["success"] if response and "success" in response else False
+
+    def getCodeFixesAtCursor(self, file, cursorPosition, errorCodes):
+        line = cursorPosition["line"]
+        col = cursorPosition["col"]
+        args = {
+            "file": file,
+            "startLine": line,
+            "endLine": line,
+            "startOffset": col,
+            "endOffset": col,
+            "errorCodes": errorCodes
+        }
+        response = self.send_request("getCodeFixes", args)
+        return response
 
     def getErr(self, files):
         args = {"files": files}
@@ -367,6 +394,10 @@ class Client(object):
             'needFileNameList': 'false'
         }
         response = self.send_request("projectInfo", args)
+        return get_response_body(response)
+
+    def getApplicableRefactors(self, args):
+        response = self.send_request("getApplicableRefactors", args)
         return get_response_body(response)
 
 
