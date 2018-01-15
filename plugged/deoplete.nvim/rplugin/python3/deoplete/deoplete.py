@@ -49,7 +49,7 @@ class Deoplete(logger.LoggingMixin):
     def enable_logging(self, context):
         logging = self._vim.vars['deoplete#_logging']
         logger.setup(self._vim, logging['level'], logging['logfile'])
-        self.debug_enabled = True
+        self.is_debug_enabled = True
 
     def completion_begin(self, context):
         self.check_recache(context)
@@ -92,7 +92,6 @@ class Deoplete(logger.LoggingMixin):
                 if source.disabled_syntaxes and 'syntax_names' not in context:
                     context['syntax_names'] = get_syn_names(self._vim)
                 ctx = copy.deepcopy(context)
-                ctx['is_async'] = False
 
                 charpos = source.get_complete_position(ctx)
                 if charpos >= 0 and source.is_bytepos:
@@ -110,13 +109,15 @@ class Deoplete(logger.LoggingMixin):
                     # Skip
                     continue
 
-                if (not source.is_volatile and
-                        source.name in self._prev_results and
+                if (source.name in self._prev_results and
                         self.use_previous_result(
-                            context, self._prev_results[source.name])):
+                            context, self._prev_results[source.name],
+                            source.is_volatile)):
                     results.append(self._prev_results[source.name])
                     continue
 
+                ctx['is_async'] = False
+                ctx['is_refresh'] = True
                 ctx['max_abbr_width'] = min(source.max_abbr_width,
                                             ctx['max_abbr_width'])
                 ctx['max_kind_width'] = min(source.max_kind_width,
@@ -160,10 +161,30 @@ class Deoplete(logger.LoggingMixin):
                           'is restarted.' % source.name)
                     self._sources.pop(source.name)
                     continue
-                error_tb(self._vim,
-                         'Could not get completions from: %s' % source.name)
+                error_tb(self._vim, 'Errors from: %s' % source.name)
 
         return results
+
+    def gather_async_results(self, result, source):
+        try:
+            result['context']['is_refresh'] = False
+            async_candidates = source.gather_candidates(result['context'])
+            result['is_async'] = result['context']['is_async']
+            if async_candidates is None:
+                return
+            result['context']['candidates'] += convert2candidates(
+                async_candidates)
+        except Exception:
+            self._source_errors[source.name] += 1
+            if source.is_silent:
+                return
+            if self._source_errors[source.name] > 2:
+                error(self._vim, 'Too many errors from "%s". '
+                      'This source is disabled until Neovim '
+                      'is restarted.' % source.name)
+                self._sources.pop(source.name)
+            else:
+                error_tb(self._vim, 'Errors from: %s' % source.name)
 
     def merge_results(self, results, context_input):
         merged_results = []
@@ -174,13 +195,7 @@ class Deoplete(logger.LoggingMixin):
 
             # Gather async results
             if result['is_async']:
-                async_candidates = source.gather_candidates(
-                    result['context'])
-                result['is_async'] = result['context']['is_async']
-                if async_candidates is None:
-                    continue
-                result['context']['candidates'] += convert2candidates(
-                    async_candidates)
+                self.gather_async_results(result, source)
 
             if not result['context']['candidates']:
                 continue
@@ -228,7 +243,7 @@ class Deoplete(logger.LoggingMixin):
                               'is restarted.' % f.name)
                         self._filters.pop(f.name)
                         continue
-                    error_tb(self._vim, 'Could not filter using: %s' % f)
+                    error_tb(self._vim, 'Errors from: %s' % f)
 
             context['ignorecase'] = ignorecase
 
@@ -320,7 +335,7 @@ class Deoplete(logger.LoggingMixin):
             yield source_name, source
 
     def profile_start(self, context, name):
-        if self._profile_flag is 0 or not self.debug_enabled:
+        if self._profile_flag is 0 or not self.is_debug_enabled:
             return
 
         if not self._profile_flag:
@@ -410,7 +425,8 @@ class Deoplete(logger.LoggingMixin):
             'sorters',
             'converters',
             'mark',
-            'debug_enabled',
+            'is_debug_enabled',
+            'is_silent',
         )
 
         for name, source in self._sources.items():
@@ -424,11 +440,15 @@ class Deoplete(logger.LoggingMixin):
                 setattr(source, attr, get_custom(context['custom'],
                                                  name, attr, source_attr))
 
-    def use_previous_result(self, context, result):
-        return (context['position'][1] == result['prev_linenr'] and
-                re.sub(r'\w*$', '', context['input']) ==
-                re.sub(r'\w*$', '', result['prev_input']) and
-                context['input'].find(result['prev_input']) == 0)
+    def use_previous_result(self, context, result, is_volatile):
+        if context['position'][1] != result['prev_linenr']:
+            return False
+        if is_volatile:
+            return context['input'] == result['prev_input']
+        else:
+            return (re.sub(r'\w*$', '', context['input']) ==
+                    re.sub(r'\w*$', '', result['prev_input']) and
+                    context['input'].find(result['prev_input']) == 0)
 
     def is_skip(self, context, source):
         if 'syntax_names' in context and source.disabled_syntaxes:

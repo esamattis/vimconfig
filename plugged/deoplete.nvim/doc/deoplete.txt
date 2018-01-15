@@ -21,7 +21,6 @@ Create filter		|deoplete-create-filter|
 FILTERS			|deoplete-filters|
 External sources	|deoplete-external-sources|
 External plugins	|deoplete-external-plugins|
-Vim8 async API support	|deoplete-vim8|
 FAQ			|deoplete-faq|
 Compatibility		|deoplete-compatibility|
 
@@ -143,6 +142,13 @@ g:deoplete#enable_refresh_always
 		Note: It increases the screen flicker.
 
 		Default value: 0
+
+					*g:deoplete#enable_on_insert_enter*
+g:deoplete#enable_on_insert_enter
+		Deoplete enables the auto completion on |InsertEnter| autocmd
+		if this value is 1.
+
+		Default value: 1
 
 				*g:deoplete#auto_complete_start_length*
 g:deoplete#auto_complete_start_length
@@ -473,7 +479,7 @@ deoplete#custom#source({source-name}, {option-name}, {value})
 		" Enable jedi source debug messages
 		" let g:deoplete#enable_profile = 1
 		" call deoplete#enable_logging('DEBUG', 'deoplete.log')
-		" call deoplete#custom#source('jedi', 'debug_enabled', 1)
+		" call deoplete#custom#source('jedi', 'is_debug_enabled', 1)
 <
 						*deoplete#enable_logging()*
 deoplete#enable_logging({level}, {logfile})
@@ -484,7 +490,7 @@ deoplete#enable_logging({level}, {logfile})
 		Messages are appended to this file.  Each log session will
 		start with "--- Deoplete Log Start ---".
 		Note: You must enable
-		|deoplete-source-attribute-debug_enabled| to debug the
+		|deoplete-source-attribute-is_debug_enabled| to debug the
 		sources.
 
 
@@ -684,6 +690,21 @@ matcher_length
 		Length matching matcher.
 		It removes candidates shorter than or equal to the user input.
 
+					*deoplete-filter-matcher_cpsm*
+matcher_cpsm
+		A matcher which filters the candidates using cpsm.
+		It is like |deoplete-filter-matcher_full_fuzzy| but faster.
+		It also sorts the candidates using cpsm.
+		Note: cpsm plugin build/install is needed in 'runtimepath'.
+		https://github.com/nixprime/cpsm
+		Note: You must use Python3 support enabled cpsm. >
+			$ PY3=ON ./install.sh
+<
+		Configuration example: >
+>
+		call deoplete#custom#source('_', 'matchers', ['matcher_cpsm'])
+		call deoplete#custom#source('_', 'sorters', [])
+<
 						*deoplete-filter-sorter_rank*
 sorter_rank	Matched rank order sorter.  The higher the head matched word
 		or already selected.
@@ -846,10 +867,16 @@ is_silent
 					*deoplete-source-attribute-is_volatile*
 is_volatile
 		(Bool)				(Optional)
-		If it is True, the source depends on the user input.
+		If it is True, the source depends on the user input. It means
+		that if this flag is set to False, deoplete will cache
+		gather_candidates results and will not call gather_candidates
+		on each input change. Only on_post_filter method will be
+		called on each input change (if implemented).
 
-				*deoplete-source-attribute-debug_enabled*
-debug_enabled
+		Default value: False
+
+				*deoplete-source-attribute-is_debug_enabled*
+is_debug_enabled
 		(Bool)				(Optional)
 		If it is True, the debug log feature is enabled in the source.
 
@@ -977,9 +1004,19 @@ __{name}	(Unspecified)			(Optional)
 			It contains current 'filetype' and same
 			filetypes and composite filetypes.
 
+		is_refresh		(Bool)
+			If the input is changed, it will be "True".
+
 		is_async		(Bool)
 			If the gather is asynchronous, the source must set
-			it "True".
+			it to "True". A typical strategy for an asynchronous
+			gather_candidates method to use this flag is to
+			set is_async flag to True while results are being
+			produced in the background (optionally, returning them
+			as they become ready). Once background processing
+			has completed, is_async flag should be set to False
+			indicating that this is the last portion of the
+			candidates.
 
 	The below is the example of async deoplete source.
 	If "context['is_async']" is True, the gather_candidates is called
@@ -1249,10 +1286,6 @@ FREQUENTLY ASKED QUESTIONS (FAQ)                                *deoplete-faq*
                                                         *deoplete-faq-trouble*
 1. Troubleshooting~
 
-Q: Does deoplete support Vim8?
-
-A: see |deoplete-vim8|
-
 Q: deoplete does not work.
 
 A: 1. Please update neovim to the latest version.
@@ -1335,7 +1368,7 @@ A: Please enable logging feature like this. >
 
        let g:deoplete#enable_profile = 1
        call deoplete#enable_logging('DEBUG', 'deoplete.log')
-       call deoplete#custom#source('jedi', 'debug_enabled', 1)
+       call deoplete#custom#source('jedi', 'is_debug_enabled', 1)
 <
                                                          *deoplete-faq-config*
 2. Configuration~
@@ -1581,6 +1614,9 @@ A: https://github.com/zchee/deoplete-jedi/issues/35
 
 ==============================================================================
 COMPATIBILITY					*deoplete-compatibility*
+
+2017.12.04
+* "debug_enabled" is deprecated.  Please use "is_debug_enabled" instead.
 
 2017.07.22
 * "deoplete#custom#set()" is deprecated.

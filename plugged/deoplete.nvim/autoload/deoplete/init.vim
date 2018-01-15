@@ -13,6 +13,14 @@ function! deoplete#init#_is_enabled() abort
 endfunction
 
 function! deoplete#init#_initialize() abort
+  if has('vim_starting')
+    augroup deoplete
+      autocmd!
+      autocmd VimEnter * call deoplete#enable()
+    augroup END
+    return 1
+  endif
+
   if !deoplete#init#_check_channel()
     return 1
   endif
@@ -78,7 +86,7 @@ function! deoplete#init#_channel() abort
   endtry
 endfunction
 function! deoplete#init#_check_channel() abort
-  return !has('vim_starting') && !exists('g:deoplete#_initialized')
+  return !exists('g:deoplete#_initialized')
 endfunction
 function! deoplete#init#_enable() abort
   call deoplete#handler#_init()
@@ -114,6 +122,8 @@ function! deoplete#init#_variables() abort
         \ 'g:deoplete#enable_camel_case', 0)
   call deoplete#util#set_default(
         \ 'g:deoplete#enable_refresh_always', 0)
+  call deoplete#util#set_default(
+        \ 'g:deoplete#enable_on_insert_enter', 1)
   call deoplete#util#set_default(
         \ 'g:deoplete#disable_auto_complete', 0)
   call deoplete#util#set_default(
@@ -213,6 +223,7 @@ function! deoplete#init#_context(event, sources) abort
         \ 'changedtick': b:changedtick,
         \ 'event': event,
         \ 'input': input,
+        \ 'is_windows': ((has('win32') || has('win64')) ? v:true : v:false),
         \ 'next_input': deoplete#util#get_next_input(a:event),
         \ 'complete_str': '',
         \ 'encoding': &encoding,

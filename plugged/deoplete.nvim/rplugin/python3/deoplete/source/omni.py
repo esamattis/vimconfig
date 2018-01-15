@@ -65,12 +65,9 @@ class Source(Base):
                 if filetype == current_ft and self.__omnifunc in [
                         'ccomplete#Complete',
                         'htmlcomplete#CompleteTags',
+                        'LanguageClient#complete',
                         'phpcomplete#CompletePHP']:
                     # In the blacklist
-                    self.print_error('omni source does not support: ' +
-                                     self.__omnifunc)
-                    self.print_error('You must use g:deoplete#omni_patterns' +
-                                     ' instead.')
                     return -1
                 try:
                     complete_pos = self.vim.call(self.__omnifunc, 1, '')
@@ -84,9 +81,9 @@ class Source(Base):
     def gather_candidates(self, context):
         try:
             candidates = self.vim.call(self.__omnifunc, 0, '')
-            if candidates is dict:
+            if isinstance(candidates, dict):
                 candidates = candidates['words']
-            elif candidates is int:
+            elif isinstance(candidates, int):
                 candidates = []
         except Exception as e:
             self.print_error('Error occurred calling omnifunction: ' +

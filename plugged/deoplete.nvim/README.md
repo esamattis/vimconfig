@@ -46,10 +46,11 @@ if !has('nvim')
 endif
 ```
 
+
 ## Requirements
 
 deoplete requires Neovim or Vim8 with if\_python3.
-If `:echo has("python3")` returns `1`, then you're done; otherwise, see below.
+If `:echo has("python3")` returns `1`, then you have python 3 support; otherwise, see below.
 
 You can enable Python3 interface with pip:
 
@@ -67,6 +68,13 @@ If Deoplete was installed prior to Python support being added to Neovim,
 `:UpdateRemotePlugins` should be executed manually in order to enable
 auto-completion.
 
+
+## Configuration Examples
+
+```vim
+" Use deoplete.
+let g:deoplete#enable_at_startup = 1
+```
 
 ## Sources
 
@@ -112,10 +120,7 @@ https://www.youtube.com/watch?v=oanoPTpiSF4
 
 [C# completion using deoplete-omnisharp](https://camo.githubusercontent.com/f429dc72f91b25619980dbb9d436065ba3fb0a44/68747470733a2f2f692e696d6775722e636f6d2f464e634c4441752e676966)
 
+[Register/Extract list completions](https://camo.githubusercontent.com/6a6df993ad0e05c014c72c8f8702447f9b34ad90/68747470733a2f2f692e696d6775722e636f6d2f5131663731744a2e676966)
 
-## Configuration Examples
-
-```vim
-" Use deoplete.
-let g:deoplete#enable_at_startup = 1
-```
+### deoplete-fsharp sample ( Enjoy! )
+![FSharp completion using deopletefs](https://github.com/callmekohei/deoplete-fsharp/blob/master/pic/sample.gif)
