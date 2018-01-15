@@ -1,13 +1,5 @@
 function! neoformat#formatters#markdown#enabled() abort
-   return ['remark', 'prettier']
-endfunction
-
-function! neoformat#formatters#markdown#prettier() abort
-    return {
-        \ 'exe': 'prettier',
-        \ 'args': ['--stdin', '--stdin-filepath', '%:p'],
-        \ 'stdin': 1,
-        \ }
+   return ['remark']
 endfunction
 
 function! neoformat#formatters#markdown#remark() abort

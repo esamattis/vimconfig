@@ -92,6 +92,7 @@ Options:
 | `no_append` | do not append the `path` of the file to the formatter command,
 	     used when the `path` is in the middle of a command | default: 0 |
 	     optional
+| `env`       | list of environment variables to prepend to the command | default: [] | optional
 
 Example:
 
@@ -260,7 +261,8 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
   - [`js-beautify`](https://github.com/beautify-web/js-beautify),
     [`prettydiff`](https://github.com/prettydiff/prettydiff),
     [`prettier`](https://github.com/prettier/prettier),
-    [`jq`](https://stedolan.github.io/jq/)
+    [`jq`](https://stedolan.github.io/jq/),
+    [`fixjson`](https://github.com/rhysd/fixjson)
 - Kotlin
   - [`ktlint`](https://github.com/shyiko/ktlint)
 - LaTeX
@@ -279,6 +281,7 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
     [`astyle`](http://astyle.sourceforge.net)
 - OCaml
   - [`ocp-indent`](http://www.typerex.org/ocp-indent.html)
+  - [`ocamlformat`](https://github.com/ocaml-ppx/ocamlformat)
 - Pandoc Markdown
   - [`pandoc`](https://pandoc.org/MANUAL.html)
 - Pawn

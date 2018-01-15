@@ -83,6 +83,7 @@ Options:
 | `replace`   | overwrite the file, instead of updating the buffer                                                                 | 0       | optional            |
 | `stdin`     | send data to the stdin of the formatter                                                                            | 0       | optional            |
 | `no_append` | do not append the `path` of the file to the formatter command, used when the `path` is in the middle of a command  | 0       | optional            |
+| `env`       | list of environment variable definitions to be prepended to the formatter command                                  | \[]     | optional            |
 
 Example:
 
@@ -92,6 +93,7 @@ let g:neoformat_python_autopep8 = {
             \ 'args': ['-s 4', '-E'],
             \ 'replace': 1 " replace the file, instead of updating buffer (default: 0),
             \ 'stdin': 1, " send data to stdin of formatter (default: 0)
+            \ 'env': ["DEBUG=1"], " prepend environment variables to formatter command
             \ 'no_append': 1,
             \ }
 
@@ -266,7 +268,8 @@ that caused Neoformat to be invoked.
   - [`js-beautify`](https://github.com/beautify-web/js-beautify),
     [`prettydiff`](https://github.com/prettydiff/prettydiff),
     [`prettier`](https://github.com/prettier/prettier),
-    [`jq`](https://stedolan.github.io/jq/)
+    [`jq`](https://stedolan.github.io/jq/),
+    [`fixjson`](https://github.com/rhysd/fixjson)
 - Kotlin
   - [`ktlint`](https://github.com/shyiko/ktlint)
 - LaTeX
@@ -285,6 +288,7 @@ that caused Neoformat to be invoked.
     [`astyle`](http://astyle.sourceforge.net)
 - OCaml
   - [`ocp-indent`](http://www.typerex.org/ocp-indent.html)
+  - [`ocamlformat`](https://github.com/ocaml-ppx/ocamlformat)
 - Pandoc Markdown
   - [`pandoc`](https://pandoc.org/MANUAL.html)
 - Pawn
