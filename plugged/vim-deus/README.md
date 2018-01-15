@@ -36,7 +36,7 @@ Manual: place `deus.vim` in your `vimfiles/colors` folder and add this line to y
 
 Use a package manager like Pathogen, Vundle, or Vim-plug just to name a few:
 
-Pathogen:
+### Pathogen:
 
 `cd ~/.vim/`
 
@@ -48,7 +48,22 @@ Pathogen:
 
 In your terminal
 
+
+### Vim-Plug:
+add the following lines to your .vimrc:
+
+```
+call plug#begin('~/.vim/bundle/')
+Plug (ajmwagar/vim-deus)
+cal  plug#end()
+```
+Don't forget to run:
+
+`:PlugInstall`
+
+
 ---
+
 
 
 ## Language Syntax Support:
@@ -84,7 +99,9 @@ In your terminal
 - Ctrlp
 - NerdTREE
 - Syntastic (and most linters)
+- Deoplete
 - YCM (YouCompleteMe)
+- Tabbar
 - Vim-easy-motion
 - Sneak
 - Rainbow-Parentheses
@@ -92,7 +109,7 @@ In your terminal
 ---
 ## Troubleshooting
 
-When using terminal-vim and vim-dues the colors
+When using terminal-vim and vim-deus the colors
 can get messed up.
 
 To fix this add the following snippet to your ~/.vimrc:
@@ -110,6 +127,8 @@ To fix this add the following snippet to your ~/.vimrc:
 `colorscheme deus`
 
 `let g:deus_termcolors=256`
+
+> _Please not this does **not** work with tmux (you will have a brownish background)._
 
 ---
 
