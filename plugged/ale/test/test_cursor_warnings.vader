@@ -1,5 +1,6 @@
 Before:
   Save g:ale_echo_msg_format
+  Save g:ale_echo_cursor
 
   let g:ale_buffer_info = {
   \ bufnr('%'): {
@@ -66,6 +67,7 @@ Before:
   let g:ale_set_loclist = 0
   let g:ale_set_signs = 0
   let g:ale_set_highlights = 0
+  let g:ale_echo_cursor = 1
 
   function GetLastMessage()
     redir => l:output
@@ -89,6 +91,7 @@ After:
   let g:ale_buffer_info = {}
 
   unlet! g:output
+  unlet! b:ale_loclist_msg_format
 
   delfunction GetLastMessage
 
@@ -212,3 +215,21 @@ Execute(The %code% and %ifcode% should be removed when there's no code):
   call ale#cursor#EchoCursorWarning()
 
   AssertEqual 'Some information', GetLastMessage()
+
+Execute(The buffer message format option should take precedence):
+  let g:ale_echo_msg_format = '%(code) %%s'
+  let b:ale_echo_msg_format = 'FOO %s'
+
+  call cursor(1, 14)
+  call ale#cursor#EchoCursorWarning()
+
+  AssertEqual 'FOO Some information', GetLastMessage()
+
+Execute(The cursor message shouldn't be echoed if the option is off):
+  let g:ale_echo_cursor = 0
+  echom 'foo'
+
+  call cursor(1, 1)
+  call ale#cursor#EchoCursorWarning()
+
+  AssertEqual 'foo', GetLastMessage()

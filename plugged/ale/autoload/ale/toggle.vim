@@ -79,7 +79,7 @@ endfunction
 function! s:EnablePreamble() abort
     " Set pattern options again, if enabled.
     if g:ale_pattern_options_enabled
-        call ale#pattern_options#SetOptions()
+        call ale#pattern_options#SetOptions(bufnr(''))
     endif
 
     " Lint immediately, including running linters against the file.
@@ -133,7 +133,7 @@ function! ale#toggle#Enable() abort
     if !g:ale_enabled
         " Set pattern options again, if enabled.
         if g:ale_pattern_options_enabled
-            call ale#pattern_options#SetOptions()
+            call ale#pattern_options#SetOptions(bufnr(''))
         endif
 
         call ale#toggle#Toggle()
@@ -158,7 +158,7 @@ function! ale#toggle#ToggleBuffer(buffer) abort
     " Disabling ALE globally removes autocmd events, so we cannot enable
     " linting locally when linting is disabled globally
     if l:enabled && !g:ale_enabled
-        echom 'ALE cannot be enabled locally when disabled globally'
+        execute 'echom ''ALE cannot be enabled locally when disabled globally'''
         return
     endif
 

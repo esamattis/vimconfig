@@ -24,8 +24,8 @@ endif
 if !s:has_features
     " Only output a warning if editing some special files.
     if index(['', 'gitcommit'], &filetype) == -1
-        echoerr 'ALE requires NeoVim >= 0.1.5 or Vim 8 with +timers +job +channel'
-        echoerr 'Please update your editor appropriately.'
+        execute 'echoerr ''ALE requires NeoVim >= 0.1.5 or Vim 8 with +timers +job +channel'''
+        execute 'echoerr ''Please update your editor appropriately.'''
     endif
 
     " Stop here, as it won't work.
@@ -175,8 +175,9 @@ let g:ale_statusline_format = get(g:, 'ale_statusline_format',
 \)
 
 " This flag can be set to 0 to disable warnings for trailing whitespace
-let g:ale_warn_about_trailing_whitespace =
-\   get(g:, 'ale_warn_about_trailing_whitespace', 1)
+call ale#Set('warn_about_trailing_whitespace', 1)
+" This flag can be set to 0 to disable warnings for trailing blank lines
+call ale#Set('warn_about_trailing_blank_lines', 1)
 
 " A flag for controlling the maximum size of the command history to store.
 let g:ale_max_buffer_history_size = get(g:, 'ale_max_buffer_history_size', 20)
@@ -186,6 +187,10 @@ let g:ale_history_enabled = get(g:, 'ale_history_enabled', 1)
 
 " A flag for storing the full output of commands in the history.
 let g:ale_history_log_output = get(g:, 'ale_history_log_output', 1)
+
+" A flag for caching failed executable checks.
+" This is off by default, because it will cause problems.
+call ale#Set('cache_executable_check_failures', 0)
 
 " A dictionary mapping regular expression patterns to arbitrary buffer
 " variables to be set. Useful for configuration ALE based on filename
@@ -203,6 +208,9 @@ call ale#Set('type_map', {})
 call ale#Set('completion_enabled', 0)
 call ale#Set('completion_delay', 100)
 call ale#Set('completion_max_suggestions', 50)
+
+" A setting for wrapping commands.
+call ale#Set('command_wrapper', '')
 
 if g:ale_set_balloons
     call ale#balloon#Enable()
@@ -247,6 +255,10 @@ command! -bar ALEFix :call ale#fix#Fix()
 " Suggest registered functions to use for fixing problems.
 command! -bar ALEFixSuggest :call ale#fix#registry#Suggest(&filetype)
 
+" Go to definition for tsserver and LSP
+command! -bar ALEGoToDefinition :call ale#definition#GoTo({})
+command! -bar ALEGoToDefinitionInTab :call ale#definition#GoTo({'open_in_tab': 1})
+
 " <Plug> mappings for commands
 nnoremap <silent> <Plug>(ale_previous) :ALEPrevious<Return>
 nnoremap <silent> <Plug>(ale_previous_wrap) :ALEPreviousWrap<Return>
@@ -265,6 +277,8 @@ nnoremap <silent> <Plug>(ale_reset_buffer) :ALEResetBuffer<Return>
 nnoremap <silent> <Plug>(ale_lint) :ALELint<Return>
 nnoremap <silent> <Plug>(ale_detail) :ALEDetail<Return>
 nnoremap <silent> <Plug>(ale_fix) :ALEFix<Return>
+nnoremap <silent> <Plug>(ale_go_to_definition) :ALEGoToDefinition<Return>
+nnoremap <silent> <Plug>(ale_go_to_definition_in_tab) :ALEGoToDefinitionInTab<Return>
 
 " Set up autocmd groups now.
 call ale#toggle#InitAuGroups()
@@ -274,7 +288,7 @@ call ale#toggle#InitAuGroups()
 augroup ALECleanupGroup
     autocmd!
     " Clean up buffers automatically when they are unloaded.
-    autocmd BufUnload * call ale#engine#Cleanup(str2nr(expand('<abuf>')))
+    autocmd BufDelete * call ale#engine#Cleanup(str2nr(expand('<abuf>')))
     autocmd QuitPre * call ale#events#QuitEvent(str2nr(expand('<abuf>')))
 augroup END
 
