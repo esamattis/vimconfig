@@ -31,7 +31,8 @@ class Source(Base):
             else ["typescript", "tsx", "typescript.tsx"]
         self.rank = 1000
         self.min_pattern_length = 1
-        self.input_pattern = r'.'
+        # Workaround for https://github.com/mhartington/nvim-typescript/issues/117
+        self.input_pattern = r'FIXME342323'
         # self.input_pattern = r'(\.|::)\w*'
         self._last_input_reload = time()
         self._max_completion_detail = self.vim.vars[
