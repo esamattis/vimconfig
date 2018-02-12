@@ -54,7 +54,7 @@ add the following lines to your .vimrc:
 
 ```
 call plug#begin('~/.vim/bundle/')
-Plug (ajmwagar/vim-deus)
+Plug 'ajmwagar/vim-deus'
 cal  plug#end()
 ```
 Don't forget to run:
@@ -129,6 +129,8 @@ To fix this add the following snippet to your ~/.vimrc:
 `let g:deus_termcolors=256`
 
 > _Please not this does **not** work with tmux (you will have a brownish background)._
+
+If you use vim in a terminal that supports italics, in order to have italics enable with vim-deus, set the environment variable TERM_ITALICS to TRUE.
 
 ---
 
