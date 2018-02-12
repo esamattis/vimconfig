@@ -94,6 +94,8 @@ Options:
 	     optional
 | `env`       | list of environment variables to prepend to the command | default: [] | optional
 
+| `valid_exit_codes` | list of valid exit codes for formatters who do not respect common unix practices | \[0] | optional
+
 Example:
 
 Define custom formatters.
@@ -103,6 +105,7 @@ Define custom formatters.
             \ 'args': ['-s 4', '-E'],
             \ 'replace': 1 " replace the file, instead of updating buffer (default: 0),
             \ 'stdin': 1, " send data to stdin of formatter (default: 0)
+            \ 'valid_exit_codes': [0, 23],
             \ 'no_append': 1,
             \ }
 
@@ -275,6 +278,7 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
   - [`luaformatter`](https://github.com/LuaDevelopmentTools/luaformatter)
 - Markdown
   - [`remark`](https://github.com/wooorm/remark)
+    [`prettier`](https://github.com/prettier/prettier),
 - Objective-C
   - [`uncrustify`](http://uncrustify.sourceforge.net),
     [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html),

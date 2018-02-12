@@ -18,7 +18,7 @@ pip install yapf==0.14.0
 
 # Linter(s)
 if ! hash vint 2>/dev/null; then
-    pip install vim-vint
+    pip3 install vim-vint
 fi
 
 # Make sure neovim is installed
@@ -41,3 +41,7 @@ fi
 if [ ! -d "$HOME/.vim/plugged/vader.vim" ]; then
     git clone https://github.com/junegunn/vader.vim.git ~/.vim/plugged/vader.vim
 fi
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export PATH=$PATH:"$DIR"/bin
+echo $PATH

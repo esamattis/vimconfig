@@ -76,14 +76,15 @@ Define custom formatters.
 
 Options:
 
-| name        | description                                                                                                        | default | optional / required |
-| ----------- | ------------------------------------------------------------------------------------------------------------------ | ------- | ------------------- |
-| `exe`       | the name the formatter executable in the path                                                                      | n/a     | **required**        |
-| `args`      | list of arguments                                                                                                  | \[]     | optional            |
-| `replace`   | overwrite the file, instead of updating the buffer                                                                 | 0       | optional            |
-| `stdin`     | send data to the stdin of the formatter                                                                            | 0       | optional            |
-| `no_append` | do not append the `path` of the file to the formatter command, used when the `path` is in the middle of a command  | 0       | optional            |
-| `env`       | list of environment variable definitions to be prepended to the formatter command                                  | \[]     | optional            |
+| name               | description                                                                                                       | default | optional / required |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------- | ------- | ------------------- |
+| `exe`              | the name the formatter executable in the path                                                                     | n/a     | **required**        |
+| `args`             | list of arguments                                                                                                 | \[]     | optional            |
+| `replace`          | overwrite the file, instead of updating the buffer                                                                | 0       | optional            |
+| `stdin`            | send data to the stdin of the formatter                                                                           | 0       | optional            |
+| `no_append`        | do not append the `path` of the file to the formatter command, used when the `path` is in the middle of a command | 0       | optional            |
+| `env`              | list of environment variable definitions to be prepended to the formatter command                                 | \[]     | optional            |
+| `valid_exit_codes` | list of valid exit codes for formatters who do not respect common unix practices                                  | \[0]    | optional            |
 
 Example:
 
@@ -94,6 +95,7 @@ let g:neoformat_python_autopep8 = {
             \ 'replace': 1 " replace the file, instead of updating buffer (default: 0),
             \ 'stdin': 1, " send data to stdin of formatter (default: 0)
             \ 'env': ["DEBUG=1"], " prepend environment variables to formatter command
+            \ 'valid_exit_codes': [0, 23],
             \ 'no_append': 1,
             \ }
 
@@ -282,6 +284,7 @@ that caused Neoformat to be invoked.
   - [`luaformatter`](https://github.com/LuaDevelopmentTools/luaformatter)
 - Markdown
   - [`remark`](https://github.com/wooorm/remark)
+    [`prettier`](https://github.com/prettier/prettier)
 - Objective-C
   - [`uncrustify`](http://uncrustify.sourceforge.net),
     [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html),
