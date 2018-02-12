@@ -51,12 +51,14 @@ class Client(object):
         command = self.serverPath.replace('tsserver', 'tsc')
         rawOutput = subprocess.check_output(
             [command + ' --version'], shell=True)
-        [major, minor, patch] = rawOutput.rstrip().decode(
-            "utf-8").split(' ').pop().split('.')
+        # strip nightly
+        pure_version = rawOutput.rstrip().decode(
+                'utf-8').split(' ').pop().split('-')[0]
+        [major, minor, patch] = pure_version.split('.')[:3]
         self.tsConfg = {"major": int(major), "minor": int(
             minor), "patch": int(patch)}
 
-    def isHigher(self, val):
+    def isCurrentVersionHigher(self, val):
         local = self.tsConfg["major"] * 100 + \
             self.tsConfg["minor"] * 10 + self.tsConfg["patch"]
         return local > val
@@ -95,7 +97,7 @@ class Client(object):
         """
         send a stop request
         """
-        os.killpg(os.getpgid(Client.server_handle.pid), signal.SIGTERM)
+        Client.server_handle.kill()
         Client.server_handle = None
 
     def status(self):
@@ -108,13 +110,14 @@ class Client(object):
         else:
             return 'stopped'
 
-    def start(self):
+    def start(self, should_debug, debug_options):
         """
         start proc
         """
-        # https://github.com/Microsoft/TypeScript/blob/master/lib/protocol.d.ts#L854
+        # https://github.com/Microsoft/TypeScript/blob/master/lib/protocol.d.ts
         if Client.server_handle is None:
-            # Client.__environ['TSS_LOG'] = "-logToFile true -file ./server.log"
+            if should_debug is not 0:
+                Client.__environ['TSS_LOG'] = "-logToFile true -file {0} -level {1}".format(debug_options['file'], debug_options['level'])
             Client.server_handle = subprocess.Popen(
                 [self.serverPath, "--disableAutomaticTypingAcquisition"],
                 env=Client.__environ,
@@ -125,7 +128,6 @@ class Client(object):
                 universal_newlines=True,
                 shell=True,
                 bufsize=-1,
-                preexec_fn=os.setsid
             )
             return True
         else:
@@ -166,7 +168,7 @@ class Client(object):
             # TODO: refactor for a conditional loop
 
             # TS 1.9.x returns two reload finished responses
-            if not self.isHigher(260) and self.isHigher(190):
+            if not self.isCurrentVersionHigher(260) and self.isCurrentVersionHigher(190):
                 if ('body', {'reloadFinished': True}) in ret.items():
                     continue
 
