@@ -13,6 +13,10 @@ function! neosnippet#parser#_parse_snippets(filename) abort
     return {}
   endif
 
+  if neosnippet#util#is_sudo()
+    return s:parse(a:filename)[0]
+  endif
+
   let cache_dir = neosnippet#variables#data_dir()
   let snippets = {}
   if !s:Cache.check_old_cache(cache_dir, a:filename)
@@ -24,7 +28,7 @@ function! neosnippet#parser#_parse_snippets(filename) abort
   endif
   if empty(snippets) || s:Cache.check_old_cache(cache_dir, a:filename)
     let [snippets, sourced] = s:parse(a:filename)
-    if len(snippets) > 5 && !neosnippet#util#is_sudo() && !sourced
+    if len(snippets) > 5 && !sourced
       call s:Cache.writefile(
             \ cache_dir, a:filename,
             \ [neosnippet#helpers#vim2json(snippets)])
@@ -291,15 +295,18 @@ function! neosnippet#parser#_get_completed_snippet(completed_item, cur_text, nex
   endif
 
   " Set abbr
-  let abbr = (item.abbr != '') ? item.abbr : item.word
-  if len(item.menu) > 5
-    " Combine menu.
-    let abbr .= ' ' . item.menu
-  endif
-  if item.info != ''
-    let abbr .= split(item.info, '\n')[0]
+  let abbr = ''
+  if get(item, 'info', '') =~# '^.\+('
+    let abbr = matchstr(item.info, '^\_s*\zs.*')
+  elseif get(item, 'abbr', '') =~# '^.\+('
+    let abbr = item.abbr
+  elseif get(item, 'menu', '') =~# '^.\+('
+    let abbr = item.menu
+  elseif item.word =~# '^.\+(' || get(item, 'kind', '') == 'f'
+    let abbr = item.word
   endif
   let abbr = escape(abbr, '\')
+
   let pairs = neosnippet#util#get_buffer_config(
       \ &filetype, '',
       \ 'g:neosnippet#completed_pairs', 'g:neosnippet#_completed_pairs', {})
@@ -409,7 +416,7 @@ endfunction
 function! neosnippet#parser#_conceal_argument(arg, cnt, args) abort
   let outside = ''
   let inside = ''
-  if (a:args != '')
+  if a:args != ''
     if g:neosnippet#enable_optional_arguments
       let inside = ', '
     else
