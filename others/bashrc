@@ -66,6 +66,10 @@ fi
 export N_PREFIX=$HOME/n
 export PATH=$N_PREFIX/bin:$PATH
 
+git-stats() {
+  git log --pretty=format:%an | awk '{ ++c[$0]; } END { for(cc in c) printf "%5d %s\n",c[cc],cc; }'| sort -rh
+}
+
 
 # "bundle exec" like tool for node_modules. Executes given script from the
 # first found node_modules folder
@@ -104,6 +108,7 @@ LIGHT_GREEN="\[\033[1;32m\]"
 WHITE="\[\033[1;37m\]"
 LIGHT_GRAY="\[\033[0;37m\]"
 COLOR_NONE="\[\e[0m\]"
+
 
 function generate_nvm_info {
   local version_pattern="node\/v([\.0-9]+)\/bin"

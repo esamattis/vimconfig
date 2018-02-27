@@ -5,8 +5,6 @@
   user = epeli
 [apply]
   whitespace = nowarn
-[status]
-  showUntrackedFiles = all
 [color]
   branch = auto
   diff = auto
@@ -30,12 +28,15 @@
   ci = commit
   l = log --graph --pretty=format:'%C(yellow)%h%C(cyan)%d%Creset %s %C(white)- %an, %ar%Creset'
   today = log --since="6am" --graph --pretty=format:'%C(yellow)%h%C(cyan)%d%Creset %s %C(white)- %an, %ar%Creset'
+  l-day = !git log --after="$1 00:00" --until="$1 23:59" --author="$(git config user.name)"
   ll = log --stat --abbrev-commit
   # Sorted tag list
   stag = for-each-ref --sort='*authordate' --format='%(refname:short)' refs/tags
   rh = reset HEAD
   auto-rebase = rebase -i --autosquash --autostash
   fixup = commit --fixup=HEAD
+  cicleanup = commit -m 'cleanup\n\nNon functional code cleaning'
+  cistyle = commit -m 'style++\n\nJust a simple style change for the great good'
   # "git stash pop" but without merging. Just force overrides workind directory files
   stash-pop-force = !git read-tree stash && git checkout-index -f && git reset HEAD && git stash drop
   not-pushed = !git l $1..HEAD
