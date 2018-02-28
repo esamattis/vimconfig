@@ -39,6 +39,6 @@
   cistyle = commit -m 'style++\n\nJust a simple style change for the great good'
   # "git stash pop" but without merging. Just force overrides workind directory files
   stash-pop-force = !git read-tree stash && git checkout-index -f && git reset HEAD && git stash drop
-  not-pushed = !git l $1..HEAD
+  not-pushed = !git l ${1:-origin/master}..HEAD
 [push]
 	default = simple
