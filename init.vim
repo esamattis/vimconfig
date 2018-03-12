@@ -3,7 +3,7 @@ call plug#begin()
 if has('nvim')
     " Works only with Neovim
     Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-    Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
+    " Plug 'autozimu/LanguageClient-neovim', { 'do': ':UpdateRemotePlugins' }
     Plug 'mhartington/nvim-typescript', { 'do': ':UpdateRemotePlugins' }
 
     " Breaks normal vim paste
