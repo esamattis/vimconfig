@@ -101,10 +101,14 @@ set showbreak=↳
 " http://stackoverflow.com/questions/526858/how-do-i-make-vim-do-normal-bash-like-tab-completion-for-file-names
 set wildmode=longest,list
 
+" Easier quotes
+imap § '
+imap ½ `
+imap ° `
+
 " Easier curly braces insertion
-imap § {
-imap ½ }
-imap ° }
+imap EE {
+imap RR }
 
 " Map escape key to jj -- much faster to exit insert mode
 imap jj <esc>
