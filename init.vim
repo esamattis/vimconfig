@@ -327,3 +327,5 @@ if filereadable(s:vim_home . "/local.vim")
     execute 'source ' . s:vim_home . "/local.vim"
 endif
 
+
+let g:ale_linters = {'javascript': ['eslint']}
