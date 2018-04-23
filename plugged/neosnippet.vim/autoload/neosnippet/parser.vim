@@ -138,17 +138,23 @@ function! s:parse_snippet_name(snippets_file, line, linenr, dup_check) abort
         \ }
 
   " Try using the name without the description (abbr).
-  let snippet_dict.name = matchstr(a:line, '^snippet\s\+\zs\S\+')
+  let base_name = matchstr(a:line, '^snippet\s\+\zs\S\+')
+  let snippet_dict.name = base_name
 
-  " Fall back to using the name and description (abbr) combined.
+  " Fall back to using the name with integer counter,
+  " but only if the name is a duplicate.
   " SnipMate snippets may have duplicate names, but different
   " descriptions (abbrs).
   let description = matchstr(a:line, '^snippet\s\+\S\+\s\+\zs.*$')
-  if description != '' && description !=# snippet_dict.name
+  if g:neosnippet#enable_snipmate_compatibility
+        \ && description != '' && description !=# snippet_dict.name
+        \ && has_key(a:dup_check, snippet_dict.name)
     " Convert description.
-    let snippet_dict.name .= '_' .
-          \ substitute(substitute(
-          \    description, '\W\+', '_', 'g'), '_\+$', '', '')
+    let i = 0
+    while has_key(a:dup_check, snippet_dict.name)
+      let snippet_dict.name = base_name . '__' . i
+      let i += 1
+    endwhile
   endif
 
   " Collect the description (abbr) of the snippet, if set on snippet line.
@@ -257,14 +263,23 @@ function! neosnippet#parser#_initialize_snippet(dict, path, line, pattern, name)
   endif
 
   let snippet = {
-        \ 'word' : a:dict.name, 'snip' : a:dict.word,
-        \ 'description' : a:dict.word,
-        \ 'menu_template' : abbr,
-        \ 'menu_abbr' : abbr,
-        \ 'options' : a:dict.options,
-        \ 'action__path' : a:path, 'action__line' : a:line,
-        \ 'action__pattern' : a:pattern, 'real_name' : a:name,
+        \ 'word': a:dict.name, 'snip': a:dict.word,
+        \ 'description': a:dict.word,
+        \ 'menu_template': abbr,
+        \ 'menu_abbr': abbr,
+        \ 'options': a:dict.options,
+        \ 'real_name': a:name,
+        \ 'action__path': a:path,
+        \ 'action__line': a:line,
+        \ 'action__pattern': a:pattern,
         \}
+
+  if exists('*json_encode')
+    let snippet.user_data = json_encode({
+          \   'snippet': a:dict.word,
+          \   'snippet_trigger': a:dict.name
+          \ })
+  endif
 
   if has_key(a:dict, 'regexp')
     let snippet.regexp = a:dict.regexp
@@ -290,32 +305,34 @@ function! neosnippet#parser#_get_completed_snippet(completed_item, cur_text, nex
     return ''
   endif
 
-  if has_key(item, 'snippet')
-    return item.snippet
-  endif
-
   " Set abbr
-  let abbr = ''
+  let abbrs = []
   if get(item, 'info', '') =~# '^.\+('
-    let abbr = matchstr(item.info, '^\_s*\zs.*')
-  elseif get(item, 'abbr', '') =~# '^.\+('
-    let abbr = item.abbr
-  elseif get(item, 'menu', '') =~# '^.\+('
-    let abbr = item.menu
-  elseif item.word =~# '^.\+(' || get(item, 'kind', '') == 'f'
-    let abbr = item.word
+    call add(abbrs, matchstr(item.info, '^\_s*\zs.*'))
   endif
-  let abbr = escape(abbr, '\')
+  if get(item, 'abbr', '') =~# '^.\+('
+    call add(abbrs, item.abbr)
+  endif
+  if get(item, 'menu', '') =~# '^.\+('
+    call add(abbrs, item.menu)
+  endif
+  if item.word =~# '^.\+(' || get(item, 'kind', '') == 'f'
+    call add(abbrs, item.word)
+  endif
+  call map(abbrs, "escape(v:val, '\')")
 
-  let pairs = neosnippet#util#get_buffer_config(
-      \ &filetype, '',
-      \ 'g:neosnippet#completed_pairs', 'g:neosnippet#_completed_pairs', {})
-  let word_pattern = neosnippet#util#escape_pattern(item.word)
-  let angle_pattern = word_pattern . '<.\+>(.*)'
+  " () Only supported
+  let pairs = {'(': ')'}
   let no_key = index(keys(pairs), item.word[-1:]) < 0
-  if no_key && abbr !~# word_pattern . '\%(<.\+>\)\?(.*)'
+  let word_pattern = '\<' . neosnippet#util#escape_pattern(item.word)
+  let angle_pattern = word_pattern . '<.\+>(.*)'
+  let check_pattern = word_pattern . '\%(<.\+>\)\?(.*)'
+  let abbrs = filter(abbrs, '!no_key || v:val =~# check_pattern')
+
+  if empty(abbrs)
     return ''
   endif
+  let abbr = abbrs[0]
 
   let key = no_key ? '(' : item.word[-1:]
   if a:next_text[:0] ==# key
