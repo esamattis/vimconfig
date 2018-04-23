@@ -4,41 +4,10 @@
 " License: MIT license
 "=============================================================================
 
-function! deoplete#util#set_default(var, val, ...)  abort
-  if !exists(a:var) || type({a:var}) != type(a:val)
-    let alternate_var = get(a:000, 0, '')
-
-    let {a:var} = exists(alternate_var) ?
-          \ {alternate_var} : a:val
-  endif
-endfunction
-function! deoplete#util#set_pattern(variable, keys, pattern) abort
-  for key in split(a:keys, '\s*,\s*')
-    if !has_key(a:variable, key)
-      let a:variable[key] = a:pattern
-    endif
-  endfor
-endfunction
-function! deoplete#util#get_buffer_config(
-      \ filetype, buffer_var, user_var, default_var, ...) abort
-  let default_val = get(a:000, 0, '')
-
-  if exists(a:buffer_var)
-    return {a:buffer_var}
-  endif
-
-  let filetype = !has_key({a:user_var}, a:filetype)
-        \ && !has_key(eval(a:default_var), a:filetype) ? '_' : a:filetype
-
-  return get({a:user_var}, filetype,
-        \   get(eval(a:default_var), filetype, default_val))
-endfunction
-function! deoplete#util#get_simple_buffer_config(buffer_var, user_var) abort
-  return exists(a:buffer_var) ? {a:buffer_var} : {a:user_var}
-endfunction
-function! deoplete#util#print_error(string) abort
-  echohl Error | echomsg '[deoplete] '
-        \ . deoplete#util#string(a:string) | echohl None
+function! deoplete#util#print_error(string, ...) abort
+  let name = a:0 ? a:1 : 'deoplete'
+  echohl Error | echomsg printf('[%s] %s', name,
+        \ deoplete#util#string(a:string)) | echohl None
 endfunction
 function! deoplete#util#print_warning(string) abort
   echohl WarningMsg | echomsg '[deoplete] '
@@ -49,10 +18,10 @@ function! deoplete#util#print_debug(string) abort
 endfunction
 
 function! deoplete#util#convert2list(expr) abort
-  return type(a:expr) ==# type([]) ? a:expr : [a:expr]
+  return type(a:expr) ==# v:t_list ? a:expr : [a:expr]
 endfunction
 function! deoplete#util#string(expr) abort
-  return type(a:expr) ==# type('') ? a:expr : string(a:expr)
+  return type(a:expr) ==# v:t_string ? a:expr : string(a:expr)
 endfunction
 
 function! deoplete#util#get_input(event) abort
@@ -164,7 +133,7 @@ function! deoplete#util#neovim_version() abort
 endfunction
 
 function! deoplete#util#has_yarp() abort
-  return !has('nvim') || get(g:, 'deoplete#enable_yarp', 0)
+  return !has('nvim') || deoplete#custom#_get_option('yarp')
 endfunction
 
 function! deoplete#util#get_context_filetype(input, event) abort
@@ -213,6 +182,22 @@ function! deoplete#util#get_context_filetype(input, event) abort
         \  s:context_filetype.filetypes, s:context_filetype.same_filetypes]
 endfunction
 
+function! deoplete#util#get_keyword_pattern(filetype, keyword_patterns) abort
+  if empty(a:keyword_patterns)
+    let patterns = deoplete#custom#_get_filetype_option(
+        \   'keyword_patterns', a:filetype, '')
+  else
+    let filetype = has_key(a:keyword_patterns, a:filetype) ? a:filetype : '_'
+    let patterns = get(a:keyword_patterns, filetype, '')
+  endif
+  let pattern = join(deoplete#util#convert2list(patterns), '|')
+
+  " Convert keyword.
+  let k_pattern = deoplete#util#vimoption2python(
+        \ &l:iskeyword . (&l:lisp ? ',-' : ''))
+  return substitute(pattern, '\\k', '\=k_pattern', 'g')
+endfunction
+
 function! deoplete#util#rpcnotify(event, context) abort
   if deoplete#init#_check_channel()
     return ''
@@ -225,6 +210,9 @@ function! s:notify(event, context) abort
   let a:context['rpc'] = a:event
 
   if deoplete#util#has_yarp()
+    if g:deoplete#_yarp.job_is_dead
+      return
+    endif
     call g:deoplete#_yarp.notify(a:event, a:context)
   else
     call rpcnotify(g:deoplete#_channel_id, a:event, a:context)
@@ -254,4 +242,8 @@ function! deoplete#util#versioncmp(a, b) abort
   endfor
 
   return d
+endfunction
+
+function! deoplete#util#split(string) abort
+  return split(a:string, '\s*,\s*')
 endfunction

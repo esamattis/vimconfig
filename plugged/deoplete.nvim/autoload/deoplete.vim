@@ -30,6 +30,11 @@ function! deoplete#enable_logging(level, logfile) abort
   call deoplete#util#rpcnotify('deoplete_enable_logging', {})
 endfunction
 
+function! deoplete#send_event(event) abort
+  call deoplete#util#rpcnotify('deoplete_on_event',
+        \ deoplete#init#_context(a:event, []))
+endfunction
+
 function! deoplete#manual_complete(...) abort
   if !deoplete#is_enabled()
     return ''
@@ -48,6 +53,7 @@ function! deoplete#smart_close_popup() abort
   return pumvisible() ? "\<C-e>" : ''
 endfunction
 function! deoplete#cancel_popup() abort
+  call deoplete#handler#_skip_next_completion()
   return pumvisible() ? "\<C-e>" : ''
 endfunction
 function! deoplete#refresh() abort
