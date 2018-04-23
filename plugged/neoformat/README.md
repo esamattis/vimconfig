@@ -105,7 +105,7 @@ let g:neoformat_enabled_python = ['autopep8']
 Configure enabled formatters.
 
 ```viml
-let g:neoformat_enabled_python = ['autopep8', 'yapf']
+let g:neoformat_enabled_python = ['autopep8', 'yapf', 'docformatter']
 ```
 
 Have Neoformat use &formatprg as a formatter
@@ -218,6 +218,8 @@ that caused Neoformat to be invoked.
   - [`uncrustify`](http://uncrustify.sourceforge.net),
     [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html),
     [`astyle`](http://astyle.sourceforge.net)
+- CMake
+  - [`cmake_format`](https://github.com/cheshirekow/cmake_format)
 - Crystal
   - `crystal tool format` (ships with [`crystal`](http://crystal-lang.org))
 - CSS
@@ -307,8 +309,10 @@ that caused Neoformat to be invoked.
   - [`pug-beautifier`](https://github.com/vingorius/pug-beautifier)
 - Python
   - [`yapf`](https://github.com/google/yapf),
-    [`autopep8`](https://github.com/hhatto/autopep8)
+    [`autopep8`](https://github.com/hhatto/autopep8),
+    [`black`](https://github.com/ambv/black)
   - [`isort`](https://github.com/timothycrosley/isort)
+  - [`docformatter`](https://github.com/myint/docformatter)
 - Reason
   - [`refmt`](https://github.com/facebook/reason)
 - Ruby
@@ -333,6 +337,7 @@ that caused Neoformat to be invoked.
   - [`shfmt`](https://github.com/mvdan/sh)
 - SQL
   - `sqlformat` (ships with [sqlparse](https://github.com/andialbrecht/sqlparse))
+  - `pg_format` (ships with [pgFormatter](https://github.com/darold/pgFormatter))
 - Terraform
   - [`terraform`](https://www.terraform.io/docs/commands/fmt.html),
 - Typescript
@@ -340,6 +345,8 @@ that caused Neoformat to be invoked.
     [`prettier`](https://github.com/prettier/prettier)
 - VALA
   - [`uncrustify`](http://uncrustify.sourceforge.net)
+- Vue
+  - [`prettier`](https://github.com/prettier/prettier)
 - XHTML
   - [`tidy`](http://www.html-tidy.org),
     [`prettydiff`](https://github.com/prettydiff/prettydiff)
