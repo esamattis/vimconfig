@@ -8,7 +8,7 @@ let g:ale_python_flake8_executable =
 let s:default_options = get(g:, 'ale_python_flake8_args', '')
 let g:ale_python_flake8_options =
 \   get(g:, 'ale_python_flake8_options', s:default_options)
-let g:ale_python_flake8_use_global = get(g:, 'ale_python_flake8_use_global', 0)
+let g:ale_python_flake8_use_global = get(g:, 'ale_python_flake8_use_global', get(g:, 'ale_use_global_executables', 0))
 
 function! s:UsingModule(buffer) abort
     return ale#Var(a:buffer, 'python_flake8_options') =~# ' *-m flake8'
@@ -105,11 +105,16 @@ function! ale_linters#python#flake8#Handle(buffer, lines) abort
         \   'type': 'W',
         \}
 
-        if l:code[:0] is# 'F' || l:code is# 'E999'
-            let l:item.type = 'E'
+        if l:code[:0] is# 'F'
+            if l:code isnot# 'F401'
+                let l:item.type = 'E'
+            endif
         elseif l:code[:0] is# 'E'
             let l:item.type = 'E'
-            let l:item.sub_type = 'style'
+
+            if l:code isnot# 'E999' && l:code isnot# 'E112'
+                let l:item.sub_type = 'style'
+            endif
         elseif l:code[:0] is# 'W'
             let l:item.sub_type = 'style'
         endif
