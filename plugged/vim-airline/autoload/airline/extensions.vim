@@ -22,7 +22,7 @@ endfunction
 let s:script_path = tolower(resolve(expand('<sfile>:p:h')))
 
 let s:filetype_overrides = {
-      \ 'nerdtree': [ 'NERD', '' ],
+      \ 'nerdtree': [ get(g:, 'NERDTreeStatusline', 'NERD'), '' ],
       \ 'gundo': [ 'Gundo', '' ],
       \ 'vimfiler': [ 'vimfiler', '%{vimfiler#get_status_string()}' ],
       \ 'minibufexpl': [ 'MiniBufExplorer', '' ],
@@ -172,6 +172,11 @@ function! airline#extensions#load()
     call add(loaded_ext, 'ctrlp')
   endif
 
+  if get(g:, 'loaded_localsearch', 0)
+    call airline#extensions#localsearch#init(s:ext)
+    call add(loaded_ext, 'localsearch')
+  endif
+
   if get(g:, 'CtrlSpaceLoaded', 0)
     call airline#extensions#ctrlspace#init(s:ext)
     call add(loaded_ext, 'ctrlspace')
@@ -231,6 +236,7 @@ function! airline#extensions#load()
 
   if get(g:, 'airline#extensions#fugitiveline#enabled', 1)
         \ && exists('*fugitive#head')
+        \ && index(loaded_ext, 'bufferline') == -1
     call airline#extensions#fugitiveline#init(s:ext)
     call add(loaded_ext, 'fugitiveline')
   endif
@@ -304,6 +310,11 @@ function! airline#extensions#load()
   if (get(g:, 'airline#extensions#capslock#enabled', 1) && exists('*CapsLockStatusline'))
     call airline#extensions#capslock#init(s:ext)
     call add(loaded_ext, 'capslock')
+  endif
+
+  if (get(g:, 'airline#extensions#gutentags#enabled', 1) && get(g:, 'loaded_gutentags', 0))
+    call airline#extensions#gutentags#init(s:ext)
+    call add(loaded_ext, 'gutentags')
   endif
 
   if (get(g:, 'airline#extensions#xkblayout#enabled', 1) && exists('g:XkbSwitchLib'))

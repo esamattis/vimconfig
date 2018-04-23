@@ -181,7 +181,7 @@ function! airline#extensions#tabline#new_builder()
     let builder_context.left_alt_sep = get(g:, 'airline#extensions#tabline#left_alt_sep' , '|')
   endif
 
-  return airline#builder#new(builder_context)
+  return airline#extensions#tabline#builder#new(builder_context)
 endfunction
 
 function! airline#extensions#tabline#group_of_bufnr(tab_bufs, bufnr)
@@ -206,7 +206,7 @@ endfunction
 
 function! airline#extensions#tabline#add_label(dict, type)
   if get(g:, 'airline#extensions#tabline#show_tab_type', 1)
-    call a:dict.add_section_spaced('airline_tablabel', 
-          \ get(g:, 'airline#extensions#tabline#'.a:type.'_label', '['.a:type.']'))
+    call a:dict.add_section_spaced('airline_tablabel',
+          \ get(g:, 'airline#extensions#tabline#'.a:type.'_label', a:type))
   endif
 endfunction
