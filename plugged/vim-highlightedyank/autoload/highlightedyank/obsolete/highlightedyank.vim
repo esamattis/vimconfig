@@ -1,10 +1,16 @@
-let s:Const = highlightedyank#constant#import()
-let s:Feature = s:Const.Feature
-let s:Type = s:Const.Type
-let s:NULLREGION = s:Const.NULLREGION
-let s:MAXCOL = s:Const.MAXCOL
+let s:NULLPOS = [0, 0, 0, 0]
+let s:NULLREGION = {
+  \ 'wise': '', 'blockwidth': 0,
+  \ 'head': copy(s:NULLPOS), 'tail': copy(s:NULLPOS),
+  \ }
+let s:MAXCOL = 2147483647
+let s:HAS_GUI_RUNNING = has('gui_running')
+let s:HAS_TIMERS = has('timers')
+let s:TYPE_NUM = type(0)
 let s:ON = 1
 let s:OFF = 0
+
+let s:STATE = s:ON
 
 " SID
 function! s:SID() abort
@@ -24,8 +30,9 @@ let s:normal['"']  = s:SID . '(highlightedyank-doublequote)'
 let s:normal['g@'] = s:SID . '(highlightedyank-g@)'
 let s:normal['gv'] = s:SID . '(highlightedyank-gv)'
 
-let s:STATE = s:ON
-function! highlightedyank#obsolete#yank(mode) abort  "{{{
+
+
+function! highlightedyank#obsolete#highlightedyank#yank(mode) abort  "{{{
   let l:count = v:count ? v:count : ''
   let register = v:register ==# s:default_register() ? '' : s:normal['"'] . v:register
   if a:mode ==# 'n'
@@ -34,11 +41,15 @@ function! highlightedyank#obsolete#yank(mode) abort  "{{{
     call s:yank_visual(register)
   endif
 endfunction "}}}
-function! highlightedyank#obsolete#setoperatorfunc() abort "{{{
-  set operatorfunc=highlightedyank#obsolete#operatorfunc
+
+
+function! highlightedyank#obsolete#highlightedyank#setoperatorfunc() abort "{{{
+  set operatorfunc=highlightedyank#obsolete#highlightedyank#operatorfunc
   return ''
 endfunction "}}}
-function! highlightedyank#obsolete#operatorfunc(motionwise, ...) abort "{{{
+
+
+function! highlightedyank#obsolete#highlightedyank#operatorfunc(motionwise, ...) abort "{{{
   let region = {'head': getpos("'["), 'tail': getpos("']"), 'wise': a:motionwise}
   if s:is_ahead(region.head, region.tail)
     return
@@ -48,30 +59,38 @@ function! highlightedyank#obsolete#operatorfunc(motionwise, ...) abort "{{{
   execute printf('normal! `[%sy%s`]', register, s:motionwise2visualmode(a:motionwise))
   call s:highlight_yanked_region(region)
 endfunction "}}}
-function! highlightedyank#obsolete#on() abort "{{{
+
+
+function! highlightedyank#obsolete#highlightedyank#on() abort "{{{
   let s:STATE = s:ON
   if stridx(&cpoptions, 'y') < 0
-    nnoremap <silent> <Plug>(highlightedyank) :<C-u>call highlightedyank#yank('n')<CR>
-    xnoremap <silent> <Plug>(highlightedyank) :<C-u>call highlightedyank#yank('x')<CR>
+    nnoremap <silent> <Plug>(highlightedyank) :<C-u>call highlightedyank#obsolete#highlightedyank#yank('n')<CR>
+    xnoremap <silent> <Plug>(highlightedyank) :<C-u>call highlightedyank#obsolete#highlightedyank#yank('x')<CR>
     onoremap          <Plug>(highlightedyank) y
   else
-    noremap  <expr>   <Plug>(highlightedyank-setoperatorfunc) highlightedyank#setoperatorfunc()
+    noremap  <expr>   <Plug>(highlightedyank-setoperatorfunc) highlightedyank#obsolete#highlightedyank#setoperatorfunc()
     nmap     <silent> <Plug>(highlightedyank) <Plug>(highlightedyank-setoperatorfunc)<Plug>(highlightedyank-g@)
     xmap     <silent> <Plug>(highlightedyank) <Plug>(highlightedyank-setoperatorfunc)<Plug>(highlightedyank-g@)
     onoremap          <Plug>(highlightedyank) g@
   endif
 endfunction "}}}
-function! highlightedyank#obsolete#off() abort "{{{
+
+
+function! highlightedyank#obsolete#highlightedyank#off() abort "{{{
   let s:STATE = s:OFF
   noremap <silent> <Plug>(highlightedyank) y
 endfunction "}}}
-function! highlightedyank#obsolete#toggle() abort "{{{
+
+
+function! highlightedyank#obsolete#highlightedyank#toggle() abort "{{{
   if s:STATE is s:ON
-    call highlightedyank#off()
+    call highlightedyank#obsolete#highlightedyank#off()
   else
-    call highlightedyank#on()
+    call highlightedyank#obsolete#highlightedyank#on()
   endif
 endfunction "}}}
+
+
 function! s:default_register() abort  "{{{
   if &clipboard =~# 'unnamedplus'
     let default_register = '+'
@@ -82,6 +101,8 @@ function! s:default_register() abort  "{{{
   endif
   return default_register
 endfunction "}}}
+
+
 function! s:yank_normal(count, register) abort "{{{
   let view = winsaveview()
   let options = s:shift_options()
@@ -97,6 +118,8 @@ function! s:yank_normal(count, register) abort "{{{
     call s:restore_options(options)
   endtry
 endfunction "}}}
+
+
 function! s:yank_visual(register) abort "{{{
   let view = winsaveview()
   let region = deepcopy(s:NULLREGION)
@@ -120,6 +143,8 @@ function! s:yank_visual(register) abort "{{{
     call s:restore_options(options)
   endtry
 endfunction "}}}
+
+
 function! s:query(count) abort "{{{
   let view = winsaveview()
   let curpos = getpos('.')
@@ -138,7 +163,7 @@ function! s:query(count) abort "{{{
         continue
       endif
 
-      let c = type(c) == s:Type.NUM ? nr2char(c) : c
+      let c = type(c) == s:TYPE_NUM ? nr2char(c) : c
       if c ==# "\<Esc>"
         break
       endif
@@ -155,6 +180,8 @@ function! s:query(count) abort "{{{
   endtry
   return [input, region]
 endfunction "}}}
+
+
 function! s:get_region(curpos, count, input) abort  "{{{
   let s:region = deepcopy(s:NULLREGION)
   let opfunc = &operatorfunc
@@ -181,6 +208,8 @@ function! s:get_region(curpos, count, input) abort  "{{{
     return s:modify_region(s:region)
   endtry
 endfunction "}}}
+
+
 function! s:modify_region(region) abort "{{{
   " for multibyte characters
   if a:region.tail[2] != col([a:region.tail[1], '$']) && a:region.tail[3] == 0
@@ -192,6 +221,8 @@ function! s:modify_region(region) abort "{{{
   endif
   return a:region
 endfunction "}}}
+
+
 function! s:operator_get_region(motionwise) abort "{{{
   let head = getpos("'[")
   let tail = getpos("']")
@@ -203,22 +234,28 @@ function! s:operator_get_region(motionwise) abort "{{{
   let s:region.tail = tail
   let s:region.wise = a:motionwise
 endfunction "}}}
+
+
 function! s:put_dummy_cursor(curpos) abort "{{{
   if !hlexists('Cursor')
     return {}
   endif
   let pos = {'head': a:curpos, 'tail': a:curpos, 'wise': 'char'}
-  let dummycursor = highlightedyank#highlight#new(pos)
+  let dummycursor = highlightedyank#obsolete#highlight#new(pos)
   call dummycursor.show('Cursor')
   redraw
   return dummycursor
 endfunction "}}}
+
+
 function! s:clear_dummy_cursor(dummycursor) abort  "{{{
   if empty(a:dummycursor)
     return
   endif
   call a:dummycursor.quench()
 endfunction "}}}
+
+
 function! s:highlight_yanked_region(region) abort "{{{
   let maxlinenumber = s:get('max_lines', 10000)
   if a:region.tail[1] - a:region.head[1] + 1 > maxlinenumber
@@ -228,15 +265,14 @@ function! s:highlight_yanked_region(region) abort "{{{
   let keyseq = ''
   let hi_group = 'HighlightedyankRegion'
   let hi_duration = s:get('highlight_duration', 1000)
-  let timeout = s:get('timeout', 1000)
-  let highlight = highlightedyank#highlight#new(a:region, timeout)
+  let highlight = highlightedyank#obsolete#highlight#new(a:region)
   if highlight.empty()
     return
   endif
   if hi_duration < 0
     call s:persist(highlight, hi_group)
   elseif hi_duration > 0
-    if s:Feature.TIMERS
+    if s:HAS_TIMERS
       call s:glow(highlight, hi_group, hi_duration)
     else
       let keyseq = s:blink(highlight, hi_group, hi_duration)
@@ -244,14 +280,18 @@ function! s:highlight_yanked_region(region) abort "{{{
     endif
   endif
 endfunction "}}}
+
+
 function! s:persist(highlight, hi_group) abort  "{{{
   " highlight off: limit the number of highlighting region to one explicitly
-  call highlightedyank#highlight#cancel()
+  call highlightedyank#obsolete#highlight#cancel()
 
   if a:highlight.show(a:hi_group)
     call a:highlight.persist()
   endif
 endfunction "}}}
+
+
 function! s:blink(highlight, hi_group, duration) abort "{{{
   let key = ''
   if a:highlight.show(a:hi_group)
@@ -260,15 +300,19 @@ function! s:blink(highlight, hi_group, duration) abort "{{{
   endif
   return key
 endfunction "}}}
+
+
 function! s:glow(highlight, hi_group, duration) abort "{{{
   " highlight off: limit the number of highlighting region to one explicitly
-  call highlightedyank#highlight#cancel()
+  call highlightedyank#obsolete#highlight#cancel()
   if a:highlight.show(a:hi_group)
     call a:highlight.quench_timer(a:duration)
   endif
 endfunction "}}}
+
+
 function! s:wait_for_input(highlight, duration) abort  "{{{
-  let clock = highlightedyank#clock#new()
+  let clock = highlightedyank#obsolete#clock#new()
   try
     let c = 0
     call clock.start()
@@ -287,17 +331,19 @@ function! s:wait_for_input(highlight, duration) abort  "{{{
   if c == 0
     let c = ''
   else
-    let c = type(c) == s:Type.NUM ? nr2char(c) : c
+    let c = type(c) == s:TYPE_NUM ? nr2char(c) : c
   endif
 
   return c
 endfunction "}}}
+
+
 function! s:shift_options() abort "{{{
   let options = {}
 
   """ tweak appearance
   " hide_cursor
-  if s:Feature.GUI_RUNNING
+  if s:HAS_GUI_RUNNING
     let options.cursor = &guicursor
     set guicursor+=a:block-NONE
   else
@@ -307,21 +353,29 @@ function! s:shift_options() abort "{{{
 
   return options
 endfunction "}}}
+
+
 function! s:restore_options(options) abort "{{{
-  if s:Feature.GUI_RUNNING
+  if s:HAS_GUI_RUNNING
     set guicursor&
     let &guicursor = a:options.cursor
   else
     let &t_ve = a:options.cursor
   endif
 endfunction "}}}
+
+
 function! s:get(name, default) abort  "{{{
   let identifier = 'highlightedyank_' . a:name
   return get(b:, identifier, get(g:, identifier, a:default))
 endfunction "}}}
+
+
 function! s:is_ahead(pos1, pos2) abort  "{{{
   return a:pos1[1] > a:pos2[1] || (a:pos1[1] == a:pos2[1] && a:pos1[2] > a:pos2[2])
 endfunction "}}}
+
+
 function! s:is_extended() abort "{{{
   " NOTE: This function should be used only when you are sure that the
   "       keymapping is used in visual mode.
@@ -330,6 +384,8 @@ function! s:is_extended() abort "{{{
   execute "normal! \<Esc>"
   return extended
 endfunction "}}}
+
+
 function! s:visualmode2motionwise(visualmode) abort "{{{
   if a:visualmode ==# 'v'
     let motionwise = 'char'
@@ -342,6 +398,8 @@ function! s:visualmode2motionwise(visualmode) abort "{{{
   endif
   return motionwise
 endfunction "}}}
+
+
 function! s:motionwise2visualmode(motionwise) abort "{{{
   if a:motionwise ==# 'char'
     let visualmode = 'v'
