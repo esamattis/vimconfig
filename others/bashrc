@@ -49,6 +49,7 @@ git-log-date() {
 
 
 alias node_modules_to_path='export PATH="$(pwd)/node_modules/.bin":$PATH'
+alias find_old_node_modules='find . -name node_modules -type d -maxdepth 2 -mtime +30'
 
 if [ -d ~/.local/bin ] ; then
     PATH=~/.local/bin:"${PATH}"
