@@ -100,7 +100,7 @@ function! gitgutter#diff#run_diff(bufnr, preserve_full_diff) abort
   call s:write_buffer(a:bufnr, buff_file)
 
   " Call git-diff with the temporary files.
-  let cmd .= g:gitgutter_git_executable.' --no-pager'
+  let cmd .= g:gitgutter_git_executable.' --no-pager '.g:gitgutter_git_args
   if s:c_flag
     let cmd .= ' -c "diff.autorefreshindex=0"'
     let cmd .= ' -c "diff.noprefix=false"'
@@ -145,6 +145,10 @@ endfunction
 
 function! gitgutter#diff#handler(bufnr, diff) abort
   call gitgutter#debug#log(a:diff)
+
+  if !bufexists(a:bufnr)
+    return
+  endif
 
   call gitgutter#hunk#set_hunks(a:bufnr, gitgutter#diff#parse_diff(a:diff))
   let modified_lines = gitgutter#diff#process_hunks(a:bufnr, gitgutter#hunk#hunks(a:bufnr))
