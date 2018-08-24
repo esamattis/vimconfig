@@ -365,7 +365,7 @@ function! fzf#vim#lines(...)
   return s:fzf('lines', {
   \ 'source':  lines,
   \ 'sink*':   s:function('s:line_handler'),
-  \ 'options': ['+m', '--tiebreak=index', '--prompt', 'Lines> ', '--ansi', '--extended', '--nth='.nth.'..', '--reverse', '--tabstop=1', '--query', query]
+  \ 'options': ['+m', '--tiebreak=index', '--prompt', 'Lines> ', '--ansi', '--extended', '--nth='.nth.'..', '--layout=reverse-list', '--tabstop=1', '--query', query]
   \}, args)
 endfunction
 
@@ -397,7 +397,7 @@ function! fzf#vim#buffer_lines(...)
   return s:fzf('blines', {
   \ 'source':  s:buffer_lines(),
   \ 'sink*':   s:function('s:buffer_line_handler'),
-  \ 'options': ['+m', '--tiebreak=index', '--prompt', 'BLines> ', '--ansi', '--extended', '--nth=2..', '--reverse', '--tabstop=1', '--query', query]
+  \ 'options': ['+m', '--tiebreak=index', '--prompt', 'BLines> ', '--ansi', '--extended', '--nth=2..', '--layout=reverse-list', '--tabstop=1', '--query', query]
   \}, args)
 endfunction
 
@@ -433,7 +433,7 @@ function! s:all_files()
   return fzf#vim#_uniq(map(
     \ filter([expand('%')], 'len(v:val)')
     \   + filter(map(s:buflisted_sorted(), 'bufname(v:val)'), 'len(v:val)')
-    \   + filter(copy(v:oldfiles), "filereadable(expand(v:val))"),
+    \   + filter(copy(v:oldfiles), "filereadable(fnamemodify(v:val, ':p'))"),
     \ 'fnamemodify(v:val, ":~:.")'))
 endfunction
 
@@ -446,12 +446,15 @@ function! s:history_source(type)
 endfunction
 
 nnoremap <plug>(-fzf-vim-do) :execute g:__fzf_command<cr>
+nnoremap <plug>(-fzf-/) /
+nnoremap <plug>(-fzf-:) :
 
 function! s:history_sink(type, lines)
   if len(a:lines) < 2
     return
   endif
 
+  let prefix = "\<plug>(-fzf-".a:type.')'
   let key  = a:lines[0]
   let item = matchstr(a:lines[1], ' *[0-9]\+ *\zs.*')
   if key == 'ctrl-e'
@@ -459,7 +462,10 @@ function! s:history_sink(type, lines)
     redraw
     call feedkeys(a:type."\<up>")
   else
-    let g:__fzf_command = "normal ".a:type.item."\<cr>"
+    if a:type == ':'
+      call histadd(a:type, item)
+    endif
+    let g:__fzf_command = "normal ".prefix.item."\<cr>"
     call feedkeys("\<plug>(-fzf-vim-do)")
   endif
 endfunction
@@ -577,7 +583,7 @@ endfunction
 
 function! s:format_buffer(b)
   let name = bufname(a:b)
-  let name = empty(name) ? '[No Name]' : fnamemodify(name, ":~:.")
+  let name = empty(name) ? '[No Name]' : fnamemodify(name, ":p:~:.")
   let flag = a:b == bufnr('')  ? s:blue('%', 'Conditional') :
           \ (a:b == bufnr('#') ? s:magenta('#', 'Special') : ' ')
   let modified = getbufvar(a:b, '&modified') ? s:red(' [+]', 'Exception') : ''
@@ -755,7 +761,7 @@ function! fzf#vim#buffer_tags(query, ...)
     return s:fzf('btags', {
     \ 'source':  s:btags_source(tag_cmds),
     \ 'sink*':   s:function('s:btags_sink'),
-    \ 'options': ['--reverse', '-m', '-d', '\t', '--with-nth', '1,4..', '-n', '1', '--prompt', 'BTags> ', '--query', a:query]}, args)
+    \ 'options': ['--layout=reverse-list', '-m', '-d', '\t', '--with-nth', '1,4..', '-n', '1', '--prompt', 'BTags> ', '--query', a:query]}, args)
   catch
     return s:warn(v:exception)
   endtry
@@ -1069,7 +1075,7 @@ function! s:commits_sink(lines)
       else
         " Since fugitive buffers are unlisted, we can't keep using 'e'
         let c = (cmd == 'e' && idx > 1) ? 'tab split' : cmd
-        execute c 'fugitive://'.s:git_root.'/.git//'.sha
+        execute c FugitiveGenerate(sha)
       endif
     endif
   endfor
@@ -1103,7 +1109,7 @@ function! s:commits(buffer_local, args)
   let options = {
   \ 'source':  source,
   \ 'sink*':   s:function('s:commits_sink'),
-  \ 'options': ['--ansi', '--multi', '--tiebreak=index', '--reverse',
+  \ 'options': ['--ansi', '--multi', '--tiebreak=index', '--layout=reverse-list',
   \   '--inline-info', '--prompt', command.'> ', '--bind=ctrl-s:toggle-sort',
   \   '--header', ':: Press '.s:magenta('CTRL-S', 'Special').' to toggle sort, '.s:magenta('CTRL-Y', 'Special').' to yank commit hashes',
   \   '--expect=ctrl-y,'.expect_keys]
