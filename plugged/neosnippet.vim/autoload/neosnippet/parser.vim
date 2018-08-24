@@ -104,13 +104,14 @@ function! s:parse(snippets_file) abort
             \ a:snippets_file, line, linenr, dup_check)
     elseif !empty(snippet_dict)
       if line =~ '^\s' || line == ''
-        if snippet_dict.word == ''
+        if snippet_dict.word == '' && line =~# '^\t'
           " Substitute head tab character.
           let line = substitute(line, '^\t', '', '')
+        else
+          let line = substitute(line, '^ *', '', '')
         endif
 
-        let snippet_dict.word .=
-              \ substitute(line, '^ *', '', '') . "\n"
+        let snippet_dict.word .= line . "\n"
       else
         call s:add_snippet_attribute(
               \ a:snippets_file, line, linenr, snippet_dict)
@@ -446,8 +447,9 @@ endfunction
 function! s:include_snippets(globs) abort
   let snippets = {}
   for glob in a:globs
-      for file in split(globpath(join(
-            \ neosnippet#helpers#get_snippets_directory(), ','), glob), '\n')
+    let snippets_dir = neosnippet#helpers#get_snippets_directory(
+          \ fnamemodify(glob, ':r'))
+      for file in split(globpath(join(snippets_dir, ','), glob), '\n')
         call extend(snippets, neosnippet#parser#_parse_snippets(file))
       endfor
   endfor
