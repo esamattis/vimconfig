@@ -21,23 +21,30 @@ Typescript support for Vim. Nvim-typescript provide standard IDE-like features
 like auto-completion, viewing of documentation, type-signature, go to
 definition, and reference finder.
 
-
 ===============================================================================
 INSTALL                                                    *typescript-install*
 
 To install, use your typical plugin manager and add a reference in your
 init.vim. If you'd like completion support, install Deoplete.nvim as well.
 
-*  https://github.com/junegunn/vim-plug >
+* https://github.com/junegunn/vim-plug >
 
-    Plug 'Shougo/deoplete.nvim'
-    Plug 'mhartington/nvim-typescript'
+  Plug 'mhartington/nvim-typescript', { 'do': './install.sh' }
+  " For async completion
+  Plug 'Shougo/deoplete.nvim'
 <
 
-*  https://github.com/Shougo/dein.vim >
+* https://github.com/Shougo/dein.vim >
 
-    call dein#add('Shougo/deoplete.nvim')
-    call dein#add('mhartington/nvim-typescript')
+  call dein#add('mhartington/nvim-typescript', {'build': './install'}
+  " For async completion
+  call dein#add('Shougo/deoplete.nvim')
+
+<
+You also need the node-client for neovim installed globally. >
+
+npm install -g neovim
+
 <
 
 In you install Deoplete as well, make sure you also have the python3 bindings
@@ -47,12 +54,6 @@ pip3 install neovim
 
 
 Then run `UpdateRemotePlugins`.
-
-
-Currently, a global install of typescript is required. So make sure your have
-it installed with >
-
-npm install -g typescript
 
 
 ===============================================================================
@@ -104,7 +105,7 @@ COMMANDS                                                  *typescript-commands*
 
     Prints the type signature for the symbol under the cursor.
                                                                     *:TSRename*
-TSRename [word]
+:TSRename [word]
 
     Renames the symbol currently under the cursor. Pass a new name as an arg,
     if no arg is passed, user will be prompted.
@@ -229,6 +230,14 @@ Default: 'TS'
     Use this vs setting from deoplete.
 
 
+g:nvim_typescript#server_options           *g:nvim_typescript#server_options*
+Values: List
+Default: '[]'
+
+    Sets options for the typescript server. For example, locale can be set to 
+    French using ['--locale', 'fr'].
+
+
 ===============================================================================
 MAPPINGS                                                  *typescript-mappings*
 
@@ -282,6 +291,7 @@ A: This could happen for a number of reasons
   1. No valid tsconfig.json in your project
   2. No installation of typescript on your system.
   3. `UpdateRemotePlugins` has not been called since installation.
+  4. Plugin add did not run `install.sh`
 
 Q: The plugin does not recognize my file as typescript.
 
@@ -292,15 +302,7 @@ A: This file does not include a syntax file for typescript. I do not want to
 Q: Why better than tsuquyomi? Why is this better than other plugins?
 
 A: This plugin does not claim to be better than any other plugin, and is more
-   for my own needs. Maybe you would like it too?
-   The plugin is all asynchronous and is lag free. Other plugins are not always
-   async or require additional plugins that need to be built. If you are using
-   regular Vim, I highly suggest Tsuquyomi, especially with Vim 8.
-
-
-Q: This breaks with specific version of Typescript.
-
-A: New versions of typescript could contain breaking changes. This is to be
-   expected. See the `g:nvim_typescript#ts_version` variable for the  current
-   version support.
-
+   for my own needs. Maybe you would like it too? The plugin is all
+   asynchronous and is lag free. Other plugins are not always async or require
+   additional plugins that need to be built. If you are using regular Vim, I
+   highly suggest Tsuquyomi, especially with Vim 8.

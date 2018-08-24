@@ -1,91 +1,91 @@
-# nvim-typescript
+# Nvim-Typescript
 
-TypeScript support for neovim.
 
-`nvim-typescript` provides standard IDE-like features such as auto-completion,
-viewing of documentation and type-signatures, go to definition, and reference
-finding.
+nvim language service plugin for typescript
 
 ![](https://github.com/mhartington/nvim-typescript/blob/master/deoplete-tss.gif)
 
+
 ## Installation
 
-### Prerequisites
+First make sure you have Neovim 0.2.1 or highter.
+This includes the node-host that is required for this plugin.
 
-* Python3 neovim bindings
+You will need a global install of the neovim client as well.
+This will make sure that neovim and node can communicate.
+
 
 ```bash
-pip3 install neovim
+npm install -g neovim
 ```
 
-* A TypeScript syntax file (to set the filetype), a popular choice is
-  [yats.vim](https://github.com/HerringtonDarkholme/yats.vim)
+After installing the neovim client, you will have to run `:UpdateRemotePlugins`.
 
+You might want to also have typescript install globally.
+By default, this plugin will look in your `node_modules` folder first for typescript, but if that does not exist, it will use the global install.
 
-### Install nvim-typescript
+```bash
+npm -g install typescript
+```
 
-This example uses Dein.vim, but any plugin manager will work.
+Then add the following plugins. This example uses Dein.vim, but any plugin manager will work.
 
 ```viml
-" Dein
+ " Dein
+ # REQUIRED: Add a syntax file. YATS is the best
+  call dein#add('HerringtonDarkholme/yats.vim')
+  call dein#add('mhartington/nvim-typescript', {'build': './install.sh'})
+ " For async completion
   call dein#add('Shougo/deoplete.nvim')
-  call dein#add('mhartington/nvim-typescript')
+ " For Denite features
+  call dein#add('Shougo/denite.nvim')
+
+
+ " Vim-Plug
+ # REQUIRED: Add a syntax file. YATS is the best
+  Plug 'HerringtonDarkholme/yats.vim'
+  Plug 'mhartington/nvim-typescript', {'do': './install.sh'}
+ " For async completion
+  Plug 'Shougo/deoplete.nvim'
+ " For Denite features
+  Plug 'Shougo/denite.nvim'
+
 
 " Enable deoplete at startup
+
   let g:deoplete#enable_at_startup = 1
 ```
 
-Then run `:UpdateRemotePlugins` when you first launch nvim after installing the
-plugin.
+If errors occur after installing, make sure to run `./install.sh` in the plugin
+directory.  And try to run `:UpdateRemotePlugins` if you havn't already.
 
-## Features
+## Limitation
 
-See the
-[documentation](https://github.com/mhartington/nvim-typescript/blob/master/doc/nvim-typescript.txt)
-(or within nvim `:help nvim-typescript` for a complete list of commands and
-features.
+If no completion is happening, please be sure to have a Typescript syntax file in your RTP. Neovim does not include a default syntax for Typescript, so be sure to include one. A popular syntax file for Typescript is [yats.vim](https://github.com/HerringtonDarkholme/yats.vim). Running nvim-typescript with no syntax file could lead to unexpected behavior.
 
+## Open Open Source, or how to make this everyone's code
 
-### Async completion
+If you happened to build something and would love to make a PR, I would be more than happy to add contributors.
+If something you do add happens to get merged (most likely it will :grin: ) you'll get a collaborator request. This has worked out very well in the Node community and I want it to happen here. This is as much my code as it is your code.
 
-Although this plugin provides an omnifunc for getting code completion, it can block the UI (vim "feature"). While you may not notice if for smaller projects, you do in larger ones. Instead, I suggest using:
-
-- [Deoplete](https://github.com/Shougo/deoplete.nvim)
-
-or
-
--  [nvim-completion-manager](https://github.com/roxma/nvim-completion-manager)
-
-As they do not block
-
+See:
+- [this site](http://openopensource.org)
+- [this talk](https://youtu.be/wIUkWpg9FDY?t=5m10s)
 
 ## Debugging
 
-There are a few things you'll have to modify in your vim config in order to be
-able to effectively work on this plugin:
+There are a few things you'll have to modify in your nvim config in order to be able to effectively work on this plugin:
 
 ```viml
   call dein#local('~/GitHub', {},['nvim-typescript'])
+  let $NVIM_NODE_LOG_FILE='nvim-node.log'
+  let $NVIM_NODE_LOG_LEVEL='warn'
 
-  let g:deoplete#enable_at_startup = 1
-  let g:deoplete#enable_debug = 1
-  let g:deoplete#enable_profile = 1
-  call deoplete#enable_logging('DEBUG', '/PATH_TO/deoplete.log')
 ```
+ This plug will try to log most things to warn as the node-client logs a lot of verbose output to debug/info.
+ You will now be able to `tail -f /PATH_TO/nvim-node.log`, and see debug output appear.
 
-You will now be able to `tail -f /PATH_TO/deoplete.log`, and see debug output
-appear.
 
-## Troubleshooting
+## TODOS
 
-Run `:CheckHealth` and check if everything is green, if not instructions on how
-to fix the issue should be provided.
-
-## How to Make This Everyone's Code
-
-If you happened to build something and would love to make a PR, I would be more
-than happy to add contributors. If something you do add happens to get merged
-(most likely it will :grin: ) you'll get a collaborator request. This has worked
-out very well in the Node community and I want it to happen here. This is as
-much my code as it is your code. See [this site](http://openopensource.org) and
-[this talk](https://youtu.be/wIUkWpg9FDY?t=5m10s) for more info.
+If there's a feature that you would like to see, feel free to open an issue or send a PR.

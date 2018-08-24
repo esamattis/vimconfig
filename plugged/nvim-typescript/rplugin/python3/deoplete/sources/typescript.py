@@ -1,10 +1,6 @@
 #! /usr/bin/env python3
-
-import os
 import re
-import sys
 from deoplete.source.base import Base
-from deoplete.util import error
 
 
 class Source(Base):
@@ -14,34 +10,40 @@ class Source(Base):
         Base.__init__(self, vim)
         self.name = "typescript"
         self.mark = self.vim.vars['nvim_typescript#completion_mark']
-        self.filetypes = ["typescript", "tsx", "typescript.tsx", "javascript", "jsx", "javascript.jsx"] \
-            if self.vim.vars["nvim_typescript#javascript_support"] \
-            else ["typescript", "tsx", "typescript.tsx", "vue"] \
-            if self.vim.vars["nvim_typescript#vue_support"] \
-            else ["typescript", "tsx", "typescript.tsx"]
         self.rank = 1000
         self.min_pattern_length = 1
+        self.max_abbr_width = 0
+        self.max_kind_width = 0
+        self.max_menu_width = 0
         self.input_pattern = r'(\.|::)\w*'
+        self.filetypes = ["typescript", "tsx",  "typescript.tsx", "typescriptreact"]
+        if self.vim.vars["nvim_typescript#javascript_support"]:
+            self.filetypes.extend(["javascript", "jsx", "javascript.jsx"])
+        if self.vim.vars["nvim_typescript#vue_support"]:
+            self.filetypes.extend(["vue"])
 
     def log(self, message):
-        """
-        Log message to vim echo
-        """
         self.debug('************')
-        self.debug('{} \n'.format(message))
+        self.vim.out_write('{} \n'.format(message))
         self.debug('************')
 
     def get_complete_position(self, context):
-        m = re.search(r"\w*$", context['input'])
+        m = re.search(r"\w*$", context["input"], re.IGNORECASE)
         return m.start() if m else -1
 
     def gather_candidates(self, context):
         try:
-            offset = context["complete_position"] + 1,
-            res = self.vim.funcs.TSComplete(context["complete_str"], offset)
-            self.log(res)
-            if len(res) == 0:
-                return []
-            return res
+            if context["is_async"]:
+                res = self.vim.vars["nvim_typescript#completion_res"]
+                if res:
+                    context["is_async"] = False
+                    self.vim.vars["nvim_typescript#completion_res"] = []
+                    return res
+            else:
+                context["is_async"] = True
+                [offset] = context["complete_position"] + 1,
+                self.vim.vars["nvim_typescript#completion_res"] = []
+                self.vim.funcs.TSDeoplete(context["complete_str"], offset)
+            return []
         except:
             return []
