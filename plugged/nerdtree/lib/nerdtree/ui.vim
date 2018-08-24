@@ -390,7 +390,7 @@ endfunction
 
 " FUNCTION: s:UI.render() {{{1
 function! s:UI.render()
-    setlocal modifiable
+    setlocal noreadonly modifiable
 
     " remember the top line of the buffer and the current line so we can
     " restore the view exactly how it was
@@ -438,7 +438,7 @@ function! s:UI.render()
     call cursor(curLine, curCol)
     let &scrolloff = old_scrolloff
 
-    setlocal nomodifiable
+    setlocal readonly nomodifiable
 endfunction
 
 
@@ -475,15 +475,23 @@ function! s:UI.toggleIgnoreFilter()
 endfunction
 
 " FUNCTION: s:UI.toggleShowBookmarks() {{{1
-" toggles the display of bookmarks
+" Toggle the visibility of the Bookmark table.
 function! s:UI.toggleShowBookmarks()
     let self._showBookmarks = !self._showBookmarks
+
     if self.getShowBookmarks()
         call self.nerdtree.render()
         call g:NERDTree.CursorToBookmarkTable()
     else
+
+        if empty(g:NERDTreeFileNode.GetSelected())
+            call b:NERDTree.root.putCursorHere(0, 0)
+            normal! 0
+        endif
+
         call self.renderViewSavingPosition()
     endif
+
     call self.centerView()
 endfunction
 
