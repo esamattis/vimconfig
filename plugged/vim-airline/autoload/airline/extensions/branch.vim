@@ -3,19 +3,6 @@
 
 scriptencoding utf-8
 
-function! s:has_fugitive()
-  return exists('*fugitive#head')
-endfunction
-function! s:has_lawrencium()
-  return exists('*lawrencium#statusline')
-endfunction
-function! s:has_vcscommand()
-  return get(g:, 'airline#extensions#branch#use_vcscommand', 0) && exists('*VCSCommandGetStatusLine')
-endfunction
-function! s:has_custom_scm()
-  return !empty(get(g:, 'airline#extensions#branch#custom_head', ''))
-endfunction
-
 " s:vcs_config contains static configuration of VCSes and their status relative
 " to the active file.
 " 'branch'    - The name of currently active branch. This field is empty iff it
@@ -94,12 +81,13 @@ let s:names = {'0': 'index', '1': 'orig', '2':'fetch', '3':'merge'}
 let s:sha1size = get(g:, 'airline#extensions#branch#sha1_len', 7)
 
 function! s:update_git_branch()
-  if !s:has_fugitive()
+  if !airline#util#has_fugitive()
     let s:vcs_config['git'].branch = ''
     return
   endif
 
-  let s:vcs_config['git'].branch = fugitive#head(s:sha1size)
+  let s:vcs_config['git'].branch = exists("*FugitiveHead") ?
+        \ FugitiveHead(s:sha1size) : fugitive#head(s:sha1size)
   if s:vcs_config['git'].branch is# 'master' && winwidth(0) < 81
     " Shorten default a bit
     let s:vcs_config['git'].branch='mas'
@@ -128,19 +116,19 @@ function! s:display_git_branch()
 endfunction
 
 function! s:update_hg_branch()
-  if s:has_lawrencium()
+  if airline#util#has_lawrencium()
     let cmd='LC_ALL=C hg qtop'
     let stl=lawrencium#statusline()
     let file=expand('%:p')
     if !empty(stl) && get(b:, 'airline_do_mq_check', 1)
       if g:airline#init#vim_async
-        call airline#async#get_mq_async(cmd, file)
+        noa call airline#async#get_mq_async(cmd, file)
       elseif has("nvim")
-        call airline#async#nvim_get_mq_async(cmd, file)
+        noa call airline#async#nvim_get_mq_async(cmd, file)
       else
         " remove \n at the end of the command
         let output=system(cmd)[0:-2]
-        call airline#async#mq_output(output, file)
+        noa call airline#async#mq_output(output, file)
       endif
     endif
     " do not do mq check anymore
@@ -211,10 +199,10 @@ function! s:update_untracked()
       " invalidated again before s:update_untracked is called, then we lose the
       " result of the previous call, i.e. the head string is not updated. It
       " doesn't happen often in practice, so we let it be.
-      call airline#async#vim_vcs_untracked(config, file)
+      noa call airline#async#vim_vcs_untracked(config, file)
     else
       " nvim async or vim without job-feature
-      call airline#async#nvim_vcs_untracked(config, file, vcs)
+      noa call airline#async#nvim_vcs_untracked(config, file, vcs)
     endif
   endfor
 endfunction
@@ -253,8 +241,8 @@ function! airline#extensions#branch#head()
   endfor
 
   if empty(heads)
-    if s:has_vcscommand()
-      call VCSCommandEnableBufferSetup()
+    if airline#util#has_vcscommand()
+      noa call VCSCommandEnableBufferSetup()
       if exists('b:VCSCommandBufferInfo')
         let b:airline_head = s:format_name(get(b:VCSCommandBufferInfo, 0, ''))
       endif
@@ -262,7 +250,7 @@ function! airline#extensions#branch#head()
   endif
 
   if empty(heads)
-    if s:has_custom_scm()
+    if airline#util#has_custom_scm()
       try
         let Fn = function(g:airline#extensions#branch#custom_head)
         let b:airline_head = Fn()

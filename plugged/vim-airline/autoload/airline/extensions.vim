@@ -56,9 +56,7 @@ function! airline#extensions#apply_left_override(section1, section2)
   let w:airline_render_right = 0
 endfunction
 
-let s:active_winnr = -1
 function! airline#extensions#apply(...)
-  let s:active_winnr = winnr()
 
   if s:is_excluded_window()
     return -1
@@ -113,16 +111,8 @@ function! airline#extensions#load_theme()
   call airline#util#exec_funcrefs(s:ext._theme_funcrefs, g:airline#themes#{g:airline_theme}#palette)
 endfunction
 
-function! s:sync_active_winnr()
-  if exists('#airline') && winnr() != s:active_winnr
-    call airline#update_statusline()
-  endif
-endfunction
-
 function! airline#extensions#load()
   let loaded_ext = []
-  " non-trivial number of external plugins use eventignore=all, so we need to account for that
-  autocmd CursorMoved * call <sid>sync_active_winnr()
 
   if exists('g:airline_extensions')
     for ext in g:airline_extensions
@@ -221,9 +211,11 @@ function! airline#extensions#load()
     let s:filetype_regex_overrides['^int-'] = ['vimshell','%{substitute(&ft, "int-", "", "")}']
   endif
 
-  if get(g:, 'airline#extensions#branch#enabled', 1)
-        \ && (exists('*fugitive#head') || exists('*lawrencium#statusline') ||
-        \     (get(g:, 'airline#extensions#branch#use_vcscommand', 0) && exists('*VCSCommandGetStatusLine')))
+  if get(g:, 'airline#extensions#branch#enabled', 1) && (
+          \ airline#util#has_fugitive() ||
+          \ airline#util#has_lawrencium() ||
+          \ airline#util#has_vcscommand() ||
+          \ airline#util#has_custom_scm())
     call airline#extensions#branch#init(s:ext)
     call add(loaded_ext, 'branch')
   endif
@@ -235,7 +227,7 @@ function! airline#extensions#load()
   endif
 
   if get(g:, 'airline#extensions#fugitiveline#enabled', 1)
-        \ && exists('*fugitive#head')
+        \ && airline#util#has_fugitive()
         \ && index(loaded_ext, 'bufferline') == -1
     call airline#extensions#fugitiveline#init(s:ext)
     call add(loaded_ext, 'fugitiveline')
@@ -315,6 +307,11 @@ function! airline#extensions#load()
   if (get(g:, 'airline#extensions#gutentags#enabled', 1) && get(g:, 'loaded_gutentags', 0))
     call airline#extensions#gutentags#init(s:ext)
     call add(loaded_ext, 'gutentags')
+  endif
+
+  if (get(g:, 'airline#extensions#grepper#enabled', 1) && get(g:, 'loaded_grepper', 0))
+    call airline#extensions#grepper#init(s:ext)
+    call add(loaded_ext, 'grepper')
   endif
 
   if (get(g:, 'airline#extensions#xkblayout#enabled', 1) && exists('g:XkbSwitchLib'))
