@@ -4,9 +4,13 @@
 # License: MIT license
 # ============================================================================
 
+import copy
+import glob
+import os
+
+import deoplete.parent
 from deoplete import logger
-from deoplete.parent import Parent
-from deoplete.util import (error_tb, find_rplugins, error)
+from deoplete.util import error, error_tb
 
 
 class Deoplete(logger.LoggingMixin):
@@ -16,10 +20,12 @@ class Deoplete(logger.LoggingMixin):
 
         self._vim = vim
         self._runtimepath = ''
+        self._runtimepath_list = []
         self._custom = []
         self._loaded_paths = set()
         self._prev_merged_results = {}
-        self._prev_pos = []
+        self._prev_input = ''
+        self._prev_next_input = ''
 
         self._parents = []
         self._parent_count = 0
@@ -27,8 +33,10 @@ class Deoplete(logger.LoggingMixin):
                                            'num_processes')
 
         if self._max_parents != 1 and not hasattr(self._vim, 'loop'):
-            error(self._vim, 'neovim-python 0.2.4+ is required.')
-            return
+            msg = ('neovim-python 0.2.4+ is required for %d parents. '
+                   'Using single process.' % self._max_parents)
+            error(self._vim, msg)
+            self._max_parents = 1
 
         # Enable logging for more information, and e.g.
         # deoplete-jedi picks up the log filename from deoplete's handler in
@@ -39,7 +47,7 @@ class Deoplete(logger.LoggingMixin):
         # Initialization
         context = self._vim.call('deoplete#init#_context', 'Init', [])
         context['rpc'] = 'deoplete_on_event'
-        self._check_recache(context)
+        self.on_event(context)
 
         if hasattr(self._vim, 'channel_id'):
             self._vim.vars['deoplete#_channel_id'] = self._vim.channel_id
@@ -51,7 +59,8 @@ class Deoplete(logger.LoggingMixin):
         self.is_debug_enabled = True
 
     def completion_begin(self, context):
-        self.debug('completion_begin: %s', context['input'])
+        self.debug('completion_begin (%s): %r',
+                   context['event'], context['input'])
 
         self._check_recache(context)
 
@@ -76,10 +85,8 @@ class Deoplete(logger.LoggingMixin):
         # Async update is skipped if same.
         prev_completion = context['vars']['deoplete#_prev_completion']
         prev_candidates = prev_completion['candidates']
-        prev_pos = prev_completion['complete_position']
         if (context['event'] == 'Async' and
-                prev_pos == self._vim.call('getpos', '.') and
-                prev_candidates and candidates == prev_candidates):
+                prev_candidates and len(candidates) <= len(prev_candidates)):
             return
 
         # error(self._vim, candidates)
@@ -90,9 +97,10 @@ class Deoplete(logger.LoggingMixin):
             'input': context['input'],
             'is_async': is_async,
         }
+        self.debug('calling deoplete#handler#_do_complete:'
+                   + ' %d candidates, complete_position=%d, is_async=%d',
+                   len(candidates), position, is_async)
         self._vim.call('deoplete#handler#_do_complete')
-
-        self.debug('completion_end: %s', context['input'])
 
     def on_event(self, context):
         self.debug('on_event: %s', context['event'])
@@ -102,7 +110,8 @@ class Deoplete(logger.LoggingMixin):
             parent.on_event(context)
 
     def _merge_results(self, context):
-        use_prev = (context['position'] == self._prev_pos
+        use_prev = (context['input'] == self._prev_input
+                    and context['next_input'] == self._prev_next_input
                     and context['event'] != 'Manual')
         if not use_prev:
             self._prev_merged_results = {}
@@ -112,20 +121,22 @@ class Deoplete(logger.LoggingMixin):
         for cnt, parent in enumerate(self._parents):
             if use_prev and cnt in self._prev_merged_results:
                 # Use previous result
-                merged_results += self._prev_merged_results[cnt]
+                merged_results += copy.deepcopy(
+                    self._prev_merged_results[cnt])
             else:
                 result = parent.merge_results(context)
                 is_async = is_async or result[0]
                 if not result[0]:
                     self._prev_merged_results[cnt] = result[1]
                 merged_results += result[1]
-        self._prev_pos = context['position']
+        self._prev_input = context['input']
+        self._prev_next_input = context['next_input']
 
         if not merged_results:
             return (is_async, -1, [])
 
-        complete_position = min([x['complete_position']
-                                 for x in merged_results])
+        complete_position = min(x['complete_position']
+                                for x in merged_results)
 
         all_candidates = []
         for result in sorted(merged_results,
@@ -134,18 +145,10 @@ class Deoplete(logger.LoggingMixin):
             prefix = context['input'][
                 complete_position:result['complete_position']]
 
-            mark = result['mark'] + ' '
-            for candidate in candidates:
-                # Add prefix
-                candidate['word'] = prefix + candidate['word']
-
-                # Set default menu and icase
-                candidate['icase'] = 1
-                if (mark != ' ' and
-                        candidate.get('menu', '').find(mark) != 0):
-                    candidate['menu'] = mark + candidate.get('menu', '')
-                if result['dup']:
-                    candidate['dup'] = 1
+            if prefix != '':
+                for candidate in candidates:
+                    # Add prefix
+                    candidate['word'] = prefix + candidate['word']
 
             all_candidates += candidates
 
@@ -156,31 +159,56 @@ class Deoplete(logger.LoggingMixin):
 
         return (is_async, complete_position, all_candidates)
 
-    def _add_parent(self, context):
-        parent = Parent(self._vim, context)
+    def _add_parent(self, parent_cls):
+        parent = parent_cls(self._vim)
         if self._vim.vars['deoplete#_logging']:
             parent.enable_logging()
         self._parents.append(parent)
 
-    def _init_parents(self, context):
+    def _init_parents(self):
         if self._parents or self._max_parents <= 0:
             return
 
-        for n in range(0, self._max_parents):
-            self._add_parent(context)
+        if self._max_parents == 1:
+            self._add_parent(deoplete.parent.SingleParent)
+        else:
+            for n in range(0, self._max_parents):
+                self._add_parent(deoplete.parent.MultiParent)
+
+    def _find_rplugins(self, source):
+        """Search for base.py or *.py
+
+        Searches $VIMRUNTIME/*/rplugin/python3/deoplete/$source[s]/
+        """
+        if not self._runtimepath_list:
+            return
+
+        sources = (
+            os.path.join('rplugin', 'python3', 'deoplete',
+                         source, 'base.py'),
+            os.path.join('rplugin', 'python3', 'deoplete',
+                         source, '*.py'),
+            os.path.join('rplugin', 'python3', 'deoplete',
+                         source + 's', '*.py'),
+            os.path.join('rplugin', 'python3', 'deoplete',
+                         source, '*', '*.py'),
+        )
+
+        for src in sources:
+            for path in self._runtimepath_list:
+                yield from glob.iglob(os.path.join(path, src))
 
     def _load_sources(self, context):
-        self._init_parents(context)
+        self._init_parents()
 
-        # Load sources from runtimepath
-        for path in find_rplugins(context, 'source'):
+        for path in self._find_rplugins('source'):
             if path in self._loaded_paths:
                 continue
             self._loaded_paths.add(path)
 
             if self._max_parents <= 0:
-                # Add parent automatically
-                self._add_parent(context)
+                # Add parent automatically for num_processes=0.
+                self._add_parent(deoplete.parent.MultiParent)
 
             self._parents[self._parent_count].add_source(path)
             self.debug('Process %d: %s', self._parent_count, path)
@@ -190,15 +218,9 @@ class Deoplete(logger.LoggingMixin):
                 self._parent_count %= self._max_parents
 
         self._set_source_attributes(context)
-        self._set_custom(context)
 
     def _load_filters(self, context):
-        # Load filters from runtimepath
-        for path in find_rplugins(context, 'filter'):
-            if path in self._loaded_paths:
-                continue
-            self._loaded_paths.add(path)
-
+        for path in self._find_rplugins('filter'):
             for parent in self._parents:
                 parent.add_filter(path)
 
@@ -206,14 +228,11 @@ class Deoplete(logger.LoggingMixin):
         for parent in self._parents:
             parent.set_source_attributes(context)
 
-    def _set_custom(self, context):
-        self._custom = context['custom']
-        for parent in self._parents:
-            parent.set_custom(self._custom)
-
     def _check_recache(self, context):
-        if context['runtimepath'] != self._runtimepath:
-            self._runtimepath = context['runtimepath']
+        runtimepath = self._vim.options['runtimepath']
+        if runtimepath != self._runtimepath:
+            self._runtimepath = runtimepath
+            self._runtimepath_list = runtimepath.split(',')
             self._load_sources(context)
             self._load_filters(context)
 
@@ -221,4 +240,4 @@ class Deoplete(logger.LoggingMixin):
                 self.on_event(context)
         elif context['custom'] != self._custom:
             self._set_source_attributes(context)
-            self._set_custom(context)
+            self._custom = context['custom']

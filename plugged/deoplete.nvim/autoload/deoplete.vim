@@ -8,21 +8,31 @@ function! deoplete#initialize() abort
   return deoplete#init#_initialize()
 endfunction
 function! deoplete#is_enabled() abort
-  call deoplete#initialize()
-  return deoplete#init#_is_enabled()
+  return deoplete#init#_is_handler_enabled()
 endfunction
 function! deoplete#enable() abort
-  if deoplete#initialize()
+  if has('vim_starting')
+    augroup deoplete
+      autocmd!
+      autocmd VimEnter * call deoplete#enable()
+    augroup END
     return 1
   endif
-  return deoplete#init#_enable()
+
+  if deoplete#initialize() && deoplete#is_enabled()
+    return 1
+  endif
+  return deoplete#init#_enable_handler()
 endfunction
 function! deoplete#disable() abort
-  return deoplete#init#_disable()
+  call deoplete#initialize()
+  return deoplete#init#_disable_handler()
 endfunction
 function! deoplete#toggle() abort
+  call deoplete#initialize()
   return deoplete#is_enabled() ?
-        \ deoplete#init#_disable() : deoplete#init#_enable()
+        \ deoplete#init#_disable_handler() :
+        \ deoplete#init#_enable_handler()
 endfunction
 
 function! deoplete#enable_logging(level, logfile) abort
@@ -30,9 +40,10 @@ function! deoplete#enable_logging(level, logfile) abort
   call deoplete#util#rpcnotify('deoplete_enable_logging', {})
 endfunction
 
-function! deoplete#send_event(event) abort
+function! deoplete#send_event(event, ...) abort
+  let sources = get(a:000, 0, [])
   call deoplete#util#rpcnotify('deoplete_on_event',
-        \ deoplete#init#_context(a:event, []))
+        \ deoplete#init#_context(a:event, sources))
 endfunction
 
 function! deoplete#manual_complete(...) abort

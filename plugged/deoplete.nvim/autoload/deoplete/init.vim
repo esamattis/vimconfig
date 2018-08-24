@@ -4,32 +4,22 @@
 " License: MIT license
 "=============================================================================
 
-if !exists('s:is_enabled')
-  let s:is_enabled = 0
+if !exists('s:is_handler_enabled')
+  let s:is_handler_enabled = 0
 endif
 
 let s:is_windows = ((has('win32') || has('win64')) ? v:true : v:false)
 
-function! deoplete#init#_is_enabled() abort
-  return s:is_enabled
+function! deoplete#init#_is_handler_enabled() abort
+  return s:is_handler_enabled
 endfunction
 
 function! deoplete#init#_initialize() abort
-  if has('vim_starting')
-    augroup deoplete
-      autocmd!
-      autocmd VimEnter * call deoplete#enable()
-    augroup END
+  if exists('g:deoplete#_initialized')
     return 1
   endif
 
-  if !deoplete#init#_check_channel()
-    return 1
-  endif
-
-  augroup deoplete
-    autocmd!
-  augroup END
+  let g:deoplete#_initialized = v:false
 
   call s:init_internal_variables()
   call deoplete#init#_custom_variables()
@@ -90,26 +80,22 @@ function! deoplete#init#_channel() abort
     return 1
   endtry
 endfunction
-function! deoplete#init#_check_channel() abort
-  return !exists('g:deoplete#_initialized')
+function! deoplete#init#_channel_initialized() abort
+  return get(g:, 'deoplete#_initialized', v:false)
 endfunction
-function! deoplete#init#_enable() abort
+function! deoplete#init#_enable_handler() abort
   call deoplete#handler#_init()
-  let s:is_enabled = 1
+  let s:is_handler_enabled = 1
 endfunction
-function! deoplete#init#_disable() abort
+function! deoplete#init#_disable_handler() abort
   augroup deoplete
     autocmd!
   augroup END
-  let s:is_enabled = 0
+  let s:is_handler_enabled = 0
 endfunction
 
 function! s:init_internal_variables() abort
-  let g:deoplete#_prev_completion = {
-        \ 'complete_position': [],
-        \ 'candidates': [],
-        \ 'event': '',
-        \ }
+  call deoplete#init#_prev_completion()
   let g:deoplete#_context = {}
   let g:deoplete#_rank = {}
   if !exists('g:deoplete#_logging')
@@ -218,11 +204,7 @@ function! deoplete#init#_context(event, sources) abort
   let width = winwidth(0) - col('.') + len(matchstr(input, '\w*$'))
   let max_width = (width * 2 / 3)
 
-  if a:event ==# 'BufNew'
-    let bufnr = expand('<abuf>')
-  else
-    let bufnr = bufnr('%')
-  endif
+  let bufnr = expand('<abuf>') !=# '' ? expand('<abuf>') : bufnr('%')
   let bufname = bufname(bufnr)
   let bufpath = fnamemodify(bufname, ':p')
   if !filereadable(bufpath) || getbufvar(bufnr, '&buftype') =~# 'nofile'
@@ -249,7 +231,6 @@ function! deoplete#init#_context(event, sources) abort
         \ 'max_abbr_width': max_width,
         \ 'max_kind_width': max_width,
         \ 'max_menu_width': max_width,
-        \ 'runtimepath': &runtimepath,
         \ 'bufnr': bufnr,
         \ 'bufname': bufname,
         \ 'bufpath': bufpath,
@@ -295,12 +276,21 @@ function! deoplete#init#_option() abort
         \  'xml': ['<', '</', '<[^>]*\s[[:alnum:]-]*'],
         \ },
         \ 'on_insert_enter': v:true,
+        \ 'on_text_changed_i': v:true,
         \ 'profile': v:false,
         \ 'min_pattern_length': 2,
-        \ 'refresh_always': v:false,
+        \ 'refresh_always': v:true,
         \ 'skip_chars': ['(', ')'],
         \ 'smart_case': &smartcase,
         \ 'sources': {},
+        \ 'trigger_key': v:char,
         \ 'yarp': v:false,
+        \ }
+endfunction
+function! deoplete#init#_prev_completion() abort
+  let g:deoplete#_prev_completion = {
+        \ 'event': '',
+        \ 'input': '',
+        \ 'candidates': [],
         \ }
 endfunction

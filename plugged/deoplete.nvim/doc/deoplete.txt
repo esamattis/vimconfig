@@ -1,4 +1,4 @@
-*deoplete.txt*	Dark powered asynchronous completion framework for neovim/Vim8.
+*deoplete.txt*	Dark powered asynchronous completion framework for Neovim/Vim8.
 
 Version: 4.0
 Author: Shougo <Shougo.Matsu at gmail.com>
@@ -13,6 +13,7 @@ Interface		|deoplete-interface|
   Variables		  |deoplete-variables|
   Key mappings		  |deoplete-key-mappings|
   Functions		  |deoplete-functions|
+  Custom Functions	  |deoplete-custom-functions|
 Examples		|deoplete-examples|
 Sources			|deoplete-sources|
 Create source		|deoplete-create-source|
@@ -44,7 +45,7 @@ Improvements in deoplete in comparison to |neocomplete|:
 ==============================================================================
 INSTALL							*deoplete-install*
 
-Note: deoplete requires Neovim(0.2.0+) or Vim8(latest is recommended) with
+Note: deoplete requires Neovim (0.2.0+) or Vim8 (latest is recommended) with
 Python3 and |+timers| enabled.
 
 Please install nvim-yarp plugin for Vim8.
@@ -56,7 +57,7 @@ https://github.com/roxma/vim-hug-neovim-rpc
 1. Extract the files and put them in your Neovim or .vim directory
    (usually `$XDG_CONFIG_HOME/nvim/`).
 2. Call |deoplete#enable()| or set "let g:deoplete#enable_at_startup = 1" in
-   your `init.vim`
+   your `init.vim`/`vimrc`
 3. Execute the ":UpdateRemotePlugins" if Neovim.
 
 If ":echo has('python3')" returns `1`, then you're done; otherwise, see below.
@@ -82,6 +83,23 @@ INTERFACE						*deoplete-interface*
 ------------------------------------------------------------------------------
 OPTIONS	 					*deoplete-options*
 
+Options can be toggled through the use of |deoplete#custom#option()|.
+
+For example:
+
+>
+    " Set a single option
+    call deoplete#custom#option('auto_complete_delay', 200)
+
+    " Pass a dictionary to set multiple options
+    call deoplete#custom#option({
+    \ 'auto_complete_delay': 200,
+    \ 'smart_case': v:true,
+    \ })
+<
+
+The set of available options follows.
+
 					*deoplete-options-auto_complete*
 auto_complete
 		If it is False, automatic completion becomes invalid, but can
@@ -105,9 +123,9 @@ auto_refresh_delay
 
 						*deoplete-options-camel_case*
 camel_case
-		When a capital letter is matched with the uppercase, but a
-		lower letter is matched with the upper- and lowercase.
-		Ex: "foB" is matched with "FooBar" not "foobar".
+		If it is True, lowercase letters are also matched with the
+		corresponding uppercase ones.
+		Ex: "foB" is matched with "FooBar" but not with "foobar".
 		Note: This feature is only available in
 		|deoplete-filter-matcher_fuzzy| or
 		|deoplete-filter-matcher_full_fuzzy|.
@@ -154,15 +172,16 @@ keyword_patterns
 		'iskeyword' pattern.
 >
 		call deoplete#custom#option('keyword_patterns', {
+		\ '_': '[a-zA-Z_]\k*',
 		\ 'tex': '\\?[a-zA-Z_]\w*',
+		\ 'ruby': '[a-zA-Z_]\w*[!?]?',
 		\})
 <
 		Default value: {}
 
 						*deoplete-options-max_list*
 max_list
-		If the list of candidates exceeds the limit, not all
-		candidates will show up.
+		Show up to this limit candidates.
 
 		Default value: 500
 
@@ -171,26 +190,31 @@ num_processes
 		The number of processes used for the deoplete parallel
 		feature.
 		If it is 1, this feature is disabled.
-		If it is less than equal 0, the number of processes are equal
-		to sources number.
+		If it is less than or equal to 0, the number of processes is
+		equal to that of sources.
 
 		Default value: 1 (Windows) or 4 (Others)
 
 					*deoplete-options-omni_patterns*
 omni_patterns
-		It is the keyword patterns to Omni completion.
+		If omni_patterns is set, deoplete will call 'omnifunc'
+		directly as soon as a pattern is matched.
+		Note: This will disable deoplete filtering and combination of
+		sources for those matches.  Suggested use is only for legacy
+		omnifunc plugins which do not return all results when provided
+		an empty base argument or moves the cursor in omnifunc.  See
+		|complete-functions|
 
-		If this pattern is not defined or empty pattern, deoplete
-		does not call 'omnifunc'.
-		Note: If it is a set, deoplete will call 'omnifunc'
-		directly.  So almost deoplete features are disabled.
-		Note: It is Vim regexp.
+		If this pattern is not defined or empty for a filetype,
+		deoplete does not call 'omnifunc'.
+
+		Note: It is a Vim regexp.
 >
 		call deoplete#custom#option('omni_patterns', {
 		\ 'java': '[^. *\t]\.\w*',
 		\})
 <
-		Default value: in init.vim
+		Default value: in autoload/deoplete/init.vim
 
 					*deoplete-options-on_insert_enter*
 on_insert_enter
@@ -199,11 +223,18 @@ on_insert_enter
 
 		Default value: v:true
 
+					*deoplete-options-on_text_changed_i*
+on_text_changed_i
+		Deoplete enables the auto completion on |TextChangedI| autocmd
+		if this value is True.
+
+		Default value: v:true
+
 						*deoplete-options-profile*
 profile
 		If it is True, deoplete will print the time information to
 		|deoplete#enable_logging()| logfile.
-		Must be set in init.vim before to start the Neovim.
+		Must be set in init.vim/vimrc before starting Neovim/Vim.
 		Does not support command line.
 
 		Default value: v:false
@@ -214,7 +245,7 @@ refresh_always
 		is True.
 		Note: It increases the screen flicker.
 
-		Default value: v:false
+		Default value: v:true
 
 						*deoplete-options-skip_chars*
 skip_chars
@@ -231,7 +262,7 @@ smart_case
 
 					*deoplete-options-sources*
 sources
-		It is a dictionary to decide use source names.  The key is
+		It is a dictionary to specify source names.  The key is
 		filetype and the value is source names list.  If the key is
 		"_", the value will be used for default filetypes.  For
 		example, you can load some sources in C++ filetype.
@@ -239,7 +270,7 @@ sources
 
 		Default value: {}
 >
-		" Examples:
+		" Example:
 		call deoplete#custom#option('sources', {
 		\ '_': ['buffer'],
 		\ 'cpp': ['buffer', 'tag'],
@@ -268,21 +299,20 @@ VARIABLES	 					*deoplete-variables*
 
 						*g:deoplete#enable_at_startup*
 g:deoplete#enable_at_startup
-		Deoplete gets started automatically when Neovim starts if
+		Deoplete gets started automatically when Neovim/Vim starts if
 		this value is 1.
 
-		With the default value 0, you cannot use deoplete
-		unless you start it manually.
+		Default: 0
+		Note: It means you cannot use deoplete unless you start it
+		manually.
 
 ------------------------------------------------------------------------------
 FUNCTIONS 						*deoplete-functions*
 
-						*deoplete#initialize()*
-deoplete#initialize()
-		Initialize deoplete and sources.
-		Note: You should call it in |VimEnter| autocmd.
-		User customization for deoplete must be set before
-		initialization of deoplete.
+							*deoplete#disable()*
+deoplete#disable()
+		Disable deoplete auto completion.
+		Note: It changes the global state.
 
 							*deoplete#enable()*
 deoplete#enable()
@@ -291,20 +321,45 @@ deoplete#enable()
 		Note: It does not work in lazy loading.  You should use
 		|g:deoplete#enable_at_startup| instead.
 
-							*deoplete#disable()*
-deoplete#disable()
-		Disable deoplete auto completion.
-		Note: It changes the global state.
+						*deoplete#enable_logging()*
+deoplete#enable_logging({level}, {logfile})
+		Enable logging for debugging purposes.
+		Set {level} to "DEBUG", "INFO", "WARNING", "ERROR", or
+		"CRITICAL".
+		{logfile} is the file where log messages are written.
+		Messages are appended to this file.  Each log session will
+		start with "--- Deoplete Log Start ---".
+		Note: You must enable
+		|deoplete-source-attribute-is_debug_enabled| to debug the
+		sources.
+
+						*deoplete#initialize()*
+deoplete#initialize()
+		Initialize deoplete and sources.
+		Note: You should call it in |VimEnter| autocmd.
+		User customization for deoplete must be set before
+		initialization of deoplete.
+
+						*deoplete#send_event()*
+deoplete#send_event({event}, [{sources}])
+		Call |deoplete-source-attribute-on_event| manually.
+		{event} is event name.  {sources} are sources list.
 
 							*deoplete#toggle()*
 deoplete#toggle()
 		Toggle deoplete auto completion.
 		Note: It changes the global state.
 
+
+CUSTOM FUNCTIONS 				*deoplete-custom-functions*
 					*deoplete#custom#buffer_option()*
 deoplete#custom#buffer_option({option-name}, {value})
 deoplete#custom#buffer_option({dict})
 		The buffer local version of |deoplete#custom#option()|.
+
+					*deoplete#custom#buffer_var()*
+deoplete#custom#buffer_var({source-name}, {var-name}, {value})
+		The buffer local version of |deoplete#custom#var()|.
 
 						*deoplete#custom#option()*
 deoplete#custom#option({option-name}, {value})
@@ -374,25 +429,19 @@ deoplete#custom#var({source-name}, {var-name}, {value})
 		to {value}.  You may specify multiple sources with the
 		separator "," in {source-name}.
 
-						*deoplete#enable_logging()*
-deoplete#enable_logging({level}, {logfile})
-		Enable logging for debugging purposes.
-		Set {level} to "DEBUG", "INFO", "WARNING", "ERROR", or
-		"CRITICAL".
-		{logfile} is the file where log messages are written.
-		Messages are appended to this file.  Each log session will
-		start with "--- Deoplete Log Start ---".
-		Note: You must enable
-		|deoplete-source-attribute-is_debug_enabled| to debug the
-		sources.
-
-						*deoplete#send_event()*
-deoplete#send_event({event})
-		Call |deoplete-source-attribute-on_event| manually.
-		{event} is event name.
-
 ------------------------------------------------------------------------------
 KEY MAPPINGS 					*deoplete-key-mappings*
+
+					*deoplete#close_popup()*
+deoplete#close_popup()
+		Insert candidate and close popup menu for deoplete.
+		Note: It must be in |map-<expr>|.
+
+					*deoplete#complete_common_string()*
+deoplete#complete_common_string()
+		complete common string in candidates.  It will be convenient
+		when candidates have long common string.
+		Note: It must be in |map-<expr>|.
 
 					*deoplete#manual_complete()*
 deoplete#manual_complete([{sources}])
@@ -400,7 +449,7 @@ deoplete#manual_complete([{sources}])
 		custom completion setups.
 		You can provide a list of {sources}: It can be the name of a
 		source or a list of sources name.
-		Note: It blocks your neovim.
+		Note: It blocks your Neovim/Vim.
 		Note: It must be in |map-<expr>|.
 
 		If you want to trigger deoplete manually, see also
@@ -416,6 +465,13 @@ deoplete#manual_complete([{sources}])
 		return !col || getline('.')[col - 1]  =~ '\s'
 		endfunction"}}}
 <
+					*deoplete#refresh()*
+deoplete#refresh()
+		Refresh the candidates.
+		Note: It must be in |map-<expr>|.
+>
+		inoremap <expr><C-l>     deoplete#refresh()
+<
 				*deoplete#smart_close_popup()*
 deoplete#smart_close_popup()
 		Insert candidate and re-generate popup menu for deoplete.
@@ -426,14 +482,9 @@ deoplete#smart_close_popup()
 		inoremap <expr><BS>
 		\ deoplete#smart_close_popup()."\<C-h>"
 <
-		Note: This mapping is conflicted with |SuperTab| or |endwise|
+		Note: This mapping conflicts with |SuperTab| or |endwise|
 		plugins.
 		Note: This key mapping is for <C-h> or <BS> keymappings.
-
-					*deoplete#close_popup()*
-deoplete#close_popup()
-		Insert candidate and close popup menu for deoplete.
-		Note: It must be in |map-<expr>|.
 
 					*deoplete#undo_completion()*
 deoplete#undo_completion()
@@ -442,19 +493,6 @@ deoplete#undo_completion()
 >
 		inoremap <expr><C-g>     deoplete#undo_completion()
 <
-					*deoplete#refresh()*
-deoplete#refresh()
-		Refresh the candidates.
-		Note: It must be in |map-<expr>|.
->
-		inoremap <expr><C-l>     deoplete#refresh()
-<
-					*deoplete#complete_common_string()*
-deoplete#complete_common_string()
-		complete common string in candidates.  It will be convenient
-		when candidates have long common string.
-		Note: It must be in |map-<expr>|.
-
 ==============================================================================
 EXAMPLES						*deoplete-examples*
 >
@@ -476,10 +514,25 @@ EXAMPLES						*deoplete-examples*
 ==============================================================================
 SOURCES							*deoplete-sources*
 
+around						    *deoplete-source-around*
+		This source collects candidates around the cursor, namely
+		inside current buffer.  Plus, it searches keywords in
+		|:changes| command output.  Therefore, this source provides
+		the words that are in sight or the ones you've just typed
+		somewhere else.
+
+		Legend: You can see where the words came from. Next to the
+		source mark [~] these suffixes are used:
+		    A - above the cursor
+		    B - below the cursor
+		    C - in changes
+
+		rank: 300
+
 buffer						*deoplete-source-buffer*
-		It collects keywords from current buffer and the current
-		tabpage windows buffers and the opened buffers which have same
-		'filetype'.
+		This source collects keywords from current buffer and the
+		current tabpage windows buffers and the opened buffers which
+		have same 'filetype'.
 
 		Note: It does not collect keywords from not loaded buffer.
 		For example, if you open file by "nvim A B".  A is already
@@ -487,7 +540,7 @@ buffer						*deoplete-source-buffer*
 		the keywords in B until you switch to buffer B.
 
 		Note: It takes time to get the candidates in the first time if
-		you want to edit the large files(like Vim 22000 lines eval.c).
+		you want to edit the large files (like Vim 22000 lines eval.c).
 
 		rank: 100
 
@@ -497,28 +550,28 @@ buffer						*deoplete-source-buffer*
 				buffers of any filetype
 				(default: True)
 
-member						*deoplete-source-member*
-		It collects members from current buffer.
+dictionary					*deoplete-source-dictionary*
+		This source collects |deoplete-options-keyword_patterns|
+		keywords from 'dictionary'.
+		Note: It uses buffer-local 'dictionary' set up.
 
 		rank: 100
-
-		Source custom variables:
-		prefix_patterns
-				This dictionary records prefix patterns to
-				member completion.  This is appointed in
-				regular expression string or list every file
-				type.  If this pattern is not defined or
-				empty pattern, deoplete does not complete
-				member candidates.
-				Note: It is Python3 regexp.
-				(default: See in member.py)
-
-tag							*deoplete-source-tag*
-		It collects keywords from |ctags| files.
-		Note: It only supports UTF-8 encoding tag file.
-
-		rank: 100
-
+>
+		" Examples:
+		" Sample configuration for dictionary source with multiple
+		" dictionary files.
+		setlocal dictionary+=/usr/share/dict/words
+		setlocal dictionary+=/usr/share/dict/american-english
+		" Remove this if you'd like to use fuzzy search
+		call deoplete#custom#source(
+		\ 'dictionary', 'matchers', ['matcher_head'])
+		" If dictionary is already sorted, no need to sort it again.
+		call deoplete#custom#source(
+		\ 'dictionary', 'sorters', [])
+		" Do not complete too short words
+		call deoplete#custom#source(
+		\ 'dictionary', 'min_pattern_length', 4)
+<
 file							*deoplete-source-file*
 		This source collects keywords from local files. Specifically,
 		it completes file and directory names and paths, e.g.
@@ -528,10 +581,32 @@ file							*deoplete-source-file*
 
 		Source custom variables:
 		enable_buffer_path
-				If it is True, file source complete the files
+				If it is True, file source completes the files
 				from the buffer path instead of the current
 				directory.
 				(default: False)
+
+		force_completion_length
+				The completion length if the input does not
+				contain "/".
+				If it is less than 0, it is disabled.
+				(default: -1)
+
+member						*deoplete-source-member*
+		This source collects members from current buffer.
+
+		rank: 100
+
+		Source custom variables:
+		prefix_patterns
+				This dictionary records prefix patterns to
+				member completion.  This is appointed in
+				regular expression string or list every file
+				type.  If this pattern is not defined or
+				empty, deoplete does not complete member
+				candidates.
+				Note: It is Python3 regexp.
+				(default: See in member.py)
 
 omni							*deoplete-source-omni*
 		This source collects keywords from 'omnifunc'.
@@ -540,24 +615,6 @@ omni							*deoplete-source-omni*
 		rank: 500
 
 		Source custom variables:
-		input_patterns
-				This dictionary records keyword patterns to
-				Omni completion.  This is appointed in regular
-				expression string or list every file type.  If
-				this pattern is not defined or empty pattern,
-				deoplete does not call 'omnifunc'.
-				Note: Some omnifuncs which moves the cursor is
-				not worked.  For example, htmlcomplete,
-				phpcomplete, etc...
-				Note: It is Python3 regexp.
-				(default: See in omni.py)
->
-		call deoplete#custom#var('omni', 'input_patterns', {
-		    \ 'ruby': ['[^. *\t]\.\w*', '[a-zA-Z_]\w*::'],
-		    \ 'java': '[^. *\t]\.\w*',
-		    \ 'php': '\w+|[^. \t]->\w*|\w+::\w*',
-		    \})
-<
 		functions
 				It defines a dictionary for omni completion
 				with deoplete:
@@ -581,42 +638,29 @@ omni							*deoplete-source-omni*
 		    \ 'javascript': ['tern#Complete', 'jspc#omni']
 		    \})
 <
-dictionary					*deoplete-source-dictionary*
-		This source collects |deoplete-options-keyword_patterns|
-		keywords from 'dictionary'. Note: it uses buffer-local
-		'dictionary' set up.
+		input_patterns
+				This dictionary records keyword patterns to
+				Omni completion.  This is appointed in regular
+				expression string or list every file type.  If
+				this pattern is not defined or empty, deoplete
+				does not call 'omnifunc'.
+				Note: Some omnifuncs which moves the cursor is
+				not worked.  For example, htmlcomplete,
+				phpcomplete, etc...
+				Note: It is Python3 regexp.
+				(default: See in omni.py)
+>
+		call deoplete#custom#var('omni', 'input_patterns', {
+		    \ 'ruby': ['[^. *\t]\.\w*', '[a-zA-Z_]\w*::'],
+		    \ 'java': '[^. *\t]\.\w*',
+		    \ 'php': '\w+|[^. \t]->\w*|\w+::\w*',
+		    \})
+<
+tag							*deoplete-source-tag*
+		It collects keywords from |ctags| files.
+		Note: It only supports UTF-8 encoded tag file.
 
 		rank: 100
->
-		" Examples:
-		" Sample configuration for dictionary source with multiple
-		" dictionary files.
-		setlocal dictionary+=/usr/share/dict/words
-		setlocal dictionary+=/usr/share/dict/american-english
-		" Remove this if you'd like to use fuzzy search
-		call deoplete#custom#source(
-		\ 'dictionary', 'matchers', ['matcher_head'])
-		" If dictionary is already sorted, no need to sort it again.
-		call deoplete#custom#source(
-		\ 'dictionary', 'sorters', [])
-		" Do not complete too short words
-		call deoplete#custom#source(
-		\ 'dictionary', 'min_pattern_length', 4)
-<
-around						    *deoplete-source-around*
-		This source collects candidates around the cursor, so inside
-		current buffer only. Plus, it searches keywords in |:changes|
-		command output. Therefore, this source is about to provide the
-		words that are in sight or the ones you've just typed somewhere
-		else.
-
-		Legend: You can see where the words came from. Next to the
-		source mark [~] these suffixes are used:
-		    A - above the cursor
-		    B - below the cursor
-		    C - in changes
-
-		rank: 300
 
 ==============================================================================
 FILTERS							*deoplete-filters*
@@ -637,22 +681,6 @@ Default converters: ['converter_remove_overlap', 'converter_truncate_abbr',
 
 	You can change it by |deoplete#custom#source()|.
 
-						*deoplete-filter-matcher_head*
-matcher_head	Head matching matcher.
-
-					*deoplete-filter-matcher_fuzzy*
-matcher_fuzzy	Fuzzy matching matcher.
-
-					*deoplete-filter-matcher_full_fuzzy*
-matcher_full_fuzzy
-		Full fuzzy matching matcher.
-		It accepts partial fuzzy matches like YouCompleteMe.
-
-					*deoplete-filter-matcher_length*
-matcher_length
-		Length matching matcher.
-		It removes candidates shorter than or equal to the user input.
-
 					*deoplete-filter-matcher_cpsm*
 matcher_cpsm
 		A matcher which filters the candidates using cpsm.
@@ -668,16 +696,28 @@ matcher_cpsm
 		call deoplete#custom#source('_', 'matchers', ['matcher_cpsm'])
 		call deoplete#custom#source('_', 'sorters', [])
 <
+					*deoplete-filter-matcher_full_fuzzy*
+matcher_full_fuzzy
+		Full fuzzy matching matcher.
+		It accepts partial fuzzy matches like YouCompleteMe.
+
+					*deoplete-filter-matcher_fuzzy*
+matcher_fuzzy	Fuzzy matching matcher.
+
+						*deoplete-filter-matcher_head*
+matcher_head	Head matching matcher.
+
+					*deoplete-filter-matcher_length*
+matcher_length
+		Length matching matcher.
+		It removes candidates shorter than or equal to the user input.
+
 						*deoplete-filter-sorter_rank*
 sorter_rank	Matched rank order sorter.  The higher the head matched word
 		or already selected.
 
 						*deoplete-filter-sorter_word*
 sorter_word	Word order sorter.
-
-				*deoplete-filter-converter_remove_overlap*
-converter_remove_overlap
-		It removes overlapped text in a candidate's word.
 
 				*deoplete-filter-converter_auto_delimiter*
 converter_auto_delimiter
@@ -689,6 +729,10 @@ converter_auto_paren
 		It adds parentheses character in a candidate's word.
 		It is useful if you use |neopairs| or |neosnippet|
 		plugins.
+
+				*deoplete-filter-converter_remove_overlap*
+converter_remove_overlap
+		It removes overlapped text in a candidate's word.
 
 				*deoplete-filter-converter_remove_paren*
 converter_remove_paren
@@ -712,7 +756,7 @@ The files are automatically loaded and deoplete creates new Source class
 object.
 Source class must extend Base class in ".base".
 
-Note: The sources must be created by Python3 language.
+Note: The sources must be written in Python3 language.
 
 Note: If you call Vim functions in your source, it is not asynchronous.
 
@@ -725,52 +769,160 @@ __init__	(Function)
 		must call super() constructor.  This function takes {self} and
 		{vim} as its parameters.
 
-					*deoplete-source-attribute-name*
-name		(String)			(Required)
-		The name of a source.
+						*deoplete-source-attribute-__*
+__{name}	(Unspecified)			(Optional)
+		Additional source information.
+		Note: Recommend sources save variables instead of
+		global variables.
 
-					*deoplete-source-attribute-mark*
-mark		(String)			(Optional)
-		The mark of a source.
+					*deoplete-source-attribute-converters*
+converters	(List[str])			(Optional)
+		Source default converters list.
+
+		Default: |deoplete-filter-converter_default|
 
 					*deoplete-source-attribute-description*
 description	(String)			(Optional)
 		The description of a source.
 
+				*deoplete-source-attribute-disabled_syntaxes*
+disabled_syntaxes
+		(List[str])			(Optional)
+		Source disabled syntaxes list.
+
+		Default: []
+		Note: It means this feature is ignored.
+
+					*deoplete-source-attribute-events*
+events		(List[str])			(Optional)
+		List of events for which |deoplete-source-attribute-on_event|
+		should get called.
+
+		Default: `None`
+		Note: It means that `on_event` gets called for all events.
+
 					*deoplete-source-attribute-filetypes*
 filetypes	(List[str])			(Optional)
 		Available filetype list.
 
-		If you omit it, this source available in all filetypes.
+		Default: []
+		Note: It means this source available in all filetypes.
 
-					*deoplete-source-attribute-rank*
-rank		(Integer)			(Optional)
-		Source priority.  Higher values imply higher priority.
-		Note: It is high priority than match position.
+				*deoplete-source-attribute-gather_candidates*
+gather_candidates
+		(Function)			(Required)
+		It is called to gather candidates.
+		It takes {self} and {context} as its parameter and returns a
+		list of {candidate}.
+		If the error is occurred, it must return None.
+		{candidate} must be String or Dictionary contains
+		|deoplete-candidate-attributes|.
+		Here, {context} is the context information when the source is
+		called (|deoplete-notation-{context}|).
+		Note: The source must not filter the candidates by user input.
+		It is |deoplete-filters| work.  If the source filter the
+		candidates, user cannot filter the candidates by fuzzy match.
 
-		Default: 100
+			*deoplete-source-attribute-get_complete_position*
+get_complete_position
+		(Function)			(Optional)
+		It is called to get complete position.
+		It takes {self} and {context} as its parameter and returns
+		complete position in current line.
+		Here, {context} is the context information when the source is
+		called (|deoplete-notation-{context}|).
 
-				*deoplete-source-attribute-min_pattern_length*
-min_pattern_length
-		(Integer)			(Optional)
-		Required pattern length for completion.
+		Default: position using |deoplete-options-keyword_patterns|.
+		Note: If |deoplete-source-attribute-is_bytepos| is True, it
+		must return byte position.
 
-		Default: 2
+				*deoplete-source-attribute-input_pattern*
+input_pattern
+		(String)			(Optional)
+		If it is matched with input, deoplete ignores
+		|deoplete-source-attribute-min_pattern_length|.
+		It is useful for omni function sources.
+		Note: It is Python3 regexp.
 
-				*deoplete-source-attribute-max_pattern_length*
-max_pattern_length
-		(Integer)			(Optional)
-		Ignored pattern length for completion.
-		It is useful to edit BASE64 files.
+		Default: ''
+		Note: It means this feature is ignored.
 
-		Default: 80
+				*deoplete-source-attribute-input_patterns*
+input_patterns
+		(Dictionary)			(Optional)
+		The dictionary version of
+		|deoplete-source-attribute-input_pattern|.
+		A key is filetype and a value is input pattern.
+		Note: It is Python3 regexp.
+
+					*deoplete-source-attribute-is_bytepos*
+is_bytepos
+		(Bool)				(Optional)
+		If it is True,
+		|deoplete-source-attribute-get_complete_position|
+		returns byteposition instead of character position.
+		It is useful for Vim script to create sources because Vim
+		script string uses byte position.  Python string uses
+		character position.
+
+		Default: False
+
+				*deoplete-source-attribute-is_debug_enabled*
+is_debug_enabled
+		(Bool)				(Optional)
+		If it is True, the debug log feature is enabled in the source.
+
+		Default: False
+
+					*deoplete-source-attribute-is_silent*
+is_silent
+		(Bool)				(Optional)
+		If it is True, the source messages are disabled.
+
+		Default: False
+
+					*deoplete-source-attribute-is_volatile*
+is_volatile
+		(Bool)				(Optional)
+		If it is True, the source depends on the user input. It means
+		that if this flag is set to False, deoplete will cache
+		gather_candidates results and will not call gather_candidates
+		on each input change. Only on_post_filter method will be
+		called on each input change (if implemented).
+
+		Default: False
+
+				*deoplete-source-attribute-keyword_patterns*
+keyword_patterns
+		It defines the keyword patterns for completion.
+		This is appointed in regular expression string or list every
+		file type.
+
+		Default: |deoplete-options-keyword_patterns|
+
+					*deoplete-source-attribute-mark*
+mark		(String)			(Optional)
+		The mark of a source.
+
+					*deoplete-source-attribute-matchers*
+matchers	(List[str])			(Optional)
+		Source default matchers list.
+
+		Default: |deoplete-filter-matcher_default|
+
+					*deoplete-source-attribute-matcher_key*
+matcher_key	(String)			(Optional)
+		Matcher compare key instead of "word".
+		If it is empty string, the feature is disabled.
+
+		Default: ''
 
 				*deoplete-source-attribute-max_abbr_width*
 max_abbr_width
 		(Integer)			(Optional)
 		If the candidate abbr length exceeds the length it will be cut
 		down.
-		It it is less than or equal 0, it will be disabled.
+		If it is less than or equal to 0, it will be disabled.
 
 		Default: 80
 
@@ -787,7 +939,7 @@ max_kind_width
 		(Integer)			(Optional)
 		If the candidate kind length exceeds the length it will be cut
 		down.
-		It it is less than or equal 0, it will be disabled.
+		If it is less than or equal to 0, it will be disabled.
 
 		Default: 40
 
@@ -796,128 +948,49 @@ max_menu_width
 		(Integer)			(Optional)
 		If the candidate menu length exceeds the length it will be cut
 		down.
-		It it is less than or equal 0, it will be disabled.
+		If it is less than or equal to 0, it will be disabled.
 
 		Default: 40
 
-				*deoplete-source-attribute-input_pattern*
-input_pattern
-		(String)			(Optional)
-		If it is matched, deoplete ignores
-		|deoplete-source-attribute-min_pattern_length|.
-		It is useful for omni function sources.
-		Note: If the source set the attribute, it must define
-		|deoplete-source-attribute-get_complete_position| attribute.
-		Note: It is Python3 regexp.
+				*deoplete-source-attribute-max_pattern_length*
+max_pattern_length
+		(Integer)			(Optional)
+		Ignored pattern length for completion.
+		It is useful to edit BASE64 files.
 
-		If you omit it, this feature is ignored.
+		Default: 80
 
-					*deoplete-source-attribute-is_bytepos*
-is_bytepos
-		(Bool)				(Optional)
-		If it is True,
-		|deoplete-source-attribute-get_complete_position|
-		returns byteposition instead of character position.
-		The default is False.
-		It is useful for Vim script to create sources.
-		Because Vim script string uses byte position.  Python string
-		uses character position.
+				*deoplete-source-attribute-min_pattern_length*
+min_pattern_length
+		(Integer)			(Optional)
+		Length of pattern required for completion.
 
-					*deoplete-source-attribute-is_silent*
-is_silent
-		(Bool)				(Optional)
-		If it is True, the source messages are disabled.
+		Default: 2
 
-					*deoplete-source-attribute-is_volatile*
-is_volatile
-		(Bool)				(Optional)
-		If it is True, the source depends on the user input. It means
-		that if this flag is set to False, deoplete will cache
-		gather_candidates results and will not call gather_candidates
-		on each input change. Only on_post_filter method will be
-		called on each input change (if implemented).
+					*deoplete-source-attribute-name*
+name		(String)			(Required)
+		The unique name of a source.
 
-		Default value: False
-
-				*deoplete-source-attribute-is_debug_enabled*
-is_debug_enabled
-		(Bool)				(Optional)
-		If it is True, the debug log feature is enabled in the source.
-
-				*deoplete-source-attribute-keyword_patterns*
-keyword_patterns
-		It defines the keyword patterns for completion.
-		This is appointed in regular expression string or list every
-		file type.
-
-		If you omit it, |deoplete-options-keyword_patterns| is used.
-
-					*deoplete-source-attribute-matchers*
-matchers	(List[str])			(Optional)
-		Source default matchers list.
-
-		If you omit it, |deoplete-filter-matcher_default| is used.
-
-					*deoplete-source-attribute-sorters*
-sorters		(List[str])			(Optional)
-		Source default sorters list.
-
-		If you omit it, |deoplete-filter-sorter_default| is
-		used.
-
-					*deoplete-source-attribute-converters*
-converters	(List[str])			(Optional)
-		Source default converters list.
-
-		If you omit it, |deoplete-filter-converter_default| is used.
-
-				*deoplete-source-attribute-disabled_syntaxes*
-disabled_syntaxes
-		(List[str])			(Optional)
-		Source disabled syntaxes list.
-
-		If you omit it, this feature is ignored.
-
-					*deoplete-source-attribute-events*
-events		(List[str])			(Optional)
-		List of events for which |deoplete-source-attribute-on_event|
-		should get called.
-
-		It defaults to `None`, which means that `on_event` gets
-		called for all events.
-
-					*deoplete-source-attribute-vars*
-vars		(Dictionary)			(Optional)
-		List of source customization variables.
-
-			*deoplete-source-attribute-get_complete_position*
-get_complete_position
-		(Function)			(Optional)
-		It is called to get complete position.
-		It takes {self} and {context} as its parameter and returns
-		complete position in current line.
-		Here, {context} is the context information when the source is
-		called(|deoplete-notation-{context}|).
-		If you omit it, deoplete will use the position using
-		|deoplete-options-keyword_patterns|.
-
-		Note: |deoplete-source-attribute-is_bytepos| is True, it must
-		return byte position.
-
-				*deoplete-source-attribute-gather_candidates*
-gather_candidates
-		(Function)			(Required)
-		It is called to gather candidates.
-		It takes {self} and {context} as its parameter and returns a
-		list of {candidate}.
-		If the error is occurred, it must return None.
-		{candidate} must be String or Dictionary contains
-		|deoplete-candidate-attributes|.
-		Here, {context} is the context information when the source is
-		called(|deoplete-notation-{context}|).
-		Note: The source must not filter the candidates by user input.
-		It is |deoplete-filters| work.  If the source filter the
-		candidates, user cannot filter the candidates by fuzzy match.
+					*deoplete-source-attribute-on_event*
+on_event	(Function)			(Optional)
+		Called for |InsertEnter|, |BufWritePost|, |BufReadPost| and
+		|BufDelete| autocommands, through |deoplete#send_event()|.
+		It is useful to make cache.
+		It takes {self} and {context} as its parameter.
+>
+		" Example:
+		def on_event(self, context):
+		    if context['event'] == 'BufWritePost':
+			# BufWritePost
+			pass
+		    else:
+			pass
+<
+					*deoplete-source-attribute-on_init*
+on_init		(Function)			(Optional)
+		It will be called before the source attribute is called.
+		It takes {self} and {context} as its parameter.
+		It should be used to initialize the internal variables.
 
 				*deoplete-source-attribute-on_post_filter*
 on_post_filter
@@ -926,39 +999,34 @@ on_post_filter
 		It takes {self} and {context} as its parameter and returns a
 		list of {candidate}.
 
-					*deoplete-source-attribute-on_event*
-on_event	(Function)			(Optional)
-		Called for |InsertEnter|, |BufWritePost|, |DirChanged|
-		autocommands, through |deoplete#send_event()|.
-		It is useful to make cache.
-		It takes {self} and {context} as its parameter.
+					*deoplete-source-attribute-rank*
+rank		(Integer)			(Optional)
+		Source priority.  Higher values imply higher priority.
+		Note: It is high priority than match position.
 
-		" Examples:
-		def on_event(self, context):
-		    if context['event'] == 'BufWritePost':
-			# BufWritePost
-			pass
-		    else:
-			pass
+		Default: 100
 
-					*deoplete-source-attribute-on_init*
-on_init		(Function)			(Optional)
-		It will be called before the source attribute is called.
-		It takes {self} and {context} as its parameter.
-		It should be used to initialize the internal variables.
+					*deoplete-source-attribute-sorters*
+sorters		(List[str])			(Optional)
+		Source default sorters list.
 
-						*deoplete-source-attribute-__*
-__{name}	(Unspecified)			(Optional)
-		Additional source information.
-		Note: Recommend sources save variables instead of
-		global variables.
+		If you omit it, |deoplete-filter-sorter_default| is
+		used.
+
+					*deoplete-source-attribute-vars*
+vars		(Dictionary)			(Optional)
+		List of source customization variables.
 
 {context}					*deoplete-notation-{context}*
 		A dictionary to give context information.
 		The followings are the primary information.
 
-		input			(String)
-			The input string of current line.
+		bufnr			(Integer)
+			The current effective buffer number in event.
+			Note: It may not be same with current buffer.
+
+		candidates		(List[dict])
+			The current candidates.
 
 		complete_position	(Integer)
 			The complete position of current source.
@@ -974,18 +1042,19 @@ __{name}	(Unspecified)			(Optional)
 		complete_str		(String)
 			The complete string of current source.
 
-		candidates		(List[dict])
-			The current candidates.
+		event			(String)
+			The current event name.
 
 		filetype		(String)
 			Current 'filetype'.
 
 		filetypes		(List[str])
-			It contains current 'filetype' and same
+			It contains current 'filetype', same
 			filetypes and composite filetypes.
 
-		is_refresh		(Bool)
-			If the input is changed, it will be "True".
+		input			(String)
+			The input string of the current line, namely the part
+			before the cursor.
 
 		is_async		(Bool)
 			If the gather is asynchronous, the source must set
@@ -998,7 +1067,7 @@ __{name}	(Unspecified)			(Optional)
 			indicating that this is the last portion of the
 			candidates.
 
-	The below is the example of async deoplete source.
+	The below is an example of async deoplete source.
 	If "context['is_async']" is True, the gather_candidates is called
 	repeatedly.
 >
@@ -1017,6 +1086,9 @@ __{name}	(Unspecified)			(Optional)
 	        context['is_async'] = self._count < 10
 	        return [context['input'] + str(self._count)]
 <
+		is_refresh		(Bool)
+			If the input is changed, it will be "True".
+
 
 ------------------------------------------------------------------------------
 CANDIDATE ATTRIBUTES			*deoplete-candidate-attributes*
@@ -1059,20 +1131,20 @@ rplugin/python3/deoplete/filter/*.py.
 The files are automatically loaded and deoplete creates new Filter class object.
 Filter class must extend Base class in ".base".
 
-Note: The filters must be created by Python3 language.
+Note: The filters must be written in Python3 language.
 
 ------------------------------------------------------------------------------
 FILTER ATTRIBUTES				*deoplete-filter-attributes*
 
 					*deoplete-filter-attribute-__init__*
 __init__	(Function)
-		Source constructor.  It will be called in initializing.  It
+		Filter constructor.  It will be called in initializing.  It
 		must call Base constructor.  This function takes {self} and
 		{vim} as its parameters.
 
 					*deoplete-filter-attribute-name*
 name		(String)			(Required)
-		The name of a source.
+		The unique name of a filter.
 
 					*deoplete-filter-attribute-filter*
 filter
@@ -1080,10 +1152,10 @@ filter
 		It is called to filter candidates.
 		It takes {self} and {context} as its parameter and returns a
 		list of {candidate}.
-		{candidate} must be Dictionary contains
+		{candidate} must be Dictionary which contains
 		|deoplete-candidate-attributes|.
 		Here, {context} is the context information when the source is
-		called(|deoplete-notation-{context}|).
+		called (|deoplete-notation-{context}|).
 
 ==============================================================================
 EXTERNAL SOURCES				*deoplete-external-sources*
@@ -1132,13 +1204,6 @@ https://github.com/c9s/perlomni.vim
 
 nvim-typescript: "typescript" source for typescript
 https://github.com/mhartington/nvim-typescript
-
-deoplete-clang: "clang" source for C/C++/ObjC
-https://github.com/zchee/deoplete-clang
-
-deoplete-clang2: "clang2" source for C/C++/ObjC
-It is faster than deoplete-clang
-https://github.com/tweekmonster/deoplete-clang2
 
 async-clj-omni: "async_clj" source for Clojure
 https://github.com/SevereOverfl0w/async-clj-omni
@@ -1314,8 +1379,8 @@ A: If it is enabled, Neovim will enable and load deoplete in startup. It
        let g:deoplete#enable_at_startup = 0
        autocmd InsertEnter * call deoplete#enable()
 <
-  And you should set |g:python3_host_prog| variable. It reduces almost 20ms
-  startuptime.
+  And you should set |g:python3_host_prog| variable.  It reduces startuptime
+  by almost 20 ms.
 
 Q: deoplete cannot complete filename after "=".
 
@@ -1357,8 +1422,18 @@ https://github.com/Shougo/deoplete.nvim/issues/635#issuecomment-363331278
 Please test neovim-python module.
 https://github.com/neovim/python-client#usage-through-the-python-repl
 
+Q: "Cannot add child handler, the child watcher does not have a loop attached"
+error.
+https://github.com/Shougo/deoplete.nvim/issues/761
+
+A: It is neovim-python package problem.
+https://github.com/neovim/python-client/issues/324
+https://github.com/neovim/python-client/issues/326
+
 Note: You can disable parallel feature by |deoplete-options-num_processes|.
-It is workaround.
+It is workaround. >
+
+       call deoplete#custom#option('num_processes', 1)
 
 Q: "[deoplete] neovim-python 0.2.4+ is required." error
 https://github.com/Shougo/deoplete.nvim/issues/694
@@ -1396,7 +1471,12 @@ Q: I want to close the preview window after completion is done.
 A: >
         autocmd CompleteDone * silent! pclose!
 <
-   Note: It conflicts with iabbr.
+Or
+>
+	autocmd InsertLeave * silent! pclose!
+<
+
+   Note: It conflicts with delimitMate.
    https://github.com/Shougo/deoplete.nvim/issues/234
 
 Q: I want to disable the preview window feature.
@@ -1523,21 +1603,9 @@ A: Please use |deoplete-options-auto_complete|. >
 
 Q: I want to use C/C++ omni completion with deoplete.
 
-A: You can use |clang_complete| or |deoplete-clang|.
+A: You should use |deoplete-clangx|.
 
-   https://github.com/Rip-Rip/clang_complete
-   https://github.com/zchee/deoplete-clang
-
-   For clang_complete configuration is below. >
-
-       let g:clang_complete_auto = 0
-       let g:clang_auto_select = 0
-       let g:clang_omnicppcomplete_compliance = 0
-       let g:clang_make_default_keymappings = 0
-       "let g:clang_use_library = 1
-<
-   Currently |clang_complete| supports the original deoplete source.
-   It is better than using omni source.
+   https://github.com/Shougo/deoplete-clangx
 
 Q: I want to use jedi-vim omni completion with deoplete.
 
@@ -1548,7 +1616,7 @@ Q: I want to use Java script omnifunc.
 
 A: Please set "input_patterns" manually. >
 
-       call deoplete#custom#source('omni', 'input_patterns', {
+       call deoplete#custom#var('omni', 'input_patterns', {
        \ 'javascript': '[^. *\t]\.\w*',
        \ )
 
@@ -1562,7 +1630,7 @@ A: Please set the config as below.  >
        let g:lua_complete_dynamic = 0
        let g:lua_define_completion_mappings = 0
 
-       call deoplete#custom#source('omni', 'functions', {
+       call deoplete#custom#var('omni', 'functions', {
        \ 'lua': 'xolox#lua#omnifunc',
        \ })
 

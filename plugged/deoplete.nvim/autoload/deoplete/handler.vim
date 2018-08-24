@@ -12,11 +12,13 @@ function! deoplete#handler#_init() abort
     autocmd InsertLeave * call s:completion_timer_stop()
   augroup END
 
-  for event in ['InsertEnter', 'BufWritePost', 'DirChanged']
+  for event in ['InsertEnter', 'BufReadPost', 'BufWritePost', 'BufDelete']
     call s:define_on_event(event)
   endfor
 
-  call s:define_completion_via_timer('TextChangedI')
+  if deoplete#custom#_get_option('on_text_changed_i')
+    call s:define_completion_via_timer('TextChangedI')
+  endif
   if deoplete#custom#_get_option('on_insert_enter')
     call s:define_completion_via_timer('InsertEnter')
   endif
@@ -54,8 +56,8 @@ function! deoplete#handler#_do_complete() abort
 
   let prev = g:deoplete#_prev_completion
   let prev.event = context.event
+  let prev.input = context.input
   let prev.candidates = context.candidates
-  let prev.complete_position = getpos('.')
 
   if context.event ==# 'Manual'
     let context.event = ''
@@ -131,6 +133,10 @@ function! s:completion_begin(event) abort
   endif
 
   let context = deoplete#init#_context(a:event, [])
+  if context['event'] !=# 'Async'
+    call deoplete#init#_prev_completion()
+  endif
+
   if s:check_omnifunc(context)
     return
   endif
@@ -184,10 +190,10 @@ endfunction
 function! s:check_omnifunc(context) abort
   let prev = g:deoplete#_prev_completion
   let blacklist = ['LanguageClient#complete']
-  if prev.event ==# 'Manual'
+  if a:context.event ==# 'Manual'
         \ || &l:omnifunc ==# ''
         \ || index(blacklist, &l:omnifunc) >= 0
-        \ || prev.complete_position ==# getpos('.')
+        \ || prev.input ==# a:context.input
     return
   endif
 
@@ -199,8 +205,8 @@ function! s:check_omnifunc(context) abort
         let g:deoplete#_context.candidates = []
 
         let prev.event = a:context.event
+        let prev.input = a:context.input
         let prev.candidates = []
-        let prev.complete_position = getpos('.')
 
         call deoplete#mapping#_set_completeopt()
         call feedkeys("\<C-x>\<C-o>", 'in')
@@ -216,7 +222,8 @@ function! s:define_on_event(event) abort
   endif
 
   execute 'autocmd deoplete' a:event
-        \ '* call deoplete#send_event('.string(a:event).')'
+        \ '* if !&l:previewwindow | call deoplete#send_event('
+        \ .string(a:event).') | endif'
 endfunction
 function! s:define_completion_via_timer(event) abort
   if !exists('##' . a:event)
@@ -230,11 +237,7 @@ endfunction
 function! s:on_insert_leave() abort
   call deoplete#mapping#_restore_completeopt()
   let g:deoplete#_context = {}
-  let g:deoplete#_prev_completion = {
-        \ 'complete_position': [],
-        \ 'candidates': [],
-        \ 'event': '',
-        \ }
+  call deoplete#init#_prev_completion()
 endfunction
 
 function! s:on_complete_done() abort
@@ -248,6 +251,8 @@ function! s:on_complete_done() abort
   else
     let g:deoplete#_rank[word] += 1
   endif
+
+  call deoplete#handler#_skip_next_completion()
 endfunction
 
 function! deoplete#handler#_skip_next_completion() abort
@@ -259,6 +264,7 @@ function! deoplete#handler#_skip_next_completion() abort
   if input[-1:] !=# '/'
     let g:deoplete#_context.input = input
   endif
+  call deoplete#init#_prev_completion()
 endfunction
 
 function! s:is_exiting() abort
