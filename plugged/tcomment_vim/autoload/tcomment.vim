@@ -2,8 +2,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-09-17.
-" @Last Change: 2018-04-17.
-" @Revision:    1981
+" @Last Change: 2018-07-08.
+" @Revision:    2005
 
 scriptencoding utf-8
 
@@ -11,9 +11,6 @@ if exists(':Tlibtrace') != 2
     " :nodoc:
     command! -nargs=+ -bang Tlibtrace :
 endif
-
-
-call tcomment#deprecated#Check()
 
 
 if !exists('g:tcomment#blank_lines')
@@ -384,11 +381,12 @@ function! tcomment#Comment(beg, end, ...) abort
     if !empty(filter(['count', 'cbeg', 'cend', 'cmid'], 'has_key(cdef, v:val)'))
         call tcomment#commentdef#RepeatCommentstring(cdef)
     endif
-    let cms0 = tcomment#commentdef#GetBlockCommentRx(cdef)
+    let [is_rx, cms0] = tcomment#commentdef#GetBlockCommentRx(cdef)
     Tlibtrace 'tcomment', cms0
     "" make whitespace optional; this conflicts with comments that require some 
     "" whitespace
-    let cmt_check = substitute(cms0, '\([	 ]\)', '\1\\?', 'g')
+    let cmsrx = is_rx ? cms0 : escape(cms0, '\')
+    let cmt_check = substitute(cmsrx, '\([	 ]\)', '\1\\?', 'g')
     "" turn commentstring into a search pattern
     Tlibtrace 'tcomment', cmt_check
     let cmt_check = tcomment#format#Printf1(cmt_check, '\(\_.\{-}\)')
@@ -493,7 +491,7 @@ function! tcomment#Comment(beg, end, ...) abort
     endif
     if comment_mode =~# '>'
         call tcomment#cursor#SetPos('.', cursor_pos)
-        if comment_mode !~? 'i
+        if comment_mode !~? 'i'
             if comment_mode =~# '>>'
                 norm! j^
             elseif comment_mode =~# '>|'
@@ -806,19 +804,25 @@ function! s:CommentBlock(beg, end, cbeg, cend, comment_mode, comment_do, checkRx
         Tlibtrace 'tcomment', ms, mx, cs, prefix, postfix
         if a:comment_do ==? 'u'
             let @t = substitute(@t, '\V\^\s\*'. a:checkRx .'\$', '\1', '')
+            Tlibtrace 'tcomment', 0, @t
             let tt = []
             " TODO: Correctly handle foreign comments with inconsistent 
             " whitespace around mx markers
-            let rx = '\V'. tcomment#regex#StartColRx(a:cdef, a:comment_mode, a:cbeg) . '\zs'. mx
-            Tlibtrace 'tcomment', mx1, rx
+            let mx1 = substitute(mx, ' $', '\\( \\?\\$\\| \\)', '')
+            Tlibtrace 'tcomment', mx1
+            let rx = '\V'. tcomment#regex#StartColRx(a:cdef, a:comment_mode, a:cbeg) . '\zs'. mx1
+            Tlibtrace 'tcomment', rx
             for line in split(@t, '\n')
                 let line1 = substitute(line, rx, '', '')
+                Tlibtrace 'tcomment', line, line1
                 call add(tt, line1)
             endfor
             let @t = join(tt, "\n")
-            Tlibtrace 'tcomment', @t
+            Tlibtrace 'tcomment', 1, @t
             let @t = substitute(@t, '^\n', '', '')
+            Tlibtrace 'tcomment', 2, @t
             let @t = substitute(@t, '\n\s*$', '', '')
+            Tlibtrace 'tcomment', 3, @t
             if a:comment_mode =~# '#'
                 let s:cursor_pos = copy(s:current_pos)
                 let prefix_lines = len(substitute(prefix, "[^\n]", '', 'g')) + 1
@@ -856,7 +860,9 @@ function! s:CommentBlock(beg, end, cbeg, cend, comment_mode, comment_do, checkRx
                 else
                     for line in split(@t, '\n')
                         Tlibtrace 'tcomment', 1, line
-                        if lnum == 0
+                        if line =~# '^\s*' && tcomment#compatibility#Strdisplaywidth(line) < indentlen
+                            let line = indentStr . ms
+                        elseif lnum == 0
                             let line = substitute(line, rx, ms, '')
                         else
                             let line = substitute(line, rx, mx, '')
