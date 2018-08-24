@@ -34,7 +34,7 @@ Plug 'machakann/vim-highlightedyank'
 Plug 'tpope/vim-sleuth'
 Plug 'sbdchd/neoformat'
 Plug 'joshglendenning/vim-caddyfile'
-Plug 'leafgarland/typescript-vim'
+Plug 'HerringtonDarkholme/yats.vim'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 Plug 'ajmwagar/vim-deus'
