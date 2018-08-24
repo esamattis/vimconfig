@@ -80,7 +80,8 @@ function! s:guess(lines) abort
       let heuristics.spaces += 1
     endif
     let indent = len(matchstr(substitute(line, '\t', softtab, 'g'), '^ *'))
-    if indent > 1 && get(options, 'shiftwidth', 99) > indent
+    if indent > 1 && (indent < 4 || indent % 2 == 0) &&
+          \ get(options, 'shiftwidth', 99) > indent
       let options.shiftwidth = indent
     endif
   endfor
@@ -145,10 +146,10 @@ function! s:detect() abort
   if s:apply_if_ready(options)
     return
   endif
-  let patterns = s:patterns_for(&filetype)
+  let c = get(b:, 'sleuth_neighbor_limit', get(g:, 'sleuth_neighbor_limit', 20))
+  let patterns = c > 0 ? s:patterns_for(&filetype) : []
   call filter(patterns, 'v:val !~# "/"')
   let dir = expand('%:p:h')
-  let c = get(b:, 'sleuth_neighbor_limit', get(g:, 'sleuth_neighbor_limit', 20))
   while isdirectory(dir) && dir !=# fnamemodify(dir, ':h') && c > 0
     for pattern in patterns
       for neighbor in split(glob(dir.'/'.pattern), "\n")[0:7]
