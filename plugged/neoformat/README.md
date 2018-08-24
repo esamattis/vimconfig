@@ -134,6 +134,14 @@ succeeds)
 let g:neoformat_run_all_formatters = 1
 ```
 
+Above options can be activated or deactivated per buffer. For example:
+
+```viml
+    " runs all formatters for current buffer without tab to spaces conversion
+    let b:neoformat_run_all_formatters = 1
+    let b:neoformat_basic_format_retab = 0
+```
+
 Have Neoformat only msg when there is an error
 
 ```viml
@@ -205,6 +213,8 @@ that caused Neoformat to be invoked.
   - [`uncrustify`](http://uncrustify.sourceforge.net),
     [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html),
     [`astyle`](http://astyle.sourceforge.net)
+- Assembly
+  - [`asmfmt`](https://github.com/klauspost/asmfmt)
 - Bazel
   - [`buildifier`](https://github.com/bazelbuild/buildtools/blob/master/buildifier/README.md)
 - C
@@ -311,8 +321,10 @@ that caused Neoformat to be invoked.
   - [`yapf`](https://github.com/google/yapf),
     [`autopep8`](https://github.com/hhatto/autopep8),
     [`black`](https://github.com/ambv/black)
+    [`pydevf`](https://github.com/fabioz/PyDev.Formatter)
   - [`isort`](https://github.com/timothycrosley/isort)
   - [`docformatter`](https://github.com/myint/docformatter)
+  - [`pyment`](https://github.com/dadadel/pyment)
 - Reason
   - [`refmt`](https://github.com/facebook/reason)
 - Ruby
@@ -354,4 +366,5 @@ that caused Neoformat to be invoked.
   - [`tidy`](http://www.html-tidy.org),
     [`prettydiff`](https://github.com/prettydiff/prettydiff)
 - YAML
-  - [`pyaml`](https://pypi.python.org/pypi/pyaml)
+  - [`pyaml`](https://pypi.python.org/pypi/pyaml),
+    [`prettier`](https://github.com/prettier/prettier)

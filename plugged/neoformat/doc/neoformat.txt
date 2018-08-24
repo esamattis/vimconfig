@@ -117,19 +117,25 @@ Have Neoformat use &formatprg as a formatter
 <
 Enable basic formatting when a filetype is not found. Disabled by default.
 >
-    " Enable alignment
+    " Enable alignment globally
     let g:neoformat_basic_format_align = 1
 
-    " Enable tab to spaces conversion
+    " Enable tab to spaces conversion globally
     let g:neoformat_basic_format_retab = 1
 
-    " Enable trimmming of trailing whitespace
+    " Enable trimmming of trailing whitespace globally
     let g:neoformat_basic_format_trim = 1
 
 Run all enabled formatters (by default Neoformat stops after the first
 formatter succeeds)
 
     let g:neoformat_run_all_formatters = 1
+
+Above options can be activated or deactivated per buffer. For example:
+
+    " runs all formatters for current buffer without tab to spaces conversion
+    let b:neoformat_run_all_formatters = 1
+    let b:neoformat_basic_format_retab = 0
 
 Have Neoformat only msg when there is an error
 >
@@ -200,6 +206,8 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
   - [`uncrustify`](http://uncrustify.sourceforge.net),
     [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html),
     [`astyle`](http://astyle.sourceforge.net)
+- Assembly
+  - [`asmfmt`](https://github.com/klauspost/asmfmt)
 - Bazel
   - [`buildifier`](https://github.com/bazelbuild/buildtools/blob/master/buildifier/README.md)
 - C
@@ -304,13 +312,15 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
 - Python
   - [`yapf`](https://github.com/google/yapf),
     [`autopep8`](https://github.com/hhatto/autopep8),
-    [`black`](https://github.com/ambv/black)
-    [isort](https://github.com/timothycrosley/isort)
-    [docformatter](https://github.com/myint/docformatter)
+    [`black`](https://github.com/ambv/black),
+    [`pydevf`](https://github.com/fabioz/PyDev.Formatter),
+    [`isort`](https://github.com/timothycrosley/isort),
+    [`docformatter`](https://github.com/myint/docformatter),
+    [`pyment`](https://github.com/dadadel/pyment)
 - Reason
   - [`refmt`](https://github.com/facebook/reason)
 - Ruby
-  - [rufo](https://github.com/asterite/rufo)
+  - [`rufo`](https://github.com/asterite/rufo)
   - [`ruby-beautify`](https://github.com/erniebrodeur/ruby-beautify)
   - [`rubocop`](https://github.com/bbatsov/rubocop)
 - Rust
@@ -329,8 +339,8 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
 - Shell
   - [`shfmt`](https://github.com/mvdan/sh)
 - SQL
-  - `sqlformat` (ships with [sqlparse](https://github.com/andialbrecht/sqlparse))
-  - `pg_format` (ships with [pgFormatter](https://github.com/darold/pgFormatter))
+  - `sqlformat` (ships with [`sqlparse`](https://github.com/andialbrecht/sqlparse))
+  - `pg_format` (ships with [`pgFormatter`](https://github.com/darold/pgFormatter))
 - Terraform
   - [`terraform`](https://www.terraform.io/docs/commands/fmt.html)
 - Typescript
@@ -346,7 +356,8 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
   - [`tidy`](http://www.html-tidy.org),
     [`prettydiff`](https://github.com/prettydiff/prettydiff)
 - YAML
-  - [`pyaml`](https://pypi.python.org/pypi/pyaml)
+  - [`pyaml`](https://pypi.python.org/pypi/pyaml),
+    [`prettier`](https://github.com/prettier/prettier)
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:noet:fen:noet:

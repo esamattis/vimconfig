@@ -5,15 +5,15 @@ endfunction
 function! neoformat#formatters#typescript#tsfmt() abort
     return {
         \ 'exe': 'tsfmt',
-        \ 'args': ['--stdin', '%:p'],
-        \ 'stdin': 1
+        \ 'args': ['--replace', '--baseDir=%:h'],
+        \ 'replace': 1
         \ }
 endfunction
 
 function! neoformat#formatters#typescript#prettier() abort
     return {
         \ 'exe': 'prettier',
-        \ 'args': ['--stdin', '--parser', 'typescript'],
+        \ 'args': ['--stdin', '--stdin-filepath', '%:p', '--parser', 'typescript'],
         \ 'stdin': 1
         \ }
 endfunction
