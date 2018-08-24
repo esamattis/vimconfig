@@ -45,6 +45,17 @@ g:ale_go_gofmt_options                                 *g:ale_go_gofmt_options*
 
 
 ===============================================================================
+govet                                                            *ale-go-govet*
+
+g:ale_go_govet_options                                 *g:ale_go_govet_options*
+                                                       *b:ale_go_govet_options*
+  Type: |String|
+  Default: `''`
+
+  This variable can be set to pass additional options to the go vet linter.
+
+
+===============================================================================
 gometalinter                                              *ale-go-gometalinter*
 
 `gometalinter` is a `lint_file` linter, which only lints files that are
@@ -73,8 +84,8 @@ g:ale_go_gometalinter_options                   *g:ale_go_gometalinter_options*
   number of linters known to be slow or consume a lot of resources.
 
 
-g:ale_go_gometalinter_package                   *g:ale_go_gometalinter_package*
-                                                *b:ale_go_gometalinter_package*
+g:ale_go_gometalinter_lint_package         *g:ale_go_gometalinter_lint_package*
+                                           *b:ale_go_gometalinter_lint_package*
   Type: |Number|
   Default: `0`
 
@@ -94,8 +105,8 @@ g:ale_go_staticcheck_options                     *g:ale_go_staticcheck_options*
   linter.
 
 
-g:ale_go_staticcheck_package                     *g:ale_go_staticcheck_package*
-                                                 *b:ale_go_staticcheck_package*
+g:ale_go_staticcheck_lint_package           *g:ale_go_staticcheck_lint_package*
+                                            *b:ale_go_staticcheck_lint_package*
   Type: |Number|
   Default: `0`
 
