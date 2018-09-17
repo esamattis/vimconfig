@@ -1,3 +1,7 @@
+export PATH=$HOME/.fzf/bin:$PATH
+
+source $HOME/.fzf/shell/key-bindings.bash
+source $HOME/.fzf/shell/completion.bash
 
 if [ -x $(which fd) ]; then
     export FZF_DEFAULT_COMMAND='fd --type file --hidden --exclude .git'
