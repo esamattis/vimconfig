@@ -1,5 +1,18 @@
 #!/bin/bash
 
+
+jake() {
+    "$(_get_jake_bin)" $@
+}
+
+_get_jake_bin() {
+    if [ -x "./node_modules/.bin/jake" ]; then
+        echo "$PWD/node_modules/.bin/jake"
+    else
+        which jake
+    fi
+}
+
 # http://stackoverflow.com/a/12495480
 # http://stackoverflow.com/a/28647824
 _auto_jake()
@@ -8,7 +21,7 @@ _auto_jake()
     local -a COMPGEN=()
     _get_comp_words_by_ref -n : -c cur
     
-    local jake_bin="$(which jake)"
+    local jake_bin="$(_get_jake_bin)"
 
     if [ "$jake_bin" = "" ]; then
       return 0
