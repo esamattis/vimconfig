@@ -36,6 +36,10 @@ source $HOME/.vim/others/bash_completion_tmux.sh
 # from https://github.com/Bash-it/bash-it/blob/c3d9c46ef832f808c929a22b36c8ef6dd45cb98a/completion/available/gulp.completion.bash
 source $HOME/.vim/others/gulp.completion.bash
 
+# Jakefile
+# from https://github.com/jakejs/jake/blob/b1539744a7e42b4b386d8ddbcd8bae333f71ff63/bin/bash_completion.sh
+source $HOME/.vim/others/jake.completion.bash
+
 source $HOME/.vim/others/fzf.sh
 
 # "cd to dir" use with fzf
