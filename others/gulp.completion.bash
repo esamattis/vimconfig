@@ -1,4 +1,6 @@
 #!/bin/bash
+# Originally from https://github.com/Bash-it/bash-it/blob/c3d9c46ef832f808c929a22b36c8ef6dd45cb98a/completion/available/gulp.completion.bash
+#
 # Borrowed from grunt-cli
 # http://gruntjs.com/
 #
@@ -26,12 +28,13 @@ _get_gulp_bin() {
 
 # eval "$(gulp --completion=bash)"
 # Enable bash autocompletion.
-function _gulp_completions() {
-# The currently-being-completed word.
-local cur="${COMP_WORDS[COMP_CWORD]}"
-#Grab tasks
-local compls=$(gulp --tasks-simple)
-# Tell complete what stuff to show.
-COMPREPLY=($(compgen -W "$compls" -- "$cur"))
+_gulp_completions() {
+    # The currently-being-completed word.
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    # Grab tasks
+    local compls=$(gulp --tasks-simple)
+    # Tell complete what stuff to show.
+    COMPREPLY=($(compgen -W "$compls" -- "$cur"))
 }
+
 complete -o default -F _gulp_completions gulp
