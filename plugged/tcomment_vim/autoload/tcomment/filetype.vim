@@ -2,8 +2,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-09-17.
-" @Last Change: 2018-08-24.
-" @Revision:    25
+" @Last Change: 2018-09-02.
+" @Revision:    41
 
 if exists(':Tlibtrace') != 2
     command! -nargs=+ -bang Tlibtrace :
@@ -20,7 +20,13 @@ if !exists('g:tcomment#filetype#guess')
     "   0        ... don't guess
     "   1        ... guess
     "   FILETYPE ... assume this filetype
-    let g:tcomment#filetype#guess = 1   "{{{2
+    "
+    " NOTE: Issue 222, 224: Default=1 doesn't work well
+    let g:tcomment#filetype#guess = 0   "{{{2
+endif
+if !exists('g:tcomment#filetype#guess_cpp')
+    " See |g:tcomment#filetype#guess_php|.
+    let g:tcomment#filetype#guess_cpp = 0   "{{{2
 endif
 if !exists('g:tcomment#filetype#guess_blade')
     " See |g:tcomment#filetype#guess_php|.
@@ -93,6 +99,9 @@ if !exists('g:tcomment#filetype#map')
                 \ 'tblgen': 'cpp',
                 \ }
 endif
+if exists('g:tcomment#filetype#map_user')
+    let g:tcomment#filetype#map = extend(g:tcomment#filetype#map, g:tcomment#filetype#map_user)
+endif
 
 
 if !exists('g:tcomment#filetype#syntax_map')
@@ -127,6 +136,9 @@ if !exists('g:tcomment#filetype#syntax_map')
                 \     ],
                 \ },
                 \ }
+endif
+if exists('g:tcomment#filetype#syntax_map_user')
+    let g:tcomment#filetype#syntax_map = extend(g:tcomment#filetype#syntax_map, g:tcomment#filetype#syntax_map_user)
 endif
 
 
@@ -268,19 +280,21 @@ function! tcomment#filetype#GetAlt(filetype, cdef) abort "{{{3
     let filetype = empty(a:filetype) ? tcomment#filetype#Get(&filetype, [-1]) : a:filetype
     let vfiletype = substitute(filetype, '[.]', '_', 'g')
     Tlibtrace 'tcomment', a:filetype, filetype
-    if g:tcomment#filetype#guess || (exists('g:tcomment#filetype#guess_'. vfiletype) 
-                \ && g:tcomment#filetype#guess_{vfiletype} =~# '[^0]')
-        if g:tcomment#filetype#guess || g:tcomment#filetype#guess_{vfiletype} == 1
-            if filetype =~# '^.\{-}\..\+$'
-                let alt_filetype = tcomment#filetype#Get(filetype)
-            else
-                let alt_filetype = ''
-            endif
+    let guess = get(a:cdef, 'guess',
+                \ exists('g:tcomment#filetype#guess_'. vfiletype) ?
+                \    g:tcomment#filetype#guess_{vfiletype} :
+                \    g:tcomment#filetype#guess)
+    if guess ==# '1'
+        if filetype =~# '^.\{-}\..\+$'
+            let alt_filetype = tcomment#filetype#Get(filetype)
         else
-            let alt_filetype = g:tcomment#filetype#guess_{vfiletype}
+            let alt_filetype = ''
         endif
         Tlibtrace 'tcomment', 1, alt_filetype
         return [1, alt_filetype]
+    elseif !empty(guess)
+        Tlibtrace 'tcomment', 2, guess
+        return [1, guess]
     elseif filetype =~# '^.\{-}\..\+$'
         " Unfortunately the handling of "sub-filetypes" isn't 
         " consistent. Some use MAJOR.MINOR, others use MINOR.MAJOR.
@@ -291,10 +305,10 @@ function! tcomment#filetype#GetAlt(filetype, cdef) abort "{{{3
         "         let alt_filetype = tcomment#filetype#Get(filetype, 0)
         "     endif
         " endif
-        Tlibtrace 'tcomment', 2, alt_filetype
+        Tlibtrace 'tcomment', 3, alt_filetype
         return [1, alt_filetype]
     else
-        Tlibtrace 'tcomment', 3, ''
+        Tlibtrace 'tcomment', 4, ''
         return [0, '']
     endif
 endf
