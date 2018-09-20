@@ -38,6 +38,8 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 Plug 'ajmwagar/vim-deus'
 Plug 'scrooloose/nerdtree'
+Plug 'chr4/nginx.vim'
+Plug 'lepture/vim-jinja'
 call plug#end()
 
 "" Leader mappings
