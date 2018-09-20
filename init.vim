@@ -29,7 +29,6 @@ Plug 'tpope/vim-repeat' " makes surround work with . (repeat)
 Plug 'tmux-plugins/vim-tmux-focus-events'
 Plug 'simnalamburt/vim-mundo' " alt https://github.com/mbbill/undotree
 Plug 'vim-airline/vim-airline'
-Plug 'Glench/Vim-Jinja2-Syntax'
 Plug 'machakann/vim-highlightedyank'
 Plug 'tpope/vim-sleuth'
 Plug 'sbdchd/neoformat'
