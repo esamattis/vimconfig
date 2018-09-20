@@ -102,6 +102,11 @@ function! s:neoformat(bang, user_input, start_line, end_line) abort
         call neoformat#utils#log(v:shell_error)
 
         let process_ran_succesfully = index(cmd.valid_exit_codes, v:shell_error) != -1
+        
+        if cmd.stderr_log != ''
+            call neoformat#utils#log('stderr output redirected to file' . cmd.stderr_log)
+            call neoformat#utils#log_file_content(cmd.stderr_log)
+        endif
         if process_ran_succesfully
             " 1. append the lines that are before and after the formatterd content
             let lines_after = getbufline(bufnr('%'), a:end_line + 1, '$')
@@ -229,6 +234,8 @@ function! s:generate_cmd(definition, filetype) abort
 
     let no_append = get(a:definition, 'no_append', 0)
     let using_stdin = get(a:definition, 'stdin', 0)
+    let using_stderr = get(a:definition, 'stderr', 0)
+    let stderr_log = ''
 
     let filename = expand('%:t')
 
@@ -250,10 +257,20 @@ function! s:generate_cmd(definition, filetype) abort
     let _fullcmd = join(inline_environment, ' ') . ' ' . executable . ' ' . join(args_expanded) . ' ' . (no_append ? '' : path)
     " make sure there aren't any double spaces in the cmd
     let fullcmd = join(split(_fullcmd))
+    if !using_stderr
+        if neoformat#utils#should_be_verbose()
+            let stderr_log = expand(tmp_dir . '/stderr.log')
+            let fullcmd = fullcmd . ' 2> ' . stderr_log
+        else
+            let stderr_log = ''
+            let fullcmd = fullcmd . ' 2> ' . '/dev/null'
+        endif
+    endif
 
     return {
         \ 'exe':       fullcmd,
         \ 'stdin':     using_stdin,
+        \ 'stderr_log': stderr_log,
         \ 'name':      a:definition.exe,
         \ 'replace':   get(a:definition, 'replace', 0),
         \ 'tmp_file_path': path,

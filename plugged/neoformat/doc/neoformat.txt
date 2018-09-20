@@ -89,6 +89,9 @@ Options:
 | `args`      | list of arguments | default: [] | optional
 | `replace`   | overwrite the file, instead of updating the buffer | default: 0 | optional
 | `stdin`     | send data to the stdin of the formatter | default 0 | optional
+| `stderr`    | used to specify whether stderr output should be read along with
+	     the stdin, otherwise redirects stderr to `stderr.log` file in neoformat's
+	     temporary directory | default 0 | optional
 | `no_append` | do not append the `path` of the file to the formatter command,
 	     used when the `path` is in the middle of a command | default: 0 |
 	     optional
@@ -305,6 +308,7 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
 - PHP
   - [`php_beautifier`](http://pear.php.net/package/PHP_Beautifier)
   - [`php-cs-fixer`](http://cs.sensiolabs.org/)
+  - [`phpcbf`](https://github.com/squizlabs/PHP_CodeSniffer)
 - Proto
   - [`clang-format`](http://clang.llvm.org/docs/ClangFormat.html)
 - Pug (formally Jade)
@@ -341,6 +345,8 @@ SUPPORTED FILETYPES				*neoformat-supported-filetypes*
 - SQL
   - `sqlformat` (ships with [`sqlparse`](https://github.com/andialbrecht/sqlparse))
   - `pg_format` (ships with [`pgFormatter`](https://github.com/darold/pgFormatter))
+- Swift
+  - [`Swiftformat`](https://github.com/nicklockwood/SwiftFormat)
 - Terraform
   - [`terraform`](https://www.terraform.io/docs/commands/fmt.html)
 - Typescript
