@@ -40,6 +40,8 @@ source $HOME/.vim/others/gulp.completion.bash
 # from https://github.com/jakejs/jake/blob/b1539744a7e42b4b386d8ddbcd8bae333f71ff63/bin/bash_completion.sh
 source $HOME/.vim/others/jake.completion.bash
 
+source $HOME/.vim/others/npm.completion.bash
+
 source $HOME/.vim/others/fzf.sh
 
 # "cd to dir" use with fzf
