@@ -1,0 +1,10 @@
+{
+  "groups": {
+    "default": {
+      "packages": [
+        "plugged/nvim-typescript/rplugin/node/nvim_typescript/package.json",
+        "plugged/yats.vim/package.json"
+      ]
+    }
+  }
+}
