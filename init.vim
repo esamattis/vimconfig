@@ -45,16 +45,13 @@ call plug#end()
 "" Leader mappings
 let mapleader = ","
 
+" Helper variable for cross platform and vim/neovim usage
 if has("win32")
     let s:vim_home = $HOME . '/AppData/Local/nvim'
 elseif has('nvim')
     let s:vim_home = $HOME . '/.config/nvim'
 else
     let s:vim_home = $HOME . '/.vim'
-endif
-
-if !has("nvim")
-    silent! OldVim
 endif
 
 
@@ -95,6 +92,7 @@ cnoremap <C-y> <C-r>"
 " Show trailing whitespace characters
 set list
 set listchars=tab:▸\ ,trail:·,extends:…,nbsp:␣
+
 " Show soft wrapped lines as …
 set showbreak=↳
 
@@ -120,7 +118,7 @@ imap jj <esc>
 noremap <Leader>w :w<CR>
 imap ,w <esc>:w<CR>
 
-" Resize splits when the window is resized
+" Automatically resize splits when the window is resized
 au VimResized * exe "normal! \<c-w>="
 
 
@@ -149,7 +147,7 @@ vmap Ä g_
 " Allows to change buffers with unsaved changes
 set hidden
 
-" The crossair
+" The crossair cursor
 set cursorline cursorcolumn
 
 colorscheme molokai
@@ -157,7 +155,7 @@ colorscheme molokai
 " Do not toggle to netrw view
 let g:netrw_altfile = 1
 
-"" DISABLED using ctrlp for this
+"" DISABLED using ctrlp plugin for this
 " Toggle with last previous buffer
 " nnoremap <leader>m :b#<cr>
 
@@ -177,13 +175,13 @@ vnoremap <Leader>q <esc>:q<CR>
 inoremap <Leader>q <esc>:q<CR>
 
 
-" Make Y behave like other capitals. Yank to end of line.
+" Make Y behave like other capitals. Yank (copy) to end of line.
 map Y y$
 
 " Use mouse only in visual mode
 set mouse=v
 
-" Turn magic off from search
+" Turn regexp magic off from search
 nnoremap / /\V
 vnoremap / /\V
 
@@ -193,7 +191,8 @@ set smartcase
 
 " Hilight all words matching the one under the cursor
 noremap <Space> *N
-" Clear hilights
+
+" Clear search hilights
 noremap  <Leader><Space> :noh<cr>
 
 " Search literal strings
@@ -295,7 +294,7 @@ augroup json
 augroup END
 
 
-" Treat dash as part of words
+" Treat dash as part of words. Really nice for CSS.
 set iskeyword+=-
 
 " Change tab behaviour
@@ -309,24 +308,17 @@ command ToCamel normal f-xvgU
 command O only
 map <Leader>o :only<cr>
 
-" Adds
-"
-"     var Header = simple(View, {
-"         marginBottom: 50,
-"     });
-"     Header = compose(
-"     )(Header)
-"
-command! Compose normal! yiw$%o<esc>pA = compose(<esc>o<esc>i)(<esc>pA)<esc>O
+
 
 " Load new .prettierc files with personal defaults
 autocmd BufNewFile .prettierrc setfiletype json | read $HOME/.config/nvim/defaults/.prettierrc
 
 autocmd BufNewFile local.vim setfiletype vim | read $HOME/.config/nvim/defaults/local.vim
 
+" Local vim config customization not tracked by this git
 if filereadable(s:vim_home . "/local.vim")
     execute 'source ' . s:vim_home . "/local.vim"
 endif
 
-
+" TODO: move to plugin specific config file
 let g:ale_linters = {'javascript': ['eslint']}
