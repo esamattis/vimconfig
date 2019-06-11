@@ -89,6 +89,8 @@ au InsertLeave * set nopaste
 " Simple paste for the command mode
 cnoremap <C-y> <C-r>"
 
+set nomodeline
+
 " Show trailing whitespace characters
 set list
 set listchars=tab:▸\ ,trail:·,extends:…,nbsp:␣
