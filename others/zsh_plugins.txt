@@ -1,0 +1,3 @@
+# antibody bundle < ~/.zsh_plugins.txt > ~/.zsh_plugins.sh
+mafredri/zsh-async
+sindresorhus/pure
