@@ -1,6 +1,11 @@
 # autoload -U promptinit; promptinit
 # prompt pure
-source ~/.zsh_plugins.sh
+
+if [ -f ~/.zsh_plugins.sh ]; then
+  source ~/.zsh_plugins.sh
+else
+  >&2 echo 'Install zsh plugins with: antibody bundle < ~/.vim/others/zsh_plugins.txt > ~/.zsh_plugins.sh'
+fi
 
 # Bash like autocomplete
 setopt noautomenu
