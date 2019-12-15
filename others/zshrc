@@ -29,7 +29,10 @@ zstyle ':prompt:pure:prompt:error' color red
 autoload -Uz compinit && compinit
 
 export PLAYBOOKS_DIR="$HOME/code/valu-playbooks"
-. "$PLAYBOOKS_DIR/tools/shell-utils.source"
+if [ -d "$PLAYBOOKS_DIR" ]; then
+  . "$PLAYBOOKS_DIR/tools/shell-utils.source"
+fi
+
 ###-begin-npm-completion-###
 #
 # npm command completion script
