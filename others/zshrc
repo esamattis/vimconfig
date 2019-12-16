@@ -1,6 +1,11 @@
 # autoload -U promptinit; promptinit
 # prompt pure
-source ~/.zsh_plugins.sh
+
+if [ -f ~/.zsh_plugins.sh ]; then
+  source ~/.zsh_plugins.sh
+else
+  >&2 echo 'Install zsh plugins with: antibody bundle < ~/.vim/others/zsh_plugins.txt > ~/.zsh_plugins.sh'
+fi
 
 # Bash like autocomplete
 setopt noautomenu
@@ -13,6 +18,10 @@ setopt INC_APPEND_HISTORY
 
 export PATH=/usr/local/bin/:$PATH
 
+if [ -f $HOME/.cargo/env ]; then
+  source $HOME/.cargo/env
+fi
+
 # Not enough contrast in the default colors
 zstyle ':prompt:pure:prompt:success' color cyan
 zstyle ':prompt:pure:prompt:error' color red
@@ -20,7 +29,10 @@ zstyle ':prompt:pure:prompt:error' color red
 autoload -Uz compinit && compinit
 
 export PLAYBOOKS_DIR="$HOME/code/valu-playbooks"
-. "$PLAYBOOKS_DIR/tools/shell-utils.source"
+if [ -d "$PLAYBOOKS_DIR" ]; then
+  . "$PLAYBOOKS_DIR/tools/shell-utils.source"
+fi
+
 ###-begin-npm-completion-###
 #
 # npm command completion script
@@ -82,12 +94,32 @@ elif type compctl &>/dev/null; then
 fi
 ###-end-npm-completion-###
 
-if [ -x $(which fd) ]; then
-    export FZF_DEFAULT_COMMAND='fd --type file --hidden --exclude .git'
-elif [ -x $(which ag) ]; then
-    export FZF_DEFAULT_COMMAND='ag -g ""'
-else
-    export FZF_DEFAULT_COMMAND='find . -path "*/\.*" -prune -o -type f -print -o -type l -print'
-fi
+# Fix Home and End for WSL2
+bindkey "^[OH" beginning-of-line
+bindkey "^[OF" end-of-line
+
+# Fix esc dot for WSL2
+bindkey '\e.' insert-last-word
+
+fzf_find() {
+  if [ -x "$(which fd)" ]; then
+      fd --type file --hidden --exclude .git
+  elif [ -x "$(which ag)" ]; then
+      ag -g ""
+  else
+      find . -path "*/\.*" -prune -o -type f -print -o -type l -print
+  fi
+}
+
+export FZF_DEFAULT_COMMAND=fzf_find
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+
+if [ "$(uname)" != "Darwin" ]; then
+  export SSH_AUTH_SOCK=~/.ssh/ssh-agent.$HOSTNAME.sock
+  ssh-add -l 2>/dev/null >/dev/null
+  if [ $? -ge 2 ]; then
+    ssh-agent -a "$SSH_AUTH_SOCK" >/dev/null
+  fi
+fi
