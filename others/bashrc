@@ -44,6 +44,20 @@ source $HOME/.vim/others/npm.completion.bash
 
 source $HOME/.vim/others/fzf.sh
 
+git-add-to-existing() {
+
+  if [ -d .git ]; then
+    echo "Already has a git dir"
+    return 1
+  fi
+
+  git init
+  git remote add origin "$1"
+  git fetch origin
+  git reset origin/master
+  git branch --set-upstream-to origin/master
+}
+
 # "cd to dir" use with fzf
 cdd() {
     cd "$(dirname "$1")"
