@@ -7,8 +7,8 @@ stty -ixon
 # Update window size after every command
 shopt -s checkwinsize
 
-# This alters the default behavior of the completion functions.  If set 
-# to on, words which have more than one possible completion cause the 
+# This alters the default behavior of the completion functions.  If set
+# to on, words which have more than one possible completion cause the
 # matches to be listed immediately instead of ringing the bell.
 bind "set show-all-if-ambiguous on"
 
@@ -92,6 +92,9 @@ fi
 # https://github.com/tj/n
 export N_PREFIX=$HOME/n
 export PATH=$N_PREFIX/bin:$PATH
+
+# pip --user
+export PATH=$HOME/.local/bin:$PATH
 
 git-stats() {
   git log --pretty=format:%an | awk '{ ++c[$0]; } END { for(cc in c) printf "%5d %s\n",c[cc],cc; }'| sort -rh
