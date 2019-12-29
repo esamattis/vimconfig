@@ -16,7 +16,14 @@ HISTSIZE=10000
 SAVEHIST=1000
 setopt INC_APPEND_HISTORY
 
-export PATH=/usr/local/bin/:$PATH
+export PATH=/usr/local/bin:$PATH
+
+# https://github.com/tj/n
+export N_PREFIX=$HOME/n
+export PATH=$N_PREFIX/bin:$PATH
+
+# pip --user
+export PATH=$HOME/.local/bin:$PATH
 
 if [ -f $HOME/.cargo/env ]; then
   source $HOME/.cargo/env
