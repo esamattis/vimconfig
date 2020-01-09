@@ -35,10 +35,34 @@ zstyle ':prompt:pure:prompt:error' color red
 
 autoload -Uz compinit && compinit
 
+export PATH=/usr/local/bin/:$PATH
+
 export PLAYBOOKS_DIR="$HOME/code/valu-playbooks"
 if [ -d "$PLAYBOOKS_DIR" ]; then
   . "$PLAYBOOKS_DIR/tools/shell-utils.source"
 fi
+
+alias node_modules_to_path='export PATH="$(pwd)/node_modules/.bin":$PATH'
+alias find_old_node_modules='find . -name node_modules -type d -maxdepth 2 -mtime +30'
+alias cd-git-root='cd "$(git rev-parse --show-toplevel)"'
+
+# https://github.com/tj/n
+export N_PREFIX=$HOME/n
+export PATH=$N_PREFIX/bin:$PATH
+
+git-add-to-existing() {
+
+  if [ -d .git ]; then
+    echo "Already has a git dir"
+    return 1
+  fi
+
+  git init
+  git remote add origin "$1"
+  git fetch origin
+  git reset origin/master
+  git branch --set-upstream-to origin/master
+}
 
 ###-begin-npm-completion-###
 #
