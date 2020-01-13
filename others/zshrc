@@ -29,6 +29,14 @@ if [ -f $HOME/.cargo/env ]; then
   source $HOME/.cargo/env
 fi
 
+if [ "${EDITOR:-}" = "" ]; then
+  if [ -x "$(which nvim)" ]; then
+    export EDITOR=nvim
+  else
+    export EDITOR=vi
+  fi
+fi
+
 # Not enough contrast in the default colors
 zstyle ':prompt:pure:prompt:success' color cyan
 zstyle ':prompt:pure:prompt:error' color red
