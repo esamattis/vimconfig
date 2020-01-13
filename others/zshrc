@@ -132,6 +132,15 @@ bindkey "^[OF" end-of-line
 # Fix esc dot for WSL2
 bindkey '\e.' insert-last-word
 
+repeat_n () {
+  local n=$1
+  shift
+
+  for i in {1..$n}; do
+    $@ || return $?
+  done
+}
+
 fzf_find() {
   if [ -x "$(which fd)" ]; then
       fd --type file --hidden --exclude .git
