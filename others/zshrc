@@ -7,6 +7,9 @@ else
   >&2 echo 'Install zsh plugins with: antibody bundle < ~/.vim/others/zsh_plugins.txt > ~/.zsh_plugins.sh'
 fi
 
+# Ensure we're in emacs mode
+bindkey -e
+
 # Bash like autocomplete
 setopt noautomenu
 setopt nomenucomplete
