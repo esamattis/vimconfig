@@ -56,3 +56,7 @@
 	newHighlight = green bold 22
 [url "https://"]
 	insteadOf = git://
+[grep]
+	lineNumber = true
+[pull]
+	ff = only
