@@ -19,12 +19,11 @@ HISTSIZE=10000000
 SAVEHIST=10000000
 
 
-## Remove  duplicates from history
 # https://github.com/mattjj/my-oh-my-zsh/blob/b1d4bab329456e9a4af49237064d9a3b6566f1b0/history.zsh
-setopt BANG_HIST                 # Treat the '!' character specially during expansion.
+# setopt BANG_HIST                 # Treat the '!' character specially during expansion.
 setopt EXTENDED_HISTORY          # Write the history file in the ":start:elapsed;command" format.
 setopt INC_APPEND_HISTORY        # Write to the history file immediately, not when the shell exits.
-setopt SHARE_HISTORY             # Share history between all sessions.
+# setopt SHARE_HISTORY             # Share history between all sessions.
 setopt HIST_EXPIRE_DUPS_FIRST    # Expire duplicate entries first when trimming history.
 setopt HIST_IGNORE_DUPS          # Don't record an entry that was just recorded again.
 setopt HIST_IGNORE_ALL_DUPS      # Delete old recorded entry if new entry is a duplicate.
@@ -167,6 +166,9 @@ fi
 bindkey "^[OH" beginning-of-line
 bindkey "^[OF" end-of-line
 
+# fix delete key
+bindkey  "^[[3~"  delete-char
+
 # Fix esc dot for WSL2
 bindkey '\e.' insert-last-word
 
@@ -179,6 +181,18 @@ repeat_n () {
   done
 }
 
+
+esamattis-fasd-pick-dir() {
+  LBUFFER="${LBUFFER}$(fasd -d -l | fzf --keep-right)"
+  local ret=$?
+  zle reset-prompt
+  return $ret
+}
+
+zle -N esamattis-fasd-pick-dir
+bindkey '^G' esamattis-fasd-pick-dir
+
+
 fzf_find() {
   if [ -x "$(which fd)" ]; then
       fd --type file --hidden --exclude .git
@@ -190,6 +204,7 @@ fzf_find() {
 }
 
 export FZF_DEFAULT_COMMAND=fzf_find
+export FZF_CTRL_T_COMMAND=fzf_find
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
