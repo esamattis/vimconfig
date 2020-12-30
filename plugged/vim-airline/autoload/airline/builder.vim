@@ -1,4 +1,4 @@
-" MIT License. Copyright (c) 2013-2018 Bailey Ling et al.
+" MIT License. Copyright (c) 2013-2020 Bailey Ling et al.
 " vim: et ts=2 sts=2 sw=2
 
 scriptencoding utf-8
@@ -133,16 +133,12 @@ function! airline#builder#should_change_group(group1, group2)
   endif
   let color1 = airline#highlighter#get_highlight(a:group1)
   let color2 = airline#highlighter#get_highlight(a:group2)
-  if g:airline_gui_mode ==# 'gui'
-    return color1[1] != color2[1] || color1[0] != color2[0]
-  else
-    return color1[3] != color2[3] || color1[2] != color2[2]
-  endif
+  return color1[1] != color2[1] || color1[0] != color2[0]
+      \ ||  color1[2] != color2[2] || color1[3] != color2[3]
 endfunction
 
 function! s:get_transitioned_seperator(self, prev_group, group, side)
   let line = ''
-  call airline#highlighter#add_separator(a:prev_group, a:group, a:side)
   if get(a:self._context, 'tabline', 0) && get(g:, 'airline#extensions#tabline#alt_sep', 0) && a:group ==# 'airline_tabsel' && a:side
     call airline#highlighter#add_separator(a:prev_group, a:group, 0)
     let line .= '%#'.a:prev_group.'_to_'.a:group.'#'
@@ -166,6 +162,7 @@ endfunction
 
 function! s:get_accented_line(self, group, contents)
   if a:self._context.active
+    " active window
     let contents = []
     let content_parts = split(a:contents, '__accent')
     for cpart in content_parts
@@ -175,6 +172,7 @@ function! s:get_accented_line(self, group, contents)
     let line = join(contents, a:group)
     let line = substitute(line, '__restore__', a:group, 'g')
   else
+    " inactive window
     let line = substitute(a:contents, '%#__accent[^#]*#', '', 'g')
     let line = substitute(line, '%#__restore__#', '', 'g')
   endif

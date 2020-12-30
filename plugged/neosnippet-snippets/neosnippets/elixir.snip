@@ -100,3 +100,20 @@ options     head
     describe "${1:describe_name}" do
       ${2:TARGET}
     end
+
+snippet     puts
+    IO.puts(${1})
+
+snippet     p
+abbr        IO.inspect()
+    IO.inspect(${1})
+
+snippet     main
+options     head
+    defmodule Main do
+      def main do
+        ${1:TARGET}
+      end
+    end
+
+    Main.main

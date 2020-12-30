@@ -2,8 +2,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-09-17.
-" @Last Change: 2018-09-01.
-" @Revision:    2006
+" @Last Change: 2020-10-09.
+" @Revision:    2040
 
 scriptencoding utf-8
 
@@ -81,8 +81,8 @@ if !exists('g:tcomment#replacements_c')
     " Replacements for c filetype.
     " :read: let g:tcomment#replacements_c = {...}   "{{{2
     let g:tcomment#replacements_c = {
-                \     '/*': '#<{(|',
-                \     '*/': '|)}>#',
+                \     '/*': {'guard_rx': '^\s*/\?\*', 'subst': '#<{(|'},
+                \     '*/': {'guard_rx': '^\s*/\?\*', 'subst': '|)}>#'},
                 \ }
 endif
 
@@ -196,8 +196,16 @@ if !exists('g:tcomment#must_escape_expression_backslash')
 endif
 
 
+let s:warning_definetype = 0
+
 function! tcomment#DefineType(...) abort
-    echom 'tcomment: tcomment#DefineType() is deprecated; please use tcomment#type#Define() instead'
+    if !s:warning_definetype
+        echohl WarningMsg
+        echom 'tcomment: tcomment#DefineType() is deprecated; please use tcomment#type#Define() instead'
+        echom 'tcomment: tcomment#DefineType() will be removed in a future release'
+        echohl NONE
+        let s:warning_definetype = 1
+    endif
     return call('tcomment#type#Define', a:000)
 endf
 
@@ -228,8 +236,10 @@ function! tcomment#GuessCommentType(...) abort "{{{3
     let comment_mode = get(options, 'comment_mode', '')
     let filetype = get(options, 'filetype', &filetype)
     let fallbackFiletype = get(options, 'filetype', '')
-    return tcomment#filetype#Guess(beg, end,
+    let ct = tcomment#filetype#Guess(beg, end,
           \ comment_mode, filetype, fallbackFiletype)
+    call extend(ct, {'_args': {'beg': beg, 'end': end, 'comment_mode': comment_mode, 'filetype': filetype, 'fallbackFiletype': fallbackFiletype}})
+    return ct
 endf
 
 
@@ -271,6 +281,16 @@ endf
 "         postprocess_uncomment .. Run a |printf()| expression with 2 
 "                              placeholders on uncommented lines, e.g. 
 "                              'norm! %sgg=%sgg'.
+"         choose           ... A list of commend definitions (a 
+"                              dictionary as defined above) that may 
+"                              contain an `if` key referring to an 
+"                              expression; if this condition evaluates 
+"                              to true, the item will be selected; the 
+"                              last item in the list will be selected 
+"                              anyway (see the bib definition for an 
+"                              example)
+"         if               ... an |eval()|able expression (only valid 
+"                              within a choose list, see above)
 "   2. 1-2 values for: ?commentPrefix, ?commentPostfix
 "   3. a dictionary (internal use only)
 "
@@ -690,10 +710,10 @@ function! s:ProcessLine(comment_do, match, checkRx, replace) abort
                 let irx = 2
             endif
             let rv = substitute(a:match, a:checkRx, '\1\'. irx, '')
-            let rv = s:UnreplaceInLine(rv)
+            let rv = s:UnreplaceInLine(rv, a:match)
         else
             let ml = len(a:match)
-            let rv = s:ReplaceInLine(a:match)
+            let rv = s:ReplaceInLine(a:match, a:match)
             let rv = tcomment#format#Printf1(a:replace, rv)
             let strip_whitespace = get(s:cdef, 'strip_whitespace', 1)
             if strip_whitespace == 2 || (strip_whitespace == 1 && ml == 0)
@@ -737,9 +757,26 @@ function! s:ProcessLine(comment_do, match, checkRx, replace) abort
 endf
 
 
-function! s:ReplaceInLine(text) abort "{{{3
+function! s:GetReplacements(cdef, text) abort "{{{3
+    let replacements = {}
+    for [rx, sdef] in items(s:cdef.replacements)
+        if type(sdef) == 1
+            let replacements[rx] = sdef
+        elseif type(sdef) == 4
+            if a:text =~# sdef.guard_rx
+                let replacements[rx] = sdef.subst
+            endif
+        else
+            throw 'tcomment: Malformed substitute in GetReplacements(): '. rx .' => '. string(sdef)
+        endif
+    endfor
+    return replacements
+endf
+
+
+function! s:ReplaceInLine(text, match) abort "{{{3
     if has_key(s:cdef, 'replacements')
-        let replacements = s:cdef.replacements
+        let replacements = s:GetReplacements(s:cdef, s:cdef.commentstring)
         return s:DoReplacements(a:text, keys(replacements), values(replacements))
     else
         return a:text
@@ -747,9 +784,9 @@ function! s:ReplaceInLine(text) abort "{{{3
 endf
 
 
-function! s:UnreplaceInLine(text) abort "{{{3
+function! s:UnreplaceInLine(text, match) abort "{{{3
     if has_key(s:cdef, 'replacements')
-        let replacements = s:cdef.replacements
+        let replacements = s:GetReplacements(s:cdef, a:match)
         return s:DoReplacements(a:text, values(replacements), keys(replacements))
     else
         return a:text
@@ -818,6 +855,7 @@ function! s:CommentBlock(beg, end, cbeg, cend, comment_mode, comment_do, checkRx
             for line in split(@t, '\n')
                 let line1 = substitute(line, rx, '', '')
                 Tlibtrace 'tcomment', line, line1
+                let line1 = s:UnreplaceInLine(line1, line)
                 call add(tt, line1)
             endfor
             let @t = join(tt, "\n")
@@ -863,6 +901,7 @@ function! s:CommentBlock(beg, end, cbeg, cend, comment_mode, comment_do, checkRx
                 else
                     for line in split(@t, '\n')
                         Tlibtrace 'tcomment', 1, line
+                        let line = s:ReplaceInLine(line, line)
                         if line =~# '^\s*' && tcomment#compatibility#Strdisplaywidth(line) < indentlen
                             let line = indentStr . ms
                         elseif lnum == 0

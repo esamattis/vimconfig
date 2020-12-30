@@ -11,6 +11,7 @@ highlightedyank-highlight-groups	highlightedyank.jax	/*highlightedyank-highlight
 highlightedyank-index	highlightedyank.jax	/*highlightedyank-index*
 highlightedyank-introduction	highlightedyank.jax	/*highlightedyank-introduction*
 highlightedyank-known-issues	highlightedyank.jax	/*highlightedyank-known-issues*
+highlightedyank-options	highlightedyank.jax	/*highlightedyank-options*
 highlightedyank.txt	highlightedyank.jax	/*highlightedyank.txt*
 highlightedyank.vim	highlightedyank.jax	/*highlightedyank.vim*
 hl-HighlightedyankRegion	highlightedyank.jax	/*hl-HighlightedyankRegion*

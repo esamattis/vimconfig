@@ -23,7 +23,7 @@ Plug 'tpope/vim-fugitive'
 Plug 'vim-scripts/Rename'
 Plug 'jeetsukumaran/vim-buffersaurus'
 Plug 'tomtom/tcomment_vim'
-Plug 'w0rp/ale'
+" Plug 'w0rp/ale'
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'tpope/vim-repeat' " makes surround work with . (repeat)
 Plug 'tmux-plugins/vim-tmux-focus-events'
@@ -34,13 +34,16 @@ Plug 'tpope/vim-sleuth'
 Plug 'sbdchd/neoformat'
 Plug 'joshglendenning/vim-caddyfile'
 Plug 'HerringtonDarkholme/yats.vim'
-Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
-Plug 'junegunn/fzf.vim'
+" Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+" Plug 'junegunn/fzf.vim'
 Plug 'ajmwagar/vim-deus'
 Plug 'scrooloose/nerdtree'
 Plug 'chr4/nginx.vim'
 Plug 'lepture/vim-jinja'
 call plug#end()
+
+" react-bemed migration macro
+let @t='"sdiwhhC;h%oname: ""spA",'
 
 "" Leader mappings
 let mapleader = ","
@@ -322,4 +325,4 @@ if filereadable(s:vim_home . "/local.vim")
 endif
 
 " TODO: move to plugin specific config file
-let g:ale_linters = {'javascript': ['eslint']}
+" let g:ale_linters = {'javascript': ['eslint']}

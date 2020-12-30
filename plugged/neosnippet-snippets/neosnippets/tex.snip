@@ -188,6 +188,12 @@ alias   \begin{align*} \align*
 		${1:TARGET}
 	\end{align*}
 
+snippet aligned
+alias   \begin{aligned} \aligned
+       \begin{aligned}
+               ${1:TARGET}
+       \end{aligned}
+
 snippet eqnarray
 alias   \begin{eqnarray} \eqnarray
 	\begin{eqnarray}
@@ -259,8 +265,8 @@ alias   \begin{flushright} \flushright
 
 snippet minipage
 alias   \begin{minipage} \minipage
-	\begin{minipage}
-		${1:TARGET}
+	\begin{minipage}{${1:0.45}\linewidth}
+		${2:TARGET}
 	\end{minipage}
 
 snippet picture

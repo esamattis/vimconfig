@@ -1,8 +1,0 @@
-Before:
-  call ale#assert#SetUpLinterTest('javascript', 'tsserver')
-
-After:
-  call ale#assert#TearDownLinterTest()
-
-Execute(The default command should be correct):
-  AssertLinter 'tsserver', ale#Escape('tsserver')

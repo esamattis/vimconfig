@@ -12,7 +12,6 @@ function! neosnippet#variables#current_neosnippet() abort
           \ 'target' : '',
           \ 'trigger' : 0,
           \ 'optional_tabstop' : 0,
-          \ 'unnamed_register' : '',
           \}
   endif
 
@@ -54,7 +53,7 @@ function! neosnippet#variables#snippets_dir() abort
 endfunction
 function! neosnippet#variables#runtime_dir() abort
   " Set runtime dir.
-  let runtime_dir = split(globpath(&runtimepath, 'neosnippets'), '\n')
+  let runtime_dir = []
   if g:neosnippet#enable_snipmate_compatibility
     " Load snipMate snippet directories.
     let runtime_dir += split(globpath(&runtimepath,
@@ -63,6 +62,7 @@ function! neosnippet#variables#runtime_dir() abort
       let runtime_dir += neosnippet#util#option2list(g:snippets_dir)
     endif
   endif
+  let runtime_dir += split(globpath(&runtimepath, 'neosnippets'), '\n')
   if empty(runtime_dir) && empty(g:neosnippet#disable_runtime_snippets)
     call neosnippet#util#print_error(
           \ 'neosnippet default snippets cannot be loaded.')
@@ -76,7 +76,7 @@ function! neosnippet#variables#data_dir() abort
   let g:neosnippet#data_directory =
         \ substitute(fnamemodify(get(
         \   g:, 'neosnippet#data_directory',
-        \  ($XDG_CACHE_HOME != '' ?
+        \  ($XDG_CACHE_HOME !=# '' ?
         \   $XDG_CACHE_HOME . '/neosnippet' : expand('~/.cache/neosnippet'))),
         \  ':p'), '\\', '/', 'g')
   if !isdirectory(g:neosnippet#data_directory)

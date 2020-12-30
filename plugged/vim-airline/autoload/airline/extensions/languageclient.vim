@@ -1,4 +1,5 @@
-" MIT License. Copyright (c) 2013-2018 Bjorn Neergaard, w0rp, hallettj et al.
+" MIT License. Copyright (c) 2013-2020 Bjorn Neergaard, hallettj et al.
+" Plugin: https://github.com/autozimu/LanguageClient-neovim
 " vim: et ts=2 sts=2 sw=2
 
 scriptencoding utf-8
@@ -20,13 +21,16 @@ let s:diagnostics = {}
 
 function! s:languageclient_refresh()
   if get(g:, 'airline_skip_empty_sections', 0)
-    exe ':AirlineRefresh'
+    exe ':AirlineRefresh!'
   endif
 endfunction
 
 function! s:record_diagnostics(state)
-  let result = json_decode(a:state.result)
-  let s:diagnostics = result.diagnostics
+  " The returned message might not have the 'result' key
+  if has_key(a:state, 'result')
+    let result = json_decode(a:state.result)
+    let s:diagnostics = result.diagnostics
+  endif
   call s:languageclient_refresh()
 endfunction
 
@@ -62,12 +66,16 @@ function! s:airline_languageclient_get_line_number(type) abort
 endfunction
 
 function! airline#extensions#languageclient#get(type)
+  if get(b:, 'LanguageClient_isServerRunning', 0) ==# 0
+    return ''
+  endif
+
   let is_err = a:type == s:severity_error
   let symbol = is_err ? s:error_symbol : s:warning_symbol
 
   let cnt = 0
   for d in s:diagnostics_for_buffer()
-    if d.severity == a:type
+    if has_key(d, 'severity') && d.severity == a:type
       let cnt += 1
     endif
   endfor
