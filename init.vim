@@ -152,7 +152,6 @@ set hidden
 " The crossair cursor
 set cursorline cursorcolumn
 
-colorscheme molokai
 
 " Do not toggle to netrw view
 let g:netrw_altfile = 1
