@@ -52,6 +52,7 @@ export PATH=$N_PREFIX/bin:$PATH
 
 # own crap
 export PATH=$HOME/bin:$PATH
+export PATH=$HOME/.vim/bin:$PATH
 
 # pip --user
 export PATH=$HOME/.local/bin:$PATH
