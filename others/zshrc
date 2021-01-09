@@ -10,6 +10,12 @@ fi
 # Ensure we're in emacs mode
 bindkey -e
 
+
+# Fix home and end
+bindkey  "^[[H"   beginning-of-line
+bindkey  "^[[F"   end-of-line
+
+
 # Bash like autocomplete
 setopt noautomenu
 setopt nomenucomplete
