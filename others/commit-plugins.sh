@@ -5,6 +5,7 @@ set -eu
 cd plugged
 
 for dir in *; do
+    rm -rf "$dir/.git"
     git add "$dir/"
     git add "$dir/" -u
     cd "$dir"
