@@ -40,6 +40,6 @@ if !executable('fzf')
     nnoremap <leader>T :call <sid>GitRepo(1)<CR>
 endif
 
-nnoremap <leader>f :call <sid>FileDir()<CR>
+nnoremap <leader>n :call <sid>FileDir()<CR>
 nnoremap <leader>m :CtrlPBuffer<CR>
 

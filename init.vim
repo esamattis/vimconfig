@@ -8,11 +8,12 @@ if has('nvim')
 
     " Breaks normal vim paste
     Plug 'bfredl/nvim-miniyank'
+    Plug 'neoclide/coc.nvim', {'branch': 'release'}
 endif
 
 Plug 'tpope/vim-sensible', { 'on': 'OldVim' }
-Plug 'Shougo/neosnippet.vim'
-Plug 'Shougo/neosnippet-snippets'
+" Plug 'Shougo/neosnippet.vim'
+" Plug 'Shougo/neosnippet-snippets'
 Plug 'pangloss/vim-javascript'
 Plug 'mxw/vim-jsx'
 Plug 'tpope/vim-surround'
@@ -30,20 +31,21 @@ Plug 'tmux-plugins/vim-tmux-focus-events'
 Plug 'simnalamburt/vim-mundo' " alt https://github.com/mbbill/undotree
 Plug 'vim-airline/vim-airline'
 Plug 'machakann/vim-highlightedyank'
-Plug 'tpope/vim-sleuth'
-Plug 'sbdchd/neoformat'
+Plug 'tpope/vim-sleuth' " auto tab width
+" Plug 'sbdchd/neoformat'
 Plug 'joshglendenning/vim-caddyfile'
 Plug 'HerringtonDarkholme/yats.vim'
-" Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
-" Plug 'junegunn/fzf.vim'
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
 Plug 'ajmwagar/vim-deus'
 Plug 'scrooloose/nerdtree'
 Plug 'chr4/nginx.vim'
 Plug 'lepture/vim-jinja'
+Plug 'joshdick/onedark.vim'
 call plug#end()
 
-" react-bemed migration macro
-let @t='"sdiwhhC;h%oname: ""spA",'
+
+colorscheme onedark
 
 "" Leader mappings
 let mapleader = ","
@@ -65,6 +67,7 @@ for plugin in keys(g:plugs)
         execute 'source ' . s:plugin_config
     endif
 endfor
+
 
 
 " Use cool visual search&replace on neovim
@@ -120,7 +123,7 @@ imap jj <esc>
 
 
 " Write buffer (save)
-noremap <Leader>w :w<CR>
+noremap <Leader>w :wa<CR>
 imap ,w <esc>:w<CR>
 
 " Automatically resize splits when the window is resized
