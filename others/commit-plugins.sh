@@ -5,12 +5,12 @@ set -eu
 cd plugged
 
 for dir in *; do
-    rm -rf "$dir/.git"
     git add "$dir/"
     git add "$dir/" -u
     cd "$dir"
     hash="$(git rev-parse HEAD)"
     cd ..
+    rm -rf "$dir/.git"
     if [ "$(git diff --cached)" != "" ]; then
         git commit -m "Update $dir to $hash"
     fi
