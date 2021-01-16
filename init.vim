@@ -16,6 +16,7 @@ Plug 'tpope/vim-sensible', { 'on': 'OldVim' }
 " Plug 'Shougo/neosnippet-snippets'
 Plug 'pangloss/vim-javascript'
 Plug 'mxw/vim-jsx'
+Plug 'jparise/vim-graphql'
 Plug 'tpope/vim-surround'
 Plug 'airblade/vim-gitgutter'
 Plug 'mattn/gist-vim'
@@ -310,6 +311,8 @@ command -nargs=1 Tab setlocal noexpandtab shiftwidth=<args> tabstop=<args> softt
 
 " Convert foo-bar to fooBar
 command ToCamel normal f-xvgU
+
+command SaveWithoutFormartting noa w
 
 " Close other window splits
 command O only
