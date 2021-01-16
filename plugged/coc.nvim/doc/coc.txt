@@ -662,7 +662,7 @@ Built-in configurations:~
 
 "list.source.symbols.excludes":~
 
-	Patterns of mimimatch for filepath to execlude from symbols list,
+	Patterns of minimatch for filepath to execlude from symbols list,
 	default: `[]`
 
 "list.source.outline.ctagsFilestypes":~
@@ -2235,7 +2235,9 @@ COMMANDS						*coc-commands*
 	Note: the log would be cleared when coc.nvim started.
 
 	Use environment variable `NVIM_COC_LOG_LEVEL` to change log level
-	(default 'info').  Use shell command: >
+	(default 'info', could be 'all', 'trace', 'debug', 'info',
+	'warn', 'error', 'off').
+	Use shell command: >
 
 	export NVIM_COC_LOG_LEVEL=debug
 <
@@ -3204,7 +3206,7 @@ Use configuration like: >
 	\ },
 	\ }
 
-  " Use auocmd to force lightline update.
+  " Use autocmd to force lightline update.
   autocmd User CocStatusChange,CocDiagnosticChange call lightline#update()
 <
 ==============================================================================

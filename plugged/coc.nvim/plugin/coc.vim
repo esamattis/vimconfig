@@ -69,6 +69,9 @@ function! CocPopupCallback(bufnr, arglist) abort
 endfunction
 
 function! CocAction(name, ...) abort
+  if !get(g:, 'coc_service_initialized', 0)
+    throw 'coc.nvim not ready when invoke CocAction "'.a:name.'"'
+  endif
   return coc#rpc#request(a:name, a:000)
 endfunction
 
@@ -402,7 +405,7 @@ function! s:ShowInfo()
     " check bundle
     let file = s:root.'/build/index.js'
     if !filereadable(file)
-      call add(lines, 'Error: javascript bundle not found, please compile code of coc.nvim by webpack.')
+      call add(lines, 'Error: javascript bundle not found, please compile code of coc.nvim by esbuild.')
     endif
     if !empty(lines)
       belowright vnew
