@@ -215,3 +215,6 @@ if [ "$(uname)" != "Darwin" ]; then
     eval $(keychain --eval)
   fi
 fi
+
+# https://blog.thecodewhisperer.com/permalink/renaming-magically-with-zmv
+autoload zmv
