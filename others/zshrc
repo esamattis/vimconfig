@@ -196,6 +196,11 @@ esamattis-fasd-pick-dir() {
   return $ret
 }
 
+# Create directory and cd into it
+take() {
+  mkdir -p $@ && cd ${@:$#}
+}
+
 zle -N esamattis-fasd-pick-dir
 bindkey '^G' esamattis-fasd-pick-dir
 
