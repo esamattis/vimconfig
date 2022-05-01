@@ -1,4 +1,4 @@
-" Copyright (c) 2016-2020 Jon Parise <jon@indelible.org>
+" Copyright (c) 2016-2021 Jon Parise <jon@indelible.org>
 "
 " Permission is hereby granted, free of charge, to any person obtaining a copy
 " of this software and associated documentation files (the "Software"), to
@@ -42,7 +42,7 @@ if graphql#has_syntax_group('jsTemplateExpression')
   exec 'syntax match graphqlTaggedTemplate +' . s:tags . '\ze`+ nextgroup=graphqlTemplateString'
   syntax region graphqlTemplateExpression start=+${+ end=+}+ contained contains=jsTemplateExpression containedin=graphqlFold keepend
 
-  syntax region graphqlTemplateString matchgroup=jsTemplateString start=+`#\s\{,4\}gql\>\s*$+ skip=+\\\\\|\\`+ end=+`+ contains=@GraphQLSyntax,jsTemplateExpression,jsSpecial extend
+  syntax region graphqlTemplateString matchgroup=jsTemplateString start=+`#\s\{,4\}\(gql\|graphql\)\>\s*$+ skip=+\\\\\|\\`+ end=+`+ contains=@GraphQLSyntax,jsTemplateExpression,jsSpecial extend
 
   hi def link graphqlTemplateString jsTemplateString
   hi def link graphqlTaggedTemplate jsTaggedTemplate
@@ -56,7 +56,7 @@ elseif graphql#has_syntax_group('javaScriptStringT')
   exec 'syntax match graphqlTaggedTemplate +' . s:tags . '\ze`+ nextgroup=graphqlTemplateString'
   syntax region graphqlTemplateExpression start=+${+ end=+}+ contained contains=@javaScriptEmbededExpr containedin=graphqlFold keepend
 
-  syntax region graphqlTemplateString matchgroup=javaScriptStringT start=+`#\s\{,4\}gql\>\s*$+ skip=+\\\\\|\\`+ end=+`+ contains=@GraphQLSyntax,javaScriptSpecial,javaScriptEmbed,@htmlPreproc extend
+  syntax region graphqlTemplateString matchgroup=javaScriptStringT start=+`#\s\{,4\}\(gql\|graphql\)\>\s*$+ skip=+\\\\\|\\`+ end=+`+ contains=@GraphQLSyntax,javaScriptSpecial,javaScriptEmbed,@htmlPreproc extend
 
   hi def link graphqlTemplateString javaScriptStringT
   hi def link graphqlTaggedTemplate javaScriptEmbed

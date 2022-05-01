@@ -1,15 +1,15 @@
 Before:
-  source ../after/syntax/reason/graphql.vim
+  source ../after/syntax/rescript/graphql.vim
 
-Given reason (Template):
-  [%graphql {|
+Given rescript (Template):
+  %graphql(`
     query UserQuery {
       user {
         id
         name
       }
     }
-  |}];
+  `)
 
 Execute (Syntax assertions):
   AssertEqual 'graphqlExtensionPoint', SyntaxOf('%graphql')

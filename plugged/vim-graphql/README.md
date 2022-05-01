@@ -7,6 +7,9 @@ specification.
 
 ## Installation
 
+This plugin requires Vim version 8 or later. Equivalent Neovim versions
+are also supported.
+
 ### Using [vim-plug](https://github.com/junegunn/vim-plug)
 
 1. Add `Plug 'jparise/vim-graphql'` to `~/.vimrc`
@@ -65,8 +68,8 @@ const query = gql`
 The list of recognized tag names is defined by the `g:graphql_javascript_tags`
 variable, which defaults to `["gql", "graphql", "Relay.QL"]`.
 
-You can also add a `# gql` comment at the start of a template string to
-indicate that its contents should be considered GraphQL syntax.
+You can also add a `# gql` or `# graphql` comment at the start of a template
+string to indicate that its contents should be considered GraphQL syntax.
 
 ```javascript
 const query = `# gql
@@ -104,6 +107,22 @@ strings using [graphql-ppx][] is available.
 
 [graphql-ppx]: https://github.com/reasonml-community/graphql-ppx
 
+## ReScript Support
+
+GraphQL syntax support inside of [ReScript](https://rescript-lang.org/)
+strings is available.
+
+```rescript
+%graphql(`
+  query UserQuery {
+    user {
+      id
+      name
+    }
+  }
+`)
+```
+
 ## PHP Support
 
 GraphQL syntax inside of [heredoc][] and [nowdoc][] strings is supported. The
@@ -126,10 +145,11 @@ GQL;
 
 ## Language Server Protocol Support
 
-[coc-graphql](https://github.com/felippepuhle/coc-graphql) provides a Language
-Server Protocol extension for [coc.nvim](https://github.com/neoclide/coc.nvim)
-that interoperates with vim-graphql to provide schema-aware features like
-autocompletion support.
+[Language Server Protocol (LSP)](https://langserver.org/) implementations can
+enable editor features like schema-aware completion.
+
+- [coc.nvim](https://github.com/neoclide/coc.nvim) supports
+  [GraphQL languge servers](https://github.com/neoclide/coc.nvim/wiki/Language-servers#graphql)
 
 ## Testing
 

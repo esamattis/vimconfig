@@ -21,17 +21,18 @@
 " Language: GraphQL
 " Maintainer: Jon Parise <jon@indelible.org>
 
-if (exists('b:did_ftplugin'))
-  finish
+if exists('b:current_syntax')
+  let s:current_syntax = b:current_syntax
+  unlet b:current_syntax
 endif
-let b:did_ftplugin = 1
 
-setlocal comments=:#
-setlocal commentstring=#\ %s
-setlocal formatoptions-=t
-setlocal iskeyword+=$,@-@
-setlocal softtabstop=2
-setlocal shiftwidth=2
-setlocal expandtab
+let b:graphql_nested_syntax = 1
+syn include @GraphQLSyntax syntax/graphql.vim
+unlet b:graphql_nested_syntax
 
-let b:undo_ftplugin = 'setlocal com< cms< fo< isk< sts< sw< et<'
+if exists('s:current_syntax')
+  let b:current_syntax = s:current_syntax
+endif
+
+syntax region graphqlExtensionPoint start=+%graphql(+ end=+)+ contains=graphqlExtensionPointS
+syntax region graphqlExtensionPointS matchgroup=String start=+`+ end=+`+ contains=@GraphQLSyntax contained

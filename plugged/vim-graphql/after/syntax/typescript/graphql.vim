@@ -1,4 +1,4 @@
-" Copyright (c) 2016-2020 Jon Parise <jon@indelible.org>
+" Copyright (c) 2016-2021 Jon Parise <jon@indelible.org>
 "
 " Permission is hereby granted, free of charge, to any person obtaining a copy
 " of this software and associated documentation files (the "Software"), to
@@ -41,6 +41,15 @@ exec 'syntax match graphqlTaggedTemplate +' . s:tags . '\ze`+ nextgroup=graphqlT
 
 " Support expression interpolation ((${...})) inside template strings.
 syntax region graphqlTemplateExpression start=+${+ end=+}+ contained contains=typescriptTemplateSubstitution containedin=graphqlFold keepend
+
+" support #graphql , #gql comment strings
+syntax region graphqlTemplateString
+      \ start=+`\(#\s\{,4\}\(gql\|graphql\)\)\@=+
+      \ skip=+\\\\\|\\`+
+      \ end=+`+me=s-1
+      \ containedin=typescriptTemplate
+      \ contained
+      \ contains=@GraphQLSyntax,typescriptTemplateSubstitution extend
 
 hi def link graphqlTemplateString typescriptTemplate
 hi def link graphqlTemplateExpression typescriptTemplateSubstitution
