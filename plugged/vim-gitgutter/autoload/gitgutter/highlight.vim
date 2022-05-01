@@ -109,8 +109,8 @@ function! gitgutter#highlight#define_highlights() abort
   highlight default link GitGutterChangeDeleteLineNr CursorLineNr
 
   " Highlights used intra line.
-  highlight GitGutterAddIntraLine    gui=reverse cterm=reverse
-  highlight GitGutterDeleteIntraLine gui=reverse cterm=reverse
+  highlight default GitGutterAddIntraLine    gui=reverse cterm=reverse
+  highlight default GitGutterDeleteIntraLine gui=reverse cterm=reverse
   " Set diff syntax colours (used in the preview window) - diffAdded,diffChanged,diffRemoved -
   " to match the signs, if not set aleady.
   for [dtype,type] in [['Added','Add'], ['Changed','Change'], ['Removed','Delete']]
@@ -175,12 +175,12 @@ function! s:define_sign_line_highlights() abort
     sign define GitGutterLineRemovedAboveAndBelow  linehl=GitGutterDeleteLine
     sign define GitGutterLineModifiedRemoved       linehl=GitGutterChangeDeleteLine
   else
-    sign define GitGutterLineAdded                 linehl=
-    sign define GitGutterLineModified              linehl=
-    sign define GitGutterLineRemoved               linehl=
-    sign define GitGutterLineRemovedFirstLine      linehl=
-    sign define GitGutterLineRemovedAboveAndBelow  linehl=
-    sign define GitGutterLineModifiedRemoved       linehl=
+    sign define GitGutterLineAdded                 linehl=NONE
+    sign define GitGutterLineModified              linehl=NONE
+    sign define GitGutterLineRemoved               linehl=NONE
+    sign define GitGutterLineRemovedFirstLine      linehl=NONE
+    sign define GitGutterLineRemovedAboveAndBelow  linehl=NONE
+    sign define GitGutterLineModifiedRemoved       linehl=NONE
   endif
 endfunction
 
@@ -195,12 +195,12 @@ function! s:define_sign_linenr_highlights() abort
         sign define GitGutterLineRemovedAboveAndBelow  numhl=GitGutterDeleteLineNr
         sign define GitGutterLineModifiedRemoved       numhl=GitGutterChangeDeleteLineNr
       else
-        sign define GitGutterLineAdded                 numhl=
-        sign define GitGutterLineModified              numhl=
-        sign define GitGutterLineRemoved               numhl=
-        sign define GitGutterLineRemovedFirstLine      numhl=
-        sign define GitGutterLineRemovedAboveAndBelow  numhl=
-        sign define GitGutterLineModifiedRemoved       numhl=
+        sign define GitGutterLineAdded                 numhl=NONE
+        sign define GitGutterLineModified              numhl=NONE
+        sign define GitGutterLineRemoved               numhl=NONE
+        sign define GitGutterLineRemovedFirstLine      numhl=NONE
+        sign define GitGutterLineRemovedAboveAndBelow  numhl=NONE
+        sign define GitGutterLineModifiedRemoved       numhl=NONE
       endif
     catch /E475/
     endtry

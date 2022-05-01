@@ -70,11 +70,15 @@ let s:counter = 0
 "                      grep is available.
 function! gitgutter#diff#run_diff(bufnr, from, preserve_full_diff) abort
   if gitgutter#utility#repo_path(a:bufnr, 0) == -1
-    throw 'gitgutter author fail'
+    throw 'gitgutter path not set'
   endif
 
   if gitgutter#utility#repo_path(a:bufnr, 0) == -2
     throw 'gitgutter not tracked'
+  endif
+
+  if gitgutter#utility#repo_path(a:bufnr, 0) == -3
+    throw 'gitgutter assume unchanged'
   endif
 
   " Wrap compound commands in parentheses to make Windows happy.
