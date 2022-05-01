@@ -2,8 +2,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-09-17.
-" @Last Change: 2020-10-09.
-" @Revision:    2040
+" @Last Change: 2022-04-24.
+" @Revision:    2047
 
 scriptencoding utf-8
 
@@ -149,7 +149,8 @@ if !exists('g:tcomment#replacements_xml')
     " Replacements for xml filetype.
     " :read: let g:tcomment#replacements_xml = {...}   "{{{2
     let g:tcomment#replacements_xml = {
-                \     '-': '&#45;',
+                \     '<!--': '&#60;&#33;&#45;&#45;',
+                \     '-->': '&#45;&#45;&#62;',
                 \     '&': '&#38;',
                 \ }
 endif
@@ -281,7 +282,7 @@ endf
 "         postprocess_uncomment .. Run a |printf()| expression with 2 
 "                              placeholders on uncommented lines, e.g. 
 "                              'norm! %sgg=%sgg'.
-"         choose           ... A list of commend definitions (a 
+"         choose           ... A list of comment definitions (a 
 "                              dictionary as defined above) that may 
 "                              contain an `if` key referring to an 
 "                              expression; if this condition evaluates 

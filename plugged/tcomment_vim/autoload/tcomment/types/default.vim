@@ -1,8 +1,8 @@
 " @Author:      Tom Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     https://github.com/tomtom
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
-" @Last Change: 2020-09-14
-" @Revision:    30
+" @Last Change: 2021-03-29
+" @Revision:    35
 
 call tcomment#type#Define('aap',              '# %s'             )
 call tcomment#type#Define('ada',              '-- %s'            )
@@ -18,6 +18,7 @@ call tcomment#type#Define('asciidoc',         '// %s'            )
 call tcomment#type#Define('asm',              '; %s'             )
 call tcomment#type#Define('asterisk',         '; %s'             )
 call tcomment#type#Define('bib',              {'choose': [{'if': 'getline(''.'') =~? ''^\s*@''', 'commentstring': '@Comment{%s}'}, {'commentstring': '%% %s'}]})
+call tcomment#type#Define('bindzone',         '; %s'             )
 call tcomment#type#Define('blade',            '{{-- %s --}}'     )
 call tcomment#type#Define('blade_block',      '{{--%s--}}'       )
 call tcomment#type#Define('blade_inline',     '{{-- %s --}}'     )
@@ -149,9 +150,12 @@ call tcomment#type#Define('meson',            '# %s'             )
 call tcomment#type#Define('monkey',           ''' %s'            )
 call tcomment#type#Define('msidl',            '// %s'            )
 call tcomment#type#Define('msidl_block',      g:tcomment#block_fmt_c   )
+call tcomment#type#Define('named',            '# %s'             )
+call tcomment#type#Define('named_block',      g:tcomment#block_fmt_c   )
 call tcomment#type#Define('nginx',            '# %s'             )
 call tcomment#type#Define('nim',              '# %s'             )
 call tcomment#type#Define('nix',              '# %s'             )
+call tcomment#type#Define('nix_inline',       g:tcomment#inline_fmt_c  )
 call tcomment#type#Define('nroff',            '.\" %s'           )
 call tcomment#type#Define('noweb',            '%% %s'            )
 call tcomment#type#Define('nsis',             '# %s'             )
@@ -197,7 +201,7 @@ call tcomment#type#Define('remind',           {'commentstring_rx': '\[;#] %s', '
 call tcomment#type#Define('resolv',           '# %s'             )
 call tcomment#type#Define('robot', {'col': 1, 'commentstring': '# %s'})
 call tcomment#type#Define('robots',           '# %s'             )
-call tcomment#type#Define('rust',             tcomment#GetLineC('// %s'))
+call tcomment#type#Define('rust',             tcomment#GetLineC('// %s', {'commentstring_rx': '\%%(///\? %s\|/* %s */\)'}))
 call tcomment#type#Define('rust_block',       g:tcomment#block_fmt_c   )
 call tcomment#type#Define('rust_inline',      g:tcomment#inline_fmt_c  )
 call tcomment#type#Define('ruby',             '# %s'             )
@@ -239,6 +243,9 @@ call tcomment#type#Define('sshdconfig',       '# %s'             )
 call tcomment#type#Define('st',               '" %s "'           )
 call tcomment#type#Define('stata',            '// %s'            )
 call tcomment#type#Define('stata_block',      '/* %s */\n '      )
+call tcomment#type#Define('stylus',           '// %s'            )
+call tcomment#type#Define('stylus_block',     g:tcomment#block_fmt_c   )
+call tcomment#type#Define('stylus_inline',    g:tcomment#inline_fmt_c  )
 call tcomment#type#Define('swift',             tcomment#GetLineC('// %s'))
 call tcomment#type#Define('swift_block',       g:tcomment#block_fmt_c   )
 call tcomment#type#Define('swift_inline',      g:tcomment#inline_fmt_c  )
@@ -275,10 +282,11 @@ call tcomment#type#Define('viki',             '%% %s'            )
 call tcomment#type#Define('viki_3',           '%%%%%% %s'        )
 call tcomment#type#Define('viki_inline',      '{cmt: %s}'        )
 call tcomment#type#Define('vim',              {'choose': [
-      \ {'if': 'getline(1) ==# ''vim9script'' ||' .
-      \        'getline(search(''^\%(fu\%[nction]\|def\)\>'', ''bcnWz'')) =~# ''^def\>'' && search(''^def\>'', ''bcnWz'') < line("''[")',
+      \ {'if': 'search(''^\s*vim9script\s*$'', "bcnW") ||' .
+      \        'getline(search(''^\s*\%(fu\%[nction]\|def\)\>'', ''bcnWz'')) =~# ''^\s*def\>'' && search(''^\s*def\>'', ''bcnWz'') < line("''[")',
       \  'commentstring': '# %s'},
-      \ {'commentstring': '" %s'}]})
+      \ {'commentstring': '" %s'}],
+      \ 'commentstring_rx': '\["#] %s'})
 call tcomment#type#Define('vim_3',            '""" %s'           )
 call tcomment#type#Define('vimwiki',          '%%%% %s'          )
 call tcomment#type#Define('websec',           '# %s'             )
