@@ -30,6 +30,16 @@ endfunction
 " SECTION: General Functions {{{1
 "============================================================
 
+" FUNCTION: nerdtree#closeTreeOnOpen() {{{2
+function! nerdtree#closeTreeOnOpen() abort
+    return g:NERDTreeQuitOnOpen == 1 || g:NERDTreeQuitOnOpen == 3
+endfunction
+
+" FUNCTION: nerdtree#closeBookmarksOnOpen() {{{2
+function! nerdtree#closeBookmarksOnOpen() abort
+    return g:NERDTreeQuitOnOpen == 2 || g:NERDTreeQuitOnOpen == 3
+endfunction
+
 " FUNCTION: nerdtree#slash() {{{2
 " Return the path separator used by the underlying file system.  Special
 " consideration is taken for the use of the 'shellslash' option on Windows
@@ -44,28 +54,6 @@ function! nerdtree#slash() abort
     endif
 
     return '/'
-endfunction
-
-"FUNCTION: nerdtree#and(x,y) {{{2
-" Implements and() function for Vim <= 7.4
-function! nerdtree#and(x,y) abort
-    if exists('*and')
-        return and(a:x, a:y)
-    else
-        let l:x = a:x
-        let l:y = a:y
-        let l:n = 0
-        let l:result = 0
-        while l:x > 0 && l:y > 0
-            if (l:x % 2) && (l:y % 2)
-                let l:result += float2nr(pow(2, l:n))
-            endif
-            let l:x = float2nr(l:x / 2)
-            let l:y = float2nr(l:y / 2)
-            let l:n += 1
-        endwhile
-        return l:result
-    endif
 endfunction
 
 "FUNCTION: nerdtree#checkForBrowse(dir) {{{2
@@ -124,18 +112,18 @@ function! nerdtree#compareNodePaths(p1, p2) abort
         " Compare chunks upto common length.
         " If chunks have different type, the one which has
         " integer type is the lesser.
-        if type(sortKey1[i]) ==# type(sortKey2[i])
+        if type(sortKey1[i]) == type(sortKey2[i])
             if sortKey1[i] <# sortKey2[i]
                 return - 1
             elseif sortKey1[i] ># sortKey2[i]
                 return 1
             endif
-        elseif type(sortKey1[i]) ==# v:t_number
+        elseif type(sortKey1[i]) == type(0)
             return -1
-        elseif type(sortKey2[i]) ==# v:t_number
+        elseif type(sortKey2[i]) == type(0)
             return 1
         endif
-        let i = i + 1
+        let i += 1
     endwhile
 
     " Keys are identical upto common length.
