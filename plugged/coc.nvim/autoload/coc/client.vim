@@ -1,9 +1,11 @@
+scriptencoding utf-8
 let s:root = expand('<sfile>:h:h:h')
 let s:is_vim = !has('nvim')
 let s:is_win = has("win32") || has("win64")
 let s:clients = {}
 
 if get(g:, 'node_client_debug', 0)
+  echohl WarningMsg | echon '[coc.nvim] Enable g:node_client_debug could impact your vim experience' | echohl None
   let $NODE_CLIENT_LOG_LEVEL = 'debug'
   if exists('$NODE_CLIENT_LOG_FILE')
     let s:logfile = resolve($NODE_CLIENT_LOG_FILE)
@@ -55,7 +57,6 @@ function! s:start() dict
             \ 'VIM_NODE_RPC': '1',
             \ 'COC_NVIM': '1',
             \ 'COC_CHANNEL_TIMEOUT': timeout,
-            \ 'COC_NO_WARNINGS': disable_warning,
             \ 'TMPDIR': tmpdir,
           \ }
           \}
@@ -72,34 +73,46 @@ function! s:start() dict
     let self['running'] = 1
     let self['channel'] = job_getchannel(job)
   else
-    let original = {'tmpdir': $TMPDIR}
-    " env option not work on neovim
-    if exists('*setenv')
-      let original = {
-            \ 'NODE_NO_WARNINGS': getenv('NODE_NO_WARNINGS'),
-            \ 'COC_CHANNEL_TIMEOUT': getenv('COC_CHANNEL_TIMEOUT'),
-            \ 'COC_NO_WARNINGS': getenv('COC_NO_WARNINGS'),
-            \ 'TMPDIR': getenv('TMPDIR'),
-            \ }
-      call setenv('NODE_NO_WARNINGS', '1')
-      call setenv('COC_CHANNEL_TIMEOUT', timeout)
-      call setenv('COC_NO_WARNINGS', disable_warning)
-      call setenv('TMPDIR', tmpdir)
-    else
-      let $NODE_NO_WARNINGS = 1
-      let $COC_NO_WARNINGS = disable_warning
-    endif
-    let chan_id = jobstart(self.command, {
+    let original = {}
+    let opts = {
           \ 'rpc': 1,
           \ 'on_stderr': {channel, msgs -> s:on_stderr(self.name, msgs)},
           \ 'on_exit': {channel, code -> s:on_exit(self.name, code)},
-          \})
-    if exists('*setenv')
-      for key in keys(original)
-        call setenv(key, original[key])
-      endfor
+          \ }
+    if has('nvim-0.5.0')
+      " could use env option
+      let opts['env'] = {
+          \ 'COC_NVIM': '1',
+          \ 'NODE_NO_WARNINGS': '1',
+          \ 'COC_CHANNEL_TIMEOUT': timeout,
+          \ 'TMPDIR': tmpdir
+          \ }
     else
-      let $TMPDIR = original['tmpdir']
+      if exists('*getenv')
+        let original = {
+              \ 'NODE_NO_WARNINGS': getenv('NODE_NO_WARNINGS'),
+              \ 'TMPDIR': getenv('TMPDIR'),
+              \ }
+      endif
+      if exists('*setenv')
+        call setenv('COC_NVIM', '1')
+        call setenv('NODE_NO_WARNINGS', '1')
+        call setenv('COC_CHANNEL_TIMEOUT', timeout)
+        call setenv('TMPDIR', tmpdir)
+      else
+        let $NODE_NO_WARNINGS = 1
+        let $TMPDIR = tmpdir
+      endif
+    endif
+    let chan_id = jobstart(self.command, opts)
+    if !empty(original)
+      if exists('*setenv')
+        for key in keys(original)
+          call setenv(key, original[key])
+        endfor
+      else
+        let $TMPDIR = original['TMPDIR']
+      endif
     endif
     if chan_id <= 0
       echohl Error | echom 'Failed to start '.self.name.' service' | echohl None

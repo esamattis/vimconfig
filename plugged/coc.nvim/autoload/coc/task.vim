@@ -1,10 +1,11 @@
 " ============================================================================
 " Description: Manage long running tasks.
 " Author: Qiming Zhao <chemzqm@gmail.com>
-" Licence: MIT licence
+" Licence: Anti 966 licence
 " Version: 0.1
 " Last Modified:  Dec 12, 2020
 " ============================================================================
+scriptencoding utf-8
 
 let s:is_vim = !has('nvim')
 let s:running_task = {}
@@ -52,11 +53,15 @@ function! coc#task#start(id, opts)
           \ 'detach': get(a:opts, 'detach', 0),
           \}
     let original = {}
-    if !empty(env) && exists('*setenv') && exists('*getenv')
-      for key in keys(env)
-        let original[key] = getenv(key)
-        call setenv(key, env[key])
-      endfor
+    if !empty(env)
+      if has('nvim-0.5.0')
+        let options['env'] = env
+      elseif exists('*setenv') && exists('*getenv')
+        for key in keys(env)
+          let original[key] = getenv(key)
+          call setenv(key, env[key])
+        endfor
+      endif
     endif
     if get(a:opts, 'pty', 0)
       let options['pty'] = 1

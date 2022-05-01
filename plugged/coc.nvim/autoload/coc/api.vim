@@ -1,10 +1,11 @@
 " ============================================================================
 " Description: Client api used by vim8
 " Author: Qiming Zhao <chemzqm@gmail.com>
-" Licence: MIT licence
-" Last Modified:  Nov 11, 2020
+" Licence: Anti 996 licence
+" Last Modified: Mar 08, 2022
 " ============================================================================
 if has('nvim') | finish | endif
+scriptencoding utf-8
 let s:funcs = {}
 let s:prop_offset = get(g:, 'coc_text_prop_offset', 1000)
 let s:namespace_id = 1
@@ -15,14 +16,24 @@ function! s:buf_line_count(bufnr) abort
   if bufnr('%') == a:bufnr
     return line('$')
   endif
+  if exists('*getbufinfo')
+    let info = getbufinfo(a:bufnr)
+    if empty(info)
+      return 0
+    endif
+    " vim 8.1 has getbufinfo but no linecount
+    if has_key(info[0], 'linecount')
+      return info[0]['linecount']
+    endif
+  endif
   if exists('*getbufline')
     let lines = getbufline(a:bufnr, 1, '$')
     return len(lines)
   endif
   let curr = bufnr('%')
-  execute 'buffer '.a:bufnr
+  execute 'noa buffer '.a:bufnr
   let n = line('$')
-  execute 'buffer '.curr
+  execute 'noa buffer '.curr
   return n
 endfunction
 
@@ -72,14 +83,20 @@ function! s:funcs.list_wins() abort
   return map(getwininfo(), 'v:val["winid"]')
 endfunction
 
+function s:inspect_type(v) abort
+  let types = ['Number', 'String', 'Funcref', 'List', 'Dictionary', 'Float', 'Boolean', 'Null']
+  return get(types, type(a:v), 'Unknown')
+endfunction
+
 function! s:funcs.call_atomic(calls)
   let res = []
-  for [key, arglist] in a:calls
+  for i in range(len(a:calls))
+    let [key, arglist] = a:calls[i]
     let name = key[5:]
     try
       call add(res, call(s:funcs[name], arglist))
     catch /.*/
-      return [res, v:exception]
+      return [res, [i, "VimException(".s:inspect_type(v:exception).")", v:exception]]
     endtry
   endfor
   return [res, v:null]
@@ -108,6 +125,12 @@ function! s:funcs.command(command) abort
     call timer_start(0, {-> s:execute(a:command)})
   else
     execute a:command
+    let err = get(g:, 'errmsg', '')
+    " get error from python script run.
+    if !empty(err)
+      unlet g:errmsg
+      throw err
+    endif
   endif
 endfunction
 
@@ -129,7 +152,7 @@ function! s:funcs.feedkeys(keys, mode, escape_csi)
 endfunction
 
 function! s:funcs.list_runtime_paths()
-  return split(&runtimepath, ',')
+  return globpath(&runtimepath, '', 0, 1)
 endfunction
 
 function! s:funcs.command_output(cmd)
@@ -186,14 +209,18 @@ endfunction
 
 function! s:funcs.out_write(str)
   echon a:str
+  call timer_start(0, {-> s:execute('redraw')})
 endfunction
 
 function! s:funcs.err_write(str)
-  echoerr a:str
+  "echoerr a:str
 endfunction
 
 function! s:funcs.err_writeln(str)
-  echoerr a:str
+  echohl ErrorMsg
+  echom a:str
+  echohl None
+  call timer_start(0, {-> s:execute('redraw')})
 endfunction
 
 function! s:funcs.create_namespace(name) abort
@@ -239,14 +266,22 @@ function! s:funcs.buf_get_mark(bufnr, name)
   return [line("'" . a:name), col("'" . a:name)]
 endfunction
 
-function! s:funcs.buf_add_highlight(bufnr, srcId, hlGroup, line, colStart, colEnd) abort
-  if !has('textprop') || !has('patch-8.1.1719')
+function! s:funcs.buf_add_highlight(bufnr, srcId, hlGroup, line, colStart, colEnd, ...) abort
+  if !has('patch-8.1.1719')
     return
   endif
   let bufnr = a:bufnr == 0 ? bufnr('%') : a:bufnr
   let type = 'CocHighlight'.a:hlGroup
   if empty(prop_type_get(type))
-    call prop_type_add(type, {'highlight': a:hlGroup, 'combine': 1})
+    let opts = get(a:, 1, 0)
+    let priority = get(opts, 'priority', 0)
+    call prop_type_add(type, {
+          \ 'highlight': a:hlGroup,
+          \ 'priority': type(priority) == 0 ? priority : 0,
+          \ 'combine': get(opts, 'combine', 1),
+          \ 'start_incl': get(opts, 'start_incl', 0),
+          \ 'end_incl': get(opts, 'end_incl', 0),
+          \ })
   endif
   let total = strlen(getbufline(bufnr, a:line + 1)[0])
   let end = a:colEnd
@@ -274,7 +309,6 @@ function! s:funcs.buf_add_highlight(bufnr, srcId, hlGroup, line, colStart, colEn
   catch /^Vim\%((\a\+)\)\=:E967/
     " ignore 967
   endtry
-  let g:i = srcId
   if a:srcId == 0
     " return generated srcId
     return srcId
@@ -282,12 +316,12 @@ function! s:funcs.buf_add_highlight(bufnr, srcId, hlGroup, line, colStart, colEn
 endfunction
 
 function! s:funcs.buf_clear_namespace(bufnr, srcId, startLine, endLine) abort
-  if !has('textprop') || !has('patch-8.1.1719')
+  if !has('patch-8.1.1719')
     return
   endif
   let bufnr = a:bufnr == 0 ? bufnr('%') : a:bufnr
   let start = a:startLine + 1
-  let end = a:endLine == -1 ? len(getbufline(bufnr, 1, '$')) : a:endLine + 1
+  let end = a:endLine == -1 ? len(getbufline(bufnr, 1, '$')) : a:endLine
   if a:srcId == -1
     call prop_clear(start, end, {'bufnr' : bufnr})
   else
@@ -329,7 +363,7 @@ function! s:funcs.buf_set_lines(bufnr, start, end, strict, ...) abort
   endif
   let replacement = get(a:, 1, [])
   let lineCount = s:buf_line_count(a:bufnr)
-  let startLnum = a:start >= 0 ? a:start + 1 : lineCount + a:start + 1
+  let startLnum = a:start >= 0 ? a:start + 1 : lineCount + a:start + 2
   let end = a:end >= 0 ? a:end : lineCount + a:end + 1
   if end == lineCount + 1
     let end = lineCount
@@ -353,8 +387,14 @@ function! s:funcs.buf_set_lines(bufnr, start, end, strict, ...) abort
       if delCount
         let start = startLnum + len(replacement)
         let saved_reg = @"
-        silent execute start . ','.(start + delCount - 1).'d'
+        let system_reg = @*
+        if exists('*deletebufline')
+          silent call deletebufline(curr, start, start + delCount - 1)
+        else
+          silent execute start . ','.(start + delCount - 1).'d'
+        endif
         let @" = saved_reg
+        let @* = system_reg
       endif
     endif
     call winrestview(storeView)
@@ -373,8 +413,12 @@ function! s:funcs.buf_set_lines(bufnr, start, end, strict, ...) abort
       endif
       if delCount
         let start = startLnum + len(replacement)
+        let saved_reg = @"
+        let system_reg = @*
         "8.1.0039
-        call deletebufline(a:bufnr, start, start + delCount - 1)
+        silent call deletebufline(a:bufnr, start, start + delCount - 1)
+        let @" = saved_reg
+        let @* = system_reg
       endif
     endif
   endif
@@ -400,7 +444,14 @@ function! s:funcs.buf_set_var(bufnr, name, val)
 endfunction
 
 function! s:funcs.buf_del_var(bufnr, name)
-  call setbufvar(a:bufnr, a:name, v:null)
+  if bufnr == bufnr('%')
+    execute 'unlet! b:'.a:name
+  elseif exists('*win_execute')
+    let winid = coc#compat#buf_win_id(a:bufnr)
+    if winid != -1
+      call win_execute(winid, 'unlet! b:'.a:name)
+    endif
+  endif
 endfunction
 
 function! s:funcs.buf_get_option(bufnr, name)
@@ -457,26 +508,40 @@ else
   endfunction
 endif
 
+function! s:get_tabnr(winid) abort
+  let ref = {}
+  call s:win_execute(a:winid, 'tabpagenr()', ref)
+  return get(ref, 'out', 0)
+endfunction
+
 function! s:funcs.win_get_cursor(win_id) abort
   let ref = {}
   call s:win_execute(a:win_id, "[line('.'), col('.')-1]", ref)
-  return ref['out']
+  return get(ref, 'out', 0)
 endfunction
 
 function! s:funcs.win_get_var(win_id, name) abort
-  return gettabwinvar(0, a:win_id, a:name)
+  let tabnr = s:get_tabnr(a:win_id)
+  if tabnr
+    return gettabwinvar(tabnr, a:win_id, a:name)
+  endif
+  throw 'window '.a:win_id. ' not a valid window'
 endfunction
 
 function! s:funcs.win_set_width(win_id, width) abort
-  return s:win_execute(a:win_id, 'vertical resize '.a:width)
+  call s:win_execute(a:win_id, 'vertical resize '.a:width)
 endfunction
 
 function! s:funcs.win_set_buf(win_id, buf_id) abort
-  return s:win_execute(a:win_id, 'buffer '.a:buf_id)
+  call s:win_execute(a:win_id, 'buffer '.a:buf_id)
 endfunction
 
 function! s:funcs.win_get_option(win_id, name) abort
-  return gettabwinvar(0, a:win_id, '&'.a:name)
+  let tabnr = s:get_tabnr(a:win_id)
+  if tabnr
+    return gettabwinvar(tabnr, a:win_id, '&'.a:name)
+  endif
+  throw 'window '.a:win_id. ' not a valid window'
 endfunction
 
 function! s:funcs.win_set_height(win_id, height) abort
@@ -490,20 +555,30 @@ function! s:funcs.win_set_option(win_id, name, value) abort
   elseif val is v:false
     let val = 0
   endif
-  call setwinvar(a:win_id, '&'.a:name, val)
+  let tabnr = s:get_tabnr(a:win_id)
+  if tabnr
+    call settabwinvar(tabnr, a:win_id, '&'.a:name, val)
+  else
+    throw 'window '.a:win_id. ' not a valid window'
+  endif
 endfunction
 
 function! s:funcs.win_set_var(win_id, name, value) abort
-  call setwinvar(a:win_id, a:name, a:value)
+  let tabnr = s:get_tabnr(a:win_id)
+  if tabnr
+    call settabwinvar(tabnr, a:win_id, a:name, a:value)
+  else
+    throw 'window '.a:win_id. ' not a valid window'
+  endif
 endfunction
 
 function! s:funcs.win_del_var(win_id, name) abort
-  call settabwinvar(0, a:win_id, a:name, v:null)
+  call s:win_execute(a:win_id, 'unlet! w:'.a:name)
 endfunction
 
 function! s:funcs.win_is_valid(win_id) abort
   let info = getwininfo(a:win_id)
-  return !empty(info)
+  return empty(info) ? v:false : v:true
 endfunction
 
 function! s:funcs.win_get_number(win_id) abort
@@ -520,15 +595,16 @@ function! s:funcs.win_set_cursor(win_id, pos) abort
 endfunction
 
 function! s:funcs.win_close(win_id, ...) abort
-  call s:win_execute(a:win_id, 'close!')
+  let force = get(a:, 1, 0)
+  call s:win_execute(a:win_id, 'close'.(force ? '!' : ''))
 endfunction
 
 function! s:funcs.win_get_tabpage(win_id) abort
-  let info = getwininfo(a:win_id)
-  if !info
+  let tabnr = s:get_tabnr(a:win_id)
+  if !tabnr
     throw 'Invalid window id '.a:win_id
   endif
-  return info[0]['tabnr']
+  return tabnr
 endfunction
 " }}
 
