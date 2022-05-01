@@ -2,7 +2,7 @@
   name = Esa-Matti Suuronen
   email = esa-matti@suuronen.org
 [github]
-  user = epeli
+  user = esamattis
 [apply]
   whitespace = nowarn
 [color]
@@ -43,12 +43,14 @@
   stash-pop-force = !git read-tree stash && git checkout-index -f && git reset HEAD && git stash drop
   not-pushed = !git l ${1:-origin/master}..HEAD
   cached = diff --cached
+  reset-upstream = !git reset --hard $(git rev-parse --abbrev-ref --symbolic-full-name @{u})
 [push]
 	default = simple
 [gc]
 	auto = 0
 [core]
 	pager = diff-so-fancy | less --tabs=4 -RFX
+	excludesFile = ~/.gitignore
 [color "diff-highlight"]
 	oldNormal = red bold
 	oldHighlight = red bold 52

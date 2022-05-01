@@ -207,6 +207,9 @@ bindkey '^G' esamattis-fasd-pick-dir
 export FZF_DEFAULT_COMMAND=esamatti-fzf-find
 export FZF_CTRL_T_COMMAND=esamatti-fzf-find
 
+# fzf keybindings install:
+# $(brew --prefix)/opt/fzf/install
+# https://github.com/junegunn/fzf#using-homebrew
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 
@@ -218,3 +221,27 @@ fi
 
 # https://blog.thecodewhisperer.com/permalink/renaming-magically-with-zmv
 autoload zmv
+
+
+
+ni() {
+  # Add packages
+  if [ "${1:-}" != "" ]; then
+    if [ -f pnpm-lock.yaml ] || [ -f ../../pnpm-lock.yaml ]; then
+      pnpm install $@ && pnpm install
+    else
+      npm install $@
+    fi
+    return
+  fi
+
+  # Prefer installing using the lock file to avoid faker.js like issue.
+  # Just call the original command manually when need to update the lock
+  if [ -f pnpm-lock.yaml ] || [ -f ../../pnpm-lock.yaml ]; then
+    pnpm install --frozen-lockfile
+  elif [ -f package-lock.json ] ; then
+    npm ci
+  else
+    npm install
+  fi
+}
