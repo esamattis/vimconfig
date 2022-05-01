@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/junegunn/i/master/fzf.png" height="170" alt="fzf - a command-line fuzzy finder"> [![travis-ci](https://travis-ci.org/junegunn/fzf.svg?branch=master)](https://travis-ci.org/junegunn/fzf)
+<img src="https://raw.githubusercontent.com/junegunn/i/master/fzf.png" height="170" alt="fzf - a command-line fuzzy finder"> [![github-actions](https://github.com/junegunn/fzf/workflows/Test%20fzf%20on%20Linux/badge.svg)](https://github.com/junegunn/fzf/actions)
 ===
 
 fzf is a general-purpose command-line fuzzy finder.
@@ -17,7 +17,7 @@ Pros
 - The most comprehensive feature set
 - Flexible layout
 - Batteries included
-    - Vim/Neovim plugin, key bindings and fuzzy auto-completion
+    - Vim/Neovim plugin, key bindings, and fuzzy auto-completion
 
 Table of Contents
 -----------------
@@ -25,7 +25,7 @@ Table of Contents
 <!-- vim-markdown-toc GFM -->
 
 * [Installation](#installation)
-  * [Using Homebrew or Linuxbrew](#using-homebrew-or-linuxbrew)
+  * [Using Homebrew](#using-homebrew)
   * [Using git](#using-git)
   * [Using Linux package managers](#using-linux-package-managers)
   * [Windows](#windows)
@@ -84,9 +84,9 @@ stuff.
 
 [bin]: https://github.com/junegunn/fzf/releases
 
-### Using Homebrew or Linuxbrew
+### Using Homebrew
 
-You can use [Homebrew](http://brew.sh/) or [Linuxbrew](http://linuxbrew.sh/)
+You can use [Homebrew](https://brew.sh/) (on macOS or Linux)
 to install fzf.
 
 ```sh
@@ -121,6 +121,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | Nix             | NixOS, etc.             | `nix-env -iA nixpkgs.fzf`          |
 | Pacman          | Arch Linux              | `sudo pacman -S fzf`               |
 | pkg             | FreeBSD                 | `pkg install fzf`                  |
+| pkgin           | NetBSD                  | `pkgin install fzf`                |
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
@@ -129,6 +130,8 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 > may not be enabled by default.**
 >
 > Refer to the package documentation for more information. (e.g. `apt-cache show fzf`)
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/fzf.svg)](https://repology.org/project/fzf/versions)
 
 ### Windows
 
@@ -166,7 +169,7 @@ For more installation options, see [README-VIM.md](README-VIM.md).
 Upgrading fzf
 -------------
 
-fzf is being actively developed and you might want to upgrade it once in a
+fzf is being actively developed, and you might want to upgrade it once in a
 while. Please follow the instruction below depending on the installation
 method used.
 
@@ -201,7 +204,7 @@ vim $(fzf)
 
 #### Using the finder
 
-- `CTRL-J` / `CTRL-K` (or `CTRL-N` / `CTRL-P`) to move cursor up and down
+- `CTRL-K` / `CTRL-J` (or `CTRL-P` / `CTRL-N`) to move cursor up and down
 - `Enter` key to select the item, `CTRL-C` / `CTRL-G` / `ESC` to exit
 - On multi-select mode (`-m`), `TAB` and `Shift-TAB` to mark multiple items
 - Emacs style key bindings
@@ -217,7 +220,7 @@ cursor with `--height` option.
 vim $(fzf --height 40%)
 ```
 
-Also check out `--reverse` and `--layout` options if you prefer
+Also, check out `--reverse` and `--layout` options if you prefer
 "top-down" layout instead of the default "bottom-up" layout.
 
 ```sh
@@ -264,6 +267,13 @@ or `py`.
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
     - e.g. `export FZF_DEFAULT_COMMAND='fd --type f'`
+    - > :warning: This variable is not used by shell extensions due to the
+      > slight difference in requirements.
+      >
+      > (e.g. `CTRL-T` runs `$FZF_CTRL_T_COMMAND` instead, `vim **<tab>` runs
+      > `_fzf_compgen_path()`, and `cd **<tab>` runs `_fzf_compgen_dir()`)
+      >
+      > The available options are described later in this document.
 - `FZF_DEFAULT_OPTS`
     - Default options
     - e.g. `export FZF_DEFAULT_OPTS="--layout=reverse --inline-info"`
@@ -282,9 +292,10 @@ If you learn by watching videos, check out this screencast by [@samoshkin](https
 Examples
 --------
 
-Many useful examples can be found on [the wiki
-page](https://github.com/junegunn/fzf/wiki/examples). Feel free to add your
-own as well.
+* [Wiki page of examples](https://github.com/junegunn/fzf/wiki/examples)
+    * *Disclaimer: The examples on this page are maintained by the community
+      and are not thoroughly tested*
+* [Advanced fzf examples](https://github.com/junegunn/fzf/blob/master/ADVANCED.md)
 
 `fzf-tmux` script
 -----------------
@@ -331,7 +342,7 @@ fish.
     - Set `FZF_ALT_C_COMMAND` to override the default command
     - Set `FZF_ALT_C_OPTS` to pass additional options
 
-If you're on a tmux session, you can start fzf in a tmux split pane or in
+If you're on a tmux session, you can start fzf in a tmux split-pane or in
 a tmux popup window by setting `FZF_TMUX_OPTS` (e.g. `-d 40%`).
 See `fzf-tmux --help` for available options.
 
@@ -343,12 +354,12 @@ Fuzzy completion for bash and zsh
 #### Files and directories
 
 Fuzzy completion for files and directories can be triggered if the word before
-the cursor ends with the trigger sequence which is by default `**`.
+the cursor ends with the trigger sequence, which is by default `**`.
 
 - `COMMAND [DIRECTORY/][FUZZY_PATTERN]**<TAB>`
 
 ```sh
-# Files under current directory
+# Files under the current directory
 # - You can select multiple items with TAB key
 vim **<TAB>
 
@@ -372,7 +383,7 @@ cd ~/github/fzf**<TAB>
 #### Process IDs
 
 Fuzzy completion for PIDs is provided for kill command. In this case,
-there is no trigger sequence, just press tab key after kill command.
+there is no trigger sequence; just press the tab key after the kill command.
 
 ```sh
 # Can select multiple processes with <TAB> or <Shift-TAB> keys
@@ -381,7 +392,7 @@ kill -9 <TAB>
 
 #### Host names
 
-For ssh and telnet commands, fuzzy completion for host names is provided. The
+For ssh and telnet commands, fuzzy completion for hostnames is provided. The
 names are extracted from /etc/hosts and ~/.ssh/config.
 
 ```sh
@@ -404,7 +415,7 @@ unalias **<TAB>
 export FZF_COMPLETION_TRIGGER='~~'
 
 # Options to fzf command
-export FZF_COMPLETION_OPTS='+c -x'
+export FZF_COMPLETION_OPTS='--border --info=inline'
 
 # Use fd (https://github.com/sharkdp/fd) instead of the default find
 # command for listing path candidates.
@@ -469,11 +480,11 @@ _fzf_complete_doge() {
 
 - The arguments before `--` are the options to fzf.
 - After `--`, simply pass the original completion arguments unchanged (`"$@"`).
-- Then write a set of commands that generates the completion candidates and
+- Then, write a set of commands that generates the completion candidates and
   feed its output to the function using process substitution (`< <(...)`).
 
 zsh will automatically pick up the function using the naming convention but in
-bash you have to manually associate the function with the command using
+bash you have to manually associate the function with the command using the
 `complete` command.
 
 ```sh
@@ -509,12 +520,12 @@ Advanced topics
 
 fzf is fast and is [getting even faster][perf]. Performance should not be
 a problem in most use cases. However, you might want to be aware of the
-options that affect the performance.
+options that affect performance.
 
-- `--ansi` tells fzf to extract and parse ANSI color codes in the input and it
+- `--ansi` tells fzf to extract and parse ANSI color codes in the input, and it
   makes the initial scanning slower. So it's not recommended that you add it
   to your `$FZF_DEFAULT_OPTS`.
-- `--nth` makes fzf slower as fzf has to tokenize each line.
+- `--nth` makes fzf slower because it has to tokenize each line.
 - `--with-nth` makes fzf slower as fzf has to tokenize and reassemble each
   line.
 - If you absolutely need better performance, you can consider using
@@ -563,23 +574,26 @@ FZF_DEFAULT_COMMAND='find . -type f' \
 #### 3. Interactive ripgrep integration
 
 The following example uses fzf as the selector interface for ripgrep. We bound
-`reload` action to `change` event, so every time you type on fzf, ripgrep
+`reload` action to `change` event, so every time you type on fzf, the ripgrep
 process will restart with the updated query string denoted by the placeholder
-expression `{q}`. Also, note that we used `--phony` option so that fzf doesn't
-perform any secondary filtering.
+expression `{q}`. Also, note that we used `--disabled` option so that fzf
+doesn't perform any secondary filtering.
 
 ```sh
 INITIAL_QUERY=""
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \
   fzf --bind "change:reload:$RG_PREFIX {q} || true" \
-      --ansi --phony --query "$INITIAL_QUERY" \
+      --ansi --disabled --query "$INITIAL_QUERY" \
       --height=50% --layout=reverse
 ```
 
 If ripgrep doesn't find any matches, it will exit with a non-zero exit status,
 and fzf will warn you about it. To suppress the warning message, we added
 `|| true` to the command, so that it always exits with 0.
+
+See ["Using fzf as interative Ripgrep launcher"](https://github.com/junegunn/fzf/blob/master/ADVANCED.md#using-fzf-as-interative-ripgrep-launcher)
+for a fuller example with preview window options.
 
 ### Preview window
 
@@ -589,7 +603,7 @@ Your `$SHELL` is used to execute the command with `$SHELL -c COMMAND`.
 The window can be scrolled using the mouse or custom key bindings.
 
 ```bash
-# {} is replaced to the single-quoted string of the focused line
+# {} is replaced with the single-quoted string of the focused line
 fzf --preview 'cat {}'
 ```
 
@@ -608,7 +622,7 @@ You can customize the size, position, and border of the preview window using
 
 ```bash
 fzf --height 40% --layout reverse --info inline --border \
-    --preview 'file {}' --preview-window down:1:noborder \
+    --preview 'file {}' --preview-window up,1,border-horizontal \
     --color 'fg:#bbccdd,fg+:#ddeeff,bg:#334455,preview-bg:#223344,border:#778899'
 ```
 
@@ -661,7 +675,7 @@ fzf
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 ```
 
-If you want the command to follow symbolic links, and don't want it to exclude
+If you want the command to follow symbolic links and don't want it to exclude
 hidden files, use the following command:
 
 ```sh

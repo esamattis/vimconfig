@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.25.0
+version=0.30.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -168,7 +168,8 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  Darwin\ *64)     download fzf-$version-darwin_amd64.tar.gz  ;;
+  Darwin\ arm64)   download fzf-$version-darwin_arm64.zip     ;;
+  Darwin\ x86_64)  download fzf-$version-darwin_amd64.zip     ;;
   Linux\ armv5*)   download fzf-$version-linux_armv5.tar.gz   ;;
   Linux\ armv6*)   download fzf-$version-linux_armv6.tar.gz   ;;
   Linux\ armv7*)   download fzf-$version-linux_armv7.tar.gz   ;;
@@ -279,11 +280,6 @@ EOF
   [ $? -eq 0 ] && echo "OK" || echo "Failed"
 
   mkdir -p "${fish_dir}/functions"
-  if [ -e "${fish_dir}/functions/fzf.fish" ]; then
-    echo -n "Remove unnecessary ${fish_dir}/functions/fzf.fish ... "
-    rm -f "${fish_dir}/functions/fzf.fish" && echo "OK" || echo "Failed"
-  fi
-
   fish_binding="${fish_dir}/functions/fzf_key_bindings.fish"
   if [ $key_bindings -ne 0 ]; then
     echo -n "Symlink $fish_binding ... "

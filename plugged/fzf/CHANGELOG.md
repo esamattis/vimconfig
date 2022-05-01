@@ -1,6 +1,152 @@
 CHANGELOG
 =========
 
+0.30.0
+------
+- Fixed cursor flickering over the screen by hiding it during rendering
+- Added `--ellipsis` option. You can take advantage of it to make fzf
+  effectively search non-visible parts of the item.
+  ```sh
+  # Search against hidden line numbers on the far right
+  nl /usr/share/dict/words                  |
+    awk '{printf "%s%1000s\n", $2, $1}'     |
+    fzf --nth=-1 --no-hscroll --ellipsis='' |
+    awk '{print $2}'
+  ```
+- Added `rebind` action for restoring bindings after `unbind`
+- Bug fixes and improvements
+
+0.29.0
+------
+- Added `change-preview(...)` action to change the `--preview` command
+    - cf. `preview(...)` is a one-off action that doesn't change the default
+      preview command
+- Added `change-preview-window(...)` action
+    - You can rotate through the different options separated by `|`
+      ```sh
+      fzf --preview 'cat {}' --preview-window right:40% \
+          --bind 'ctrl-/:change-preview-window(right,70%|down,40%,border-top|hidden|)'
+      ```
+- Fixed rendering of the prompt line when overflow occurs with `--info=inline`
+
+0.28.0
+------
+- Added `--header-first` option to print header before the prompt line
+  ```sh
+  fzf --header $'Welcome to fzf\n▔▔▔▔▔▔▔▔▔▔▔▔▔▔' --reverse --height 30% --border --header-first
+  ```
+- Added `--scroll-off=LINES` option (similar to `scrolloff` option of Vim)
+    - You can set it to a very large number so that the cursor stays in the
+      middle of the screen while scrolling
+      ```sh
+      fzf --scroll-off=5
+      fzf --scroll-off=999
+      ```
+- Fixed bug where preview window is not updated on `reload` (#2644)
+- fzf on Windows will also use `$SHELL` to execute external programs
+    - See #2638 and #2647
+    - Thanks to @rashil2000, @vovcacik, and @janlazo
+
+0.27.3
+------
+- Preview window is `hidden` by default when there are `preview` bindings but
+  `--preview` command is not given
+- Fixed bug where `{n}` is not properly reset on `reload`
+- Fixed bug where spinner is not displayed on `reload`
+- Enhancements in tcell renderer for Windows (#2616)
+- Vim plugin
+    - `sinklist` is added as a synonym to `sink*` so that it's easier to add
+      a function to a spec dictionary
+      ```vim
+      let spec = { 'source': 'ls', 'options': ['--multi', '--preview', 'cat {}'] }
+      function spec.sinklist(matches)
+        echom string(a:matches)
+      endfunction
+
+      call fzf#run(fzf#wrap(spec))
+      ```
+    - Vim 7 compatibility
+
+0.27.2
+------
+- 16 base ANSI colors can be specified by their names
+  ```sh
+  fzf --color fg:3,fg+:11
+  fzf --color fg:yellow,fg+:bright-yellow
+  ```
+- Fix bug where `--read0` not properly displaying long lines
+
+0.27.1
+------
+- Added `unbind` action. In the following Ripgrep launcher example, you can
+  use `unbind(reload)` to switch to fzf-only filtering mode.
+    - See https://github.com/junegunn/fzf/blob/master/ADVANCED.md#switching-to-fzf-only-search-mode
+- Vim plugin
+    - Vim plugin will stop immediately even when the source command hasn't finished
+      ```vim
+      " fzf will read the stream file while allowing other processes to append to it
+      call fzf#run({'source': 'cat /dev/null > /tmp/stream; tail -f /tmp/stream'})
+      ```
+    - It is now possible to open popup window relative to the current window
+      ```vim
+      let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'relative': v:true, 'yoffset': 1.0 } }
+      ```
+
+0.27.0
+------
+- More border options for `--preview-window`
+  ```sh
+  fzf --preview 'cat {}' --preview-window border-left
+  fzf --preview 'cat {}' --preview-window border-left --border horizontal
+  fzf --preview 'cat {}' --preview-window top:border-bottom
+  fzf --preview 'cat {}' --preview-window top:border-horizontal
+  ```
+- Automatically set `/dev/tty` as STDIN on execute action
+  ```sh
+  # Redirect /dev/tty to suppress "Vim: Warning: Input is not from a terminal"
+  # ls | fzf --bind "enter:execute(vim {} < /dev/tty)"
+
+  # "< /dev/tty" part is no longer needed
+  ls | fzf --bind "enter:execute(vim {})"
+  ```
+- Bug fixes and improvements
+- Signed and notarized macOS binaries
+  (Huge thanks to [BACKERS.md](https://github.com/junegunn/junegunn/blob/main/BACKERS.md)!)
+
+0.26.0
+------
+- Added support for fixed header in preview window
+  ```sh
+  # Display top 3 lines as the fixed header
+  fzf --preview 'bat --style=header,grid --color=always {}' --preview-window '~3'
+  ```
+- More advanced preview offset expression to better support the fixed header
+  ```sh
+  # Preview with bat, matching line in the middle of the window below
+  # the fixed header of the top 3 lines
+  #
+  #   ~3    Top 3 lines as the fixed header
+  #   +{2}  Base scroll offset extracted from the second field
+  #   +3    Extra offset to compensate for the 3-line header
+  #   /2    Put in the middle of the preview area
+  #
+  git grep --line-number '' |
+    fzf --delimiter : \
+        --preview 'bat --style=full --color=always --highlight-line {2} {1}' \
+        --preview-window '~3:+{2}+3/2'
+  ```
+- Added `select` and `deselect` action for unconditionally selecting or
+  deselecting a single item in `--multi` mode. Complements `toggle` action.
+- Significant performance improvement in ANSI code processing
+- Bug fixes and improvements
+- Built with Go 1.16
+
+0.25.1
+------
+- Added `close` action
+    - Close preview window if open, abort fzf otherwise
+- Bug fixes and improvements
+
 0.25.0
 ------
 - Text attributes set in `--color` are not reset when fzf sees another
@@ -1073,4 +1219,3 @@ add `--sync` option to re-enable buffering.
 ### Improvements
 - `--select-1` and `--exit-0` will start finder immediately when the condition
   cannot be met
-

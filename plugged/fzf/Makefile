@@ -27,12 +27,14 @@ $(error Not on git repository; cannot determine $$FZF_REVISION)
 endif
 BUILD_FLAGS    := -a -ldflags "-s -w -X main.version=$(VERSION) -X main.revision=$(REVISION)" -tags "$(TAGS)"
 
+BINARY32       := fzf-$(GOOS)_386
 BINARY64       := fzf-$(GOOS)_amd64
 BINARYARM5     := fzf-$(GOOS)_arm5
 BINARYARM6     := fzf-$(GOOS)_arm6
 BINARYARM7     := fzf-$(GOOS)_arm7
 BINARYARM8     := fzf-$(GOOS)_arm8
 BINARYPPC64LE  := fzf-$(GOOS)_ppc64le
+BINARYRISCV64  := fzf-$(GOOS)_riscv64
 
 # https://en.wikipedia.org/wiki/Uname
 UNAME_M := $(shell uname -m)
@@ -40,6 +42,10 @@ ifeq ($(UNAME_M),x86_64)
 	BINARY := $(BINARY64)
 else ifeq ($(UNAME_M),amd64)
 	BINARY := $(BINARY64)
+else ifeq ($(UNAME_M),i686)
+	BINARY := $(BINARY32)
+else ifeq ($(UNAME_M),i386)
+	BINARY := $(BINARY32)
 else ifeq ($(UNAME_M),armv5l)
 	BINARY := $(BINARYARM5)
 else ifeq ($(UNAME_M),armv6l)
@@ -54,6 +60,8 @@ else ifeq ($(UNAME_M),aarch64)
 	BINARY := $(BINARYARM8)
 else ifeq ($(UNAME_M),ppc64le)
 	BINARY := $(BINARYPPC64LE)
+else ifeq ($(UNAME_M),riscv64)
+	BINARY := $(BINARYRISCV64)
 else
 $(error Build on $(UNAME_M) is not supported, yet.)
 endif
@@ -61,11 +69,15 @@ endif
 all: target/$(BINARY)
 
 test: $(SOURCES)
+	[ -z "$$(gofmt -s -d src)" ] || (gofmt -s -d src; exit 1)
 	SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" \
 				github.com/junegunn/fzf/src \
 				github.com/junegunn/fzf/src/algo \
 				github.com/junegunn/fzf/src/tui \
 				github.com/junegunn/fzf/src/util
+
+bench:
+	cd src && SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" -run=Bench -bench=. -benchmem
 
 install: bin/fzf
 
@@ -90,6 +102,7 @@ endif
 	grep -qF $(VERSION) install.ps1
 
 	# Make release note out of CHANGELOG.md
+	mkdir -p tmp
 	sed -n '/^$(VERSION_REGEX)$$/,/^[0-9]/p' CHANGELOG.md | tail -r | \
 		sed '1,/^ *$$/d' | tail -r | sed 1,2d | tee tmp/release-note
 
@@ -110,6 +123,9 @@ endif
 clean:
 	$(RM) -r dist target
 
+target/$(BINARY32): $(SOURCES)
+	GOARCH=386 $(GO) build $(BUILD_FLAGS) -o $@
+
 target/$(BINARY64): $(SOURCES)
 	GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $@
 
@@ -129,6 +145,9 @@ target/$(BINARYARM8): $(SOURCES)
 target/$(BINARYPPC64LE): $(SOURCES)
 	GOARCH=ppc64le $(GO) build $(BUILD_FLAGS) -o $@
 
+target/$(BINARYRISCV64): $(SOURCES)
+	GOARCH=riscv64 $(GO) build $(BUILD_FLAGS) -o $@
+
 bin/fzf: target/$(BINARY) | bin
 	cp -f target/$(BINARY) bin/fzf
 
@@ -144,4 +163,4 @@ update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all build release test install clean docker docker-test update
+.PHONY: all build release test bench install clean docker docker-test update
