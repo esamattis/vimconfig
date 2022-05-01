@@ -230,7 +230,7 @@ function! s:airline_refresh(...)
 endfunction
 
 function! s:FocusGainedHandler(timer)
-  if exists("s:timer") && a:timer == s:timer
+  if exists("s:timer") && a:timer == s:timer && exists('#airline')
     augroup airline
       au FocusGained * call s:on_focus_gained()
     augroup END
@@ -239,7 +239,7 @@ endfu
 
 function! s:airline_extensions()
   let loaded = airline#extensions#get_loaded_extensions()
-  let files = split(globpath(&rtp, "autoload/airline/extensions/*.vim"), "\n")
+  let files = split(globpath(&rtp, 'autoload/airline/extensions/*.vim', 1), "\n")
   call map(files, 'fnamemodify(v:val, ":t:r")')
   if empty(files)
     echo "No extensions loaded"
