@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+
+git-random-branch stash
+branch="$(git rev-parse --abbrev-ref HEAD)"
+git add .
+git commit -m "stash"
+git switch -
+
+cd -
+
+echo
+echo "Stashed to $branch"
+echo
