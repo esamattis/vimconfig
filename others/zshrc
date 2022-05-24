@@ -80,10 +80,6 @@ autoload -Uz compinit && compinit
 
 export PATH=/usr/local/bin/:$PATH
 
-export PLAYBOOKS_DIR="$HOME/code/valu-playbooks"
-if [ -d "$PLAYBOOKS_DIR" ]; then
-  . "$PLAYBOOKS_DIR/tools/shell-utils.source"
-fi
 
 alias keyboard-assistant='sudo open /System/Library/CoreServices/KeyboardSetupAssistant.app/Contents/MacOS/KeyboardSetupAssistant'
 alias node_modules_to_path='export PATH="$(pwd)/node_modules/.bin":$PATH'
