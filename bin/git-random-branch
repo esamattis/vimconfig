@@ -14,10 +14,18 @@ if [ ! -x "$(command -v adj-noun)" ]; then
     exit 2
 fi
 
+comment=""
+read -p 'comment> ' comment
+
+if [ "$comment" != "" ]; then
+    safe="$(echo "$comment" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]-')"
+    comment="/$safe"
+fi
+
 prefix=${1:-tmp}
 rand="$(adj-noun | sed 's/ /-/')"
 username="$(git config --global github.user || whoami)"
-branch="$prefix/$username/$rand"
+branch="$prefix/$username/$rand$comment"
 
 git switch -c "$branch"
 echo "$(date +"%Y-%m-%d") $branch" >> "$(git rev-parse --show-toplevel)/.git/random-branch-history.log"
