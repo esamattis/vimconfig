@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -eu
+
+tail $@ "$(git rev-parse --show-toplevel)/.git/random-branch-history.log"
