@@ -8,24 +8,26 @@ if [ "${1-}" = "-h" ] || [ "${1-}" = "--help" ]; then
     exit 0
 fi
 
-if [ ! -x "$(command -v adj-noun)" ]; then
-    >&2 echo "adj-noun missing."
-    >&2 echo "Install with: npm install -g adj-noun"
-    exit 2
+
+rand=""
+read -p 'slug> ' rand
+
+if [ "$rand" != "" ]; then
+    rand="$(echo "$rand" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]-')"
 fi
 
-comment=""
-read -p 'comment> ' comment
-
-if [ "$comment" != "" ]; then
-    safe="$(echo "$comment" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]-')"
-    comment="/$safe"
+if [ "$rand" = "" ]; then
+    if [ ! -x "$(command -v adj-noun)" ]; then
+        >&2 echo "adj-noun missing."
+        >&2 echo "Install with: npm install -g adj-noun"
+        exit 2
+    fi
+    rand="$(adj-noun | sed 's/ /-/')"
 fi
 
 prefix=${1:-tmp}
-rand="$(adj-noun | sed 's/ /-/')"
 username="$(git config --global github.user || whoami)"
-branch="$prefix/$username/$rand$comment"
+branch="$prefix/$username/$rand/$(date +"%Y-%m-%d")"
 
 git switch -c "$branch"
-echo "$(date +"%Y-%m-%d") $branch" >> "$(git rev-parse --show-toplevel)/.git/random-branch-history.log"
+echo "$(date +"%Y-%m-%d %H:%M") $branch" >> "$(git rev-parse --show-toplevel)/.git/random-branch-history.log"
